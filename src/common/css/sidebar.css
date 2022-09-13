@@ -1,0 +1,24 @@
+.sidebar {
+    width: 100%;
+    background-color: #004a8eed;
+    color: white;
+    height: 100%;
+    font-size: medium;
+  }
+  
+  form label {
+    margin-right: 2em;
+  }
+
+  #input_url{
+    width: 50em;
+  }
+
+  #form_metadata{
+    margin: 2em;
+    height: 100%;
+    padding: 2em;
+    border: groove;
+    border-radius: 10px;
+  }
+

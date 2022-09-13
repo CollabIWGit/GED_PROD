@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "my-ged-tree-view-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/myGedTreeView/MyGedTreeViewWebPart.js",
+          "manifest": "./src/webparts/myGedTreeView/MyGedTreeViewWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "MyGedTreeViewWebPartStrings": "lib/webparts/myGedTreeView/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
+  }
+}
