@@ -16,8 +16,9 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import { getIconClassName, Label } from 'office-ui-fabric-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFolder, faFile } from '@fortawesome/free-regular-svg-icons'
-import { IconProp } from '@fortawesome/fontawesome-svg-core';
+import { faFolder, faFolderOpen, faFileWord } from '@fortawesome/free-regular-svg-icons'
+import { faFile } from '@fortawesome/free-solid-svg-icons'
+import { IconName, IconProp } from '@fortawesome/fontawesome-svg-core';
 import { useEffect } from 'react'
 
 
@@ -67,6 +68,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           key: v["FolderID"],
           label: v["Title"],
           data: 0,
+          icon: faFolder,
           children: []
         };
 
@@ -86,6 +88,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           key: v["FolderID"],
           label: v["Title"],
           data: 1,
+          icon: faFolderOpen,
           children: []
         };
 
@@ -111,13 +114,19 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
         //v["ServerRedirectedEmbedUrl"] ==> v["FileUrl"]
+
+        const iconName: IconProp = faFile ;
+
         const tree: ITreeItem = {
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
           label: v["Title"],
+          icon:  faFile,
           data: v["FileUrl"]
         };
+
+     
 
         // ParentID ==> FolderID
         var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
@@ -134,7 +143,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     this.setState({ TreeLinks: remainingArr });
   }
-
 
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
@@ -157,12 +165,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     items={this.state.TreeLinks}
                     defaultExpanded={false}
                     selectionMode={TreeViewSelectionMode.None}
-                    selectChildrenIfParentSelected={true}
+                    selectChildrenIfParentSelected={false}
                     showCheckboxes={true}
                     treeItemActionsDisplayMode={TreeItemActionsDisplayMode.Buttons}
                     onSelect={this.onSelect}
                     onExpandCollapse={this.onTreeItemExpandCollapse}
                     onRenderItem={this.renderCustomTreeItem}
+                    defaultExpandedChildren={false}
                   />
 
                 </div>
@@ -223,49 +232,15 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private renderCustomTreeItem(item: ITreeItem): JSX.Element {
 
-    var details = [];
-    var iconName;
-
     return (
       <span
-
-        onLoad={() => {
-
-          console.log("LOOOOOOOOOOOOOOADDD");
-
-          // if (item.data == 1 || item.data == 0) {
-
-          //   iconName = faFolder;
-          //   console.log("NAAAAAME", iconName);
-          // }
-
-          // else {
-          //   iconName = faFile;
-          //   console.log("NAAAAAME", iconName);
-          // }
-
-        }
-
-
-
-        }
-
-      
-
         //onclick
         onClick={async event => {
-
           console.log("DATA value", item.data);
-          console.log(iconName);
-
           if (item.data == 1 || item.data == 0) {
-
-
           }
 
           else {
-
-
 
             const item_detail: any = await sp.web.lists.getByTitle("TestTreeView1").items.getById(parseInt(item.id))();
 
@@ -277,34 +252,21 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             console.log("DETAAAAILS", item_detail);
           }
           // console.log(this.getItemMetadata(item.id));
-
         }
 
         }
-
-
-
       >
 
-
-
         {
-
-
-          item.iconProps &&
-          <i className={"ms-Icon ms-Icon--Document" + item.iconProps.iconName} style={{ paddingRight: '4px' }} />
+          <FontAwesomeIcon icon={item.icon} className="fa-icon"></FontAwesomeIcon>
         }
 
-        <FontAwesomeIcon icon={faFolder}></FontAwesomeIcon>
-
         &nbsp;
-
         {item.label}
 
       </span>
     );
   }
-
 
 
 }

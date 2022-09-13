@@ -11,6 +11,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.2.0",
     "@fortawesome/free-regular-svg-icons": "^6.2.0",
+    "@fortawesome/free-solid-svg-icons": "^6.2.0",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@microsoft/rush-stack-compiler-4.2": "^0.1.2",
     "@microsoft/sp-core-library": "1.14.0",
