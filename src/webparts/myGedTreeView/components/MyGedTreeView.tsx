@@ -47,13 +47,15 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   private async _getLinks(sp) {
 
     // const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView").items();
-    const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView1").items();
+    const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView1").items.getAll();
 
     console.log("ALL ITEMS", allItems);
 
 
     var treearr: ITreeItem[] = [];
     var treeSub: ITreeItem[] = [];
+
+
 
     allItems.forEach((v, i) => {
 
@@ -62,11 +64,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
       if (v["ParentID"] == -1) {
 
+        var str = v["Title"];
+
         const tree: ITreeItem = {
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
-          label: v["Title"],
+          label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
           data: 0,
           icon: faFolder,
           children: []
@@ -78,15 +82,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       }
 
       // v["FileSystemObjectType"] ==> v["IsFolder"]
-      else if (v["ParentID"] !== -1 && v["IsFolder"] === "True") {
+      else if (v["ParentID"] !== -1 && v["IsFolder"] === "TRUE") {
 
         console.log("We have a sub folder here.");
+        var str = v["Title"];
 
         const tree: ITreeItem = {
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
-          label: v["Title"],
+          label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
           data: 1,
           icon: faFolderOpen,
           children: []
@@ -108,7 +113,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         }
       }
 
-      else if (v["ParentID"] !== -1 && v["IsFolder"] === "False") {
+      else if (v["ParentID"] !== -1 && v["IsFolder"] === "FALSE") {
 
         console.log("We have a file here with ParentId :" + v["ParentID"]);
 
@@ -126,8 +131,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           data: v["FileUrl"]
         };
 
-     
-
+    
         // ParentID ==> FolderID
         var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
         if (treecol.length != 0) {
@@ -173,7 +177,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     onRenderItem={this.renderCustomTreeItem}
                     defaultExpandedChildren={false}
                   />
-
+                  
                 </div>
               </div>
             </div>
