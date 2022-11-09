@@ -2,7 +2,7 @@ import * as React from 'react';
 import styles from './MyGedTreeView.module.scss';
 import { IMyGedTreeViewProps, IMyGedTreeViewState } from './IMyGedTreeView';
 import { escape } from '@microsoft/sp-lodash-subset';
-import { TreeView, ITreeItem, TreeViewSelectionMode, TreeItemActionsDisplayMode } from "@pnp/spfx-controls-react/lib/TreeView";
+import { TreeView, ITreeItem, TreeViewSelectionMode, TreeItemActionsDisplayMode, ITreeItemActions } from "@pnp/spfx-controls-react/lib/TreeView";
 // import { SPFI, spfi, SPFx } from "@pnp/sp";
 // import { Container, Row, Col, Card, Form, Nav } from "react-bootstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -10,7 +10,7 @@ import $ from 'jquery';
 import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
-import { sp, List, IItemAddResult, UserCustomActionScope, Items } from "@pnp/sp/presets/all";
+import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item } from "@pnp/sp/presets/all";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
@@ -19,7 +19,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faFolderOpen, faFileWord } from '@fortawesome/free-regular-svg-icons'
 import { faFile } from '@fortawesome/free-solid-svg-icons'
 import { IconName, IconProp } from '@fortawesome/fontawesome-svg-core';
-import { useEffect } from 'react'
+import { useEffect } from 'react';
 
 
 require('./../../../common/css/common.css');
@@ -42,19 +42,22 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     };
 
     this._getLinks(sp);
+
   }
 
   private async _getLinks(sp) {
 
     // const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView").items();
     const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView1").items.getAll();
+    //const allItems: any[] = await sp.web.lists.getByTitle("TestDocument").items.getAll();
+
 
     console.log("ALL ITEMS", allItems);
 
 
     var treearr: ITreeItem[] = [];
     var treeSub: ITreeItem[] = [];
-
+    var tree: ITreeItem[] = [];
 
 
     allItems.forEach((v, i) => {
@@ -70,10 +73,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
-          label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
+          label: str,
           data: 0,
           icon: faFolder,
-          children: []
+          children: [],
+
         };
 
         treearr.push(tree);
@@ -91,10 +95,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
-          label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
+          // label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
+          label: str,
           data: 1,
           icon: faFolderOpen,
-          children: []
+          children: [],
+
         };
 
         console.log("Tree 2", tree);
@@ -119,19 +125,19 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
         //v["ServerRedirectedEmbedUrl"] ==> v["FileUrl"]
-
-        const iconName: IconProp = faFile ;
+        const iconName: IconProp = faFile;
 
         const tree: ITreeItem = {
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
           label: v["Title"],
-          icon:  faFile,
-          data: v["FileUrl"]
+          icon: faFile,
+          data: v["FileUrl"],
+
         };
 
-    
+
         // ParentID ==> FolderID
         var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
         if (treecol.length != 0) {
@@ -145,17 +151,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var remainingArr = treearr.filter(data => data.data == 0);
 
+    tree = remainingArr;
+
     this.setState({ TreeLinks: remainingArr });
   }
 
-  public render(): React.ReactElement<IMyGedTreeViewProps> {
 
-    var tree = [];
+
+  public render(): React.ReactElement<IMyGedTreeViewProps> {
 
     return (
 
       // <div className={styles.myGedTreeView}>
-
 
       <div className="container-fluid" style={{ height: "100vh" }}>
 
@@ -163,12 +170,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           <div className="col-sm-3">
             <div id="sidebarMenu" className="sidebar">
               <div className="position-sticky">
-                <div className="list-group list-group-flush mx-3 mt-4">
+                <div className="list-group list-group-flush mx-3 mt-4" id="tree">
 
                   <TreeView
+                  
                     items={this.state.TreeLinks}
-                    defaultExpanded={false}
-                    selectionMode={TreeViewSelectionMode.None}
+                    defaultExpandedKeys={['1']}
+                    // selectionMode={TreeViewSelectionMode.None}
                     selectChildrenIfParentSelected={false}
                     showCheckboxes={true}
                     treeItemActionsDisplayMode={TreeItemActionsDisplayMode.Buttons}
@@ -176,8 +184,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     onExpandCollapse={this.onTreeItemExpandCollapse}
                     onRenderItem={this.renderCustomTreeItem}
                     defaultExpandedChildren={false}
+
                   />
-                  
+
+
                 </div>
               </div>
             </div>
@@ -206,14 +216,40 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 Url
                 <input type="text" id='input_url' className='form-control' />
               </label>
+
+              <button type="button" id='Interne' onClick={() => {
+                console.log("Button Clicked!!");
+               
+
+              }
+
+              }>Expand Internal</button>
             </form>
+
+
           </div>
         </div>
       </div>
 
 
     );
+
+
+
+
+
+
+
   }
+
+  // expandNode(key: any) {
+  //   this.treeView.expandItem(key);
+  // }
+  // collapseNode(key: any) {
+  //   this.treeView.collapseItem(key);
+  // }
+
+
 
   private async onTreeItemSelect(items: ITreeItem[]) {
 
@@ -229,10 +265,15 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     })
   }
 
+
   private onTreeItemExpandCollapse(item: ITreeItem, isExpanded: boolean) {
     console.log((isExpanded ? "Item expanded: " : "Item collapsed: ") + item.label);
+    console.log(item.key);
+    console.log(item.key);
+
     $("#text").text(item.label);
   }
+
 
   private renderCustomTreeItem(item: ITreeItem): JSX.Element {
 
@@ -246,6 +287,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           else {
 
+            //   const item_detail: any = await sp.web.lists.getByTitle("TestDocument").items.getById(parseInt(item.id))();
             const item_detail: any = await sp.web.lists.getByTitle("TestTreeView1").items.getById(parseInt(item.id))();
 
             Object.keys(item_detail).forEach((key) => {
