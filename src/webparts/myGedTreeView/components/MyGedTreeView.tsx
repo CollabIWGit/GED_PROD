@@ -22,6 +22,10 @@ import { IconName, IconProp } from '@fortawesome/fontawesome-svg-core';
 import { useEffect } from 'react';
 
 
+import 'bootstrap/dist/css/bootstrap.css';
+// import Form from 'react-bootstrap/Form';
+// import Button from 'react-bootstrap/Button';
+
 require('./../../../common/css/common.css');
 require('./../../../common/css/sidebar.css');
 require('./../../../common/css/pagecontent.css');
@@ -48,8 +52,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   private async _getLinks(sp) {
 
     // const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView").items();
-    const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView1").items.getAll();
+    // const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView1").items.getAll();
     //const allItems: any[] = await sp.web.lists.getByTitle("TestDocument").items.getAll();
+    const allItems: any[] = await sp.web.lists.getByTitle("Documents").items.getAll();
+
 
 
     console.log("ALL ITEMS", allItems);
@@ -173,7 +179,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 <div className="list-group list-group-flush mx-3 mt-4" id="tree">
 
                   <TreeView
-                  
+
                     items={this.state.TreeLinks}
                     defaultExpandedKeys={['1']}
                     // selectionMode={TreeViewSelectionMode.None}
@@ -193,6 +199,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             </div>
 
           </div>
+
+
+
           <div className="col-sm-9">
 
             <form id="form_metadata">
@@ -219,7 +228,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               <button type="button" id='Interne' onClick={() => {
                 console.log("Button Clicked!!");
-               
+
 
               }
 
@@ -288,7 +297,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           else {
 
             //   const item_detail: any = await sp.web.lists.getByTitle("TestDocument").items.getById(parseInt(item.id))();
-            const item_detail: any = await sp.web.lists.getByTitle("TestTreeView1").items.getById(parseInt(item.id))();
+            const item_detail: any = await sp.web.lists.getByTitle("Documents").items.getById(parseInt(item.id))();
 
             Object.keys(item_detail).forEach((key) => {
               $("#input_title").val(item_detail.Title);
