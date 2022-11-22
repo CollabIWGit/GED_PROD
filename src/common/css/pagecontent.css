@@ -10,3 +10,7 @@ span:hover{
     color: rgb(212, 189, 43);
 
 }
+
+#form_metadata label {
+    margin: 2em;
+}

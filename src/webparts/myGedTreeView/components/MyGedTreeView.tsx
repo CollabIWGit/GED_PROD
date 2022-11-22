@@ -9,7 +9,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import $ from 'jquery';
 import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
-
+import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item } from "@pnp/sp/presets/all";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
@@ -20,6 +20,11 @@ import { faFolder, faFolderOpen, faFileWord } from '@fortawesome/free-regular-sv
 import { faFile } from '@fortawesome/free-solid-svg-icons'
 import { IconName, IconProp } from '@fortawesome/fontawesome-svg-core';
 import { useEffect } from 'react';
+import { SPHttpClient, SPHttpClientResponse, SPHttpClientConfiguration } from '@microsoft/sp-http';
+import { IAttachmentInfo } from "@pnp/sp/attachments";
+import "@pnp/sp/attachments";
+import { IItem } from "@pnp/sp/items/types";
+
 
 
 import 'bootstrap/dist/css/bootstrap.css';
@@ -34,10 +39,15 @@ require('./../../../common/css/pagecontent.css');
 export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, IMyGedTreeViewState> {
 
 
+
   constructor(props: IMyGedTreeViewProps) {
+
+
     super(props);
+
     sp.setup({
       spfxContext: this.props.context
+      //props.context
     });
 
     // const sp = spfi().using(SPFx(this.props.context));
@@ -48,6 +58,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     this._getLinks(sp);
 
   }
+
+
+
 
   private async _getLinks(sp) {
 
@@ -163,7 +176,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   }
 
 
-
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
     return (
@@ -210,29 +222,53 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 <input type="text" id='input_title' className='form-control' />
               </label>
               <label>
-                Url
-                <input type="text" id='input_url' className='form-control' />
+                Type
+                <input type="text" id='input_type' className='form-control' />
               </label>
               <label>
-                Url
-                <input type="text" id='input_url' className='form-control' />
+                Number
+                <input type="text" id='input_number' className='form-control' />
               </label>
               <label>
-                Url
-                <input type="text" id='input_url' className='form-control' />
+                Revision
+                <input type="text" id='input_revision' className='form-control' />
               </label>
               <label>
-                Url
-                <input type="text" id='input_url' className='form-control' />
+                Status
+                <input type="text" id='input_status' className='form-control' />
               </label>
 
-              <button type="button" id='Interne' onClick={() => {
-                console.log("Button Clicked!!");
+              <label>
+                Owner
+                <input type="text" id='input_owner' className='form-control' />
+              </label>
 
+              <label>
+                Active Date
+                <input type="text" id='input_activeDate' className='form-control' />
+              </label>
 
-              }
+              <label>
+                Filename
+                <input type="text" id='input_filename' className='form-control' />
+              </label>
 
-              }>Expand Internal</button>
+              <label>
+                Author
+                <input type="text" id='input_author' className='form-control' />
+              </label>
+
+              <label>
+                Review Date
+                <input type="text" id='input_reviewDate' className='form-control' />
+              </label>
+
+              <label>
+                Keywords
+                <input type="text" id='input_keywords' className='form-control' />
+              </label>
+
+              <button type="button" id='view'>View File</button>
             </form>
 
 
@@ -242,12 +278,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
     );
-
-
-
-
-
-
 
   }
 
@@ -286,6 +316,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private renderCustomTreeItem(item: ITreeItem): JSX.Element {
 
+
+    var docResponse = null;
+
     return (
       <span
         //onclick
@@ -296,17 +329,30 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           else {
 
-            //   const item_detail: any = await sp.web.lists.getByTitle("TestDocument").items.getById(parseInt(item.id))();
-            const item_detail: any = await sp.web.lists.getByTitle("Documents").items.getById(parseInt(item.id))();
 
-            Object.keys(item_detail).forEach((key) => {
-              $("#input_title").val(item_detail.Title);
-              $("#input_url").val(item_detail.FileUrl);
-            });
 
-            console.log("DETAAAAILS", item_detail);
+            sp.web.lists.getByTitle('Documents').items.select('Id', 'Title').get().then( response => {
+              response.forEach( x => {
+                let _Item = sp.web.lists.getByTitle("Documents").items.getById(parseInt(item.id));      
+                _Item.attachmentFiles.select('FileName', 'ServerRelativeUrl').get().
+                then( responseAttachments => {
+                  responseAttachments.forEach( attachmentItem => {
+                    // result += item.Title                       + "<br/>" +
+                    // item.EncodedAbsUrl                    + "<br/>" + 
+                    // attachmentItem.FileName          + "<br/>" + 
+                    // attachmentItem.ServerRelativeUrl + "<br/><br/>";
+
+                    // $("#input_title").val(x.T);
+                    // $("#input_url").val(item_detail.FileUrl);
+                    window.open(`${attachmentItem.ServerRelativeUrl}`, '_blank');
+
+                  });
+                });        
+              });
+            })
+
           }
-          // console.log(this.getItemMetadata(item.id));
+  
         }
 
         }
