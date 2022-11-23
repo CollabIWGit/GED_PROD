@@ -14,3 +14,7 @@ span:hover{
 #form_metadata label {
     margin: 2em;
 }
+
+#view {
+    color: black;
+}

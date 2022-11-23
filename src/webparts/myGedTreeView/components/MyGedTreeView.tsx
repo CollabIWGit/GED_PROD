@@ -78,6 +78,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     var treeSub: ITreeItem[] = [];
     var tree: ITreeItem[] = [];
 
+    // var treearr: any = [];
+    // var treeSub: any = [];
+    // var tree: any = [];
+
+
 
     allItems.forEach((v, i) => {
 
@@ -96,6 +101,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           data: 0,
           icon: faFolder,
           children: [],
+          revision: ""
 
         };
 
@@ -119,6 +125,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           data: 1,
           icon: faFolderOpen,
           children: [],
+          revision: ""
 
         };
 
@@ -150,27 +157,49 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
-          label: v["Title"],
+          label: v["Title"] + "-" + v["revision"],
           icon: faFile,
           data: v["FileUrl"],
-
+          revision: v['revision']
         };
 
 
         // ParentID ==> FolderID
         var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
+
+        
+
         if (treecol.length != 0) {
           treecol[0].children.push(tree);
         }
       }
 
     });
+
     console.log("TREE ARRAY", treearr);
     console.log("TREE ARRAY SUB", treeSub);
 
     var remainingArr = treearr.filter(data => data.data == 0);
 
+    
+
+
+
+    //  var x = remainingArr.filter((a, i) => remainingArr.findIndex((s) => a.label === s.age) === i);
+
+    // var remainingArr = treearr.filter(data => data.data == 0).map(item => item.label).filter((value, index, self) => self.indexOf(value) === index);
+
+    // const key = 'label';
+    // const arrayUniqueByKey = [...new Map(remainingArr.map(item =>
+    //   [item[key], item])).values()];
+
     tree = remainingArr;
+
+
+
+
+
+    console.log("DISTINCT ITEMS", remainingArr);
 
     this.setState({ TreeLinks: remainingArr });
   }
@@ -205,7 +234,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   />
 
-
                 </div>
               </div>
             </div>
@@ -226,7 +254,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 <input type="text" id='input_type' className='form-control' />
               </label>
               <label>
-                Number
+                Document Number
                 <input type="text" id='input_number' className='form-control' />
               </label>
               <label>
@@ -329,32 +357,72 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           else {
 
+            var urlFile = '';
+
+            sp.web.lists.getByTitle('Documents').items
+              .select('Id', 'Title')
+              .get()
+              .then(response => {
+                response
+                  .forEach(x => {
+                    var _Item = sp.web.lists.getByTitle("Documents")
+                      .items
+                      .getById(parseInt(item.id));
 
 
-            sp.web.lists.getByTitle('Documents').items.select('Id', 'Title').get().then( response => {
-              response.forEach( x => {
-                let _Item = sp.web.lists.getByTitle("Documents").items.getById(parseInt(item.id));      
-                _Item.attachmentFiles.select('FileName', 'ServerRelativeUrl').get().
-                then( responseAttachments => {
-                  responseAttachments.forEach( attachmentItem => {
-                    // result += item.Title                       + "<br/>" +
-                    // item.EncodedAbsUrl                    + "<br/>" + 
-                    // attachmentItem.FileName          + "<br/>" + 
-                    // attachmentItem.ServerRelativeUrl + "<br/><br/>";
 
-                    // $("#input_title").val(x.T);
-                    // $("#input_url").val(item_detail.FileUrl);
-                    window.open(`${attachmentItem.ServerRelativeUrl}`, '_blank');
+                    _Item.attachmentFiles
+                      .select('FileName', 'ServerRelativeUrl')
+                      .get()
+                      .then(responseAttachments => {
+                        responseAttachments
+                          .forEach(attachmentItem => {
+                            // result += item.Title                       + "<br/>" +
+                            // item.EncodedAbsUrl                    + "<br/>" + 
+                            // attachmentItem.FileName          + "<br/>" + 
+                            urlFile = attachmentItem.ServerRelativeUrl;
+
+                            // $("#input_title").val(x.T);
+                            // $("#input_url").val(item_detail.FileUrl);
+                            // window.open(`${attachmentItem.ServerRelativeUrl}`, '_blank');
+
+                          });
+                      });
 
                   });
-                });        
+              })
+              .then(() => {
+
+                var item1: any = sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id));
+
+                console.log(item1);
+
+                Object.keys(item1).forEach((key) => {
+
+                  $("#input_title").val(item1.Title);
+                  $("#input_type").val(item1.type);
+                  $("#input_number").val(item1.doc_number);
+                  $("#input_revision").val(item1.revision);
+                  $("#input_status").val(item1.status);
+                  $("#input_owner").val(item1.owner);
+                  $("#input_activeDate").val(item1.active_date);
+                  $("#input_filename").val(item1.filename);
+                  $("#input_author").val(item1.author);
+                  // $("#input_reviewDate").val(item1.);
+                  $("#input_keywords").val(item1.keywords);
+
+                  document.getElementById('view').onclick = function () {
+                    window.open(`${urlFile}`, '_blank');
+                  };
+
+                });
+
+
               });
-            })
 
           }
-  
-        }
 
+        }
         }
       >
 
