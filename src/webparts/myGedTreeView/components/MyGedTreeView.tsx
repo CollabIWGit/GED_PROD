@@ -18,16 +18,21 @@ import { getIconClassName, Label } from 'office-ui-fabric-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faFolderOpen, faFileWord } from '@fortawesome/free-regular-svg-icons'
 import { faFile } from '@fortawesome/free-solid-svg-icons'
-import { IconName, IconProp } from '@fortawesome/fontawesome-svg-core';
+import { IconName, IconProp, parse } from '@fortawesome/fontawesome-svg-core';
 import { useEffect, useState } from 'react';
 import { SPHttpClient, SPHttpClientResponse, SPHttpClientConfiguration } from '@microsoft/sp-http';
 import { IAttachmentInfo } from "@pnp/sp/attachments";
 import "@pnp/sp/attachments";
 import { IItem } from "@pnp/sp/items/types";
 
+var parentIDArray = [];
+
+var sorted = [];
 
 
 import 'bootstrap/dist/css/bootstrap.css';
+
+
 // import Form from 'react-bootstrap/Form';
 // import Button from 'react-bootstrap/Button';
 
@@ -43,6 +48,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   constructor(props: IMyGedTreeViewProps) {
 
+
+
     super(props);
 
     sp.setup({
@@ -52,13 +59,23 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     // const sp = spfi().using(SPFx(this.props.context));
     this.state = {
-      TreeLinks: []
+      TreeLinks: [],
+
     };
 
 
 
 
     this._getLinks(sp);
+
+    this.getParentID(this.getItemId());
+
+    // this.getFirstParent();
+
+
+    //var node = this.getParent();
+
+    console.log("NODES", parentIDArray);
 
   }
 
@@ -212,22 +229,46 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     }
   }
 
+  private async getParentID(id: any) {
+
+    var parentID = null;
+
+
+
+    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "'").get().then((results) => {
+      parentID = results[0].ParentID;
+      parentIDArray.push(parentID);
+
+      console.log("Parent 1", parentID);
+
+    });
+
+
+    while (parentID != null) {
+      await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parentID + "'").get().then((results) => {
+        parentID = results[0].ParentID;
+        parentIDArray.push(parentID);
+
+        console.log("Parent 2", parentID);
+      });
+    }
+
+
+    //parentIDArray.push(parseInt(this.getItemId()));
+    parentIDArray.sort(function (a, b) { return a - b });
+    console.log("ArrayParent", parentIDArray);
+
+    //return parentIDArray;
+  }
+
+
 
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
-    var x = this.getItemId();
-
-    const item =  sp.web.lists
-    .getByTitle("Documents")
-    .items.select("ID", "ParentID", "FolderID")
-    .filter("FolderID eq" + x ).getAll();
-
-    
+    parentIDArray.unshift(1, parseInt(this.getItemId()));
 
 
     return (
-
-      
 
       // <div className={styles.myGedTreeView}>
 
@@ -245,18 +286,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                     defaultExpanded={true}
                     defaultExpandedChildren={false}
-                    
-                    defaultExpandedKeys={[1, parseInt(x)]}
+
+                    defaultExpandedKeys={parentIDArray.sort(function (a, b) { return a - b })}
                     // selectionMode={TreeViewSelectionMode.None}
                     selectChildrenIfParentSelected={false}
-                    showCheckboxes={false}
+                    showCheckboxes={true}
                     treeItemActionsDisplayMode={TreeItemActionsDisplayMode.Buttons}
                     onSelect={this.onSelect}
                     onExpandCollapse={this.onTreeItemExpandCollapse}
                     onRenderItem={this.renderCustomTreeItem}
-                    
+                    defaultSelectedKeys={[parseInt(this.getItemId())]}
+                    expandToSelected={true}
                   />
-
                 </div>
               </div>
             </div>
@@ -268,6 +309,189 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           <div className="col-sm-9">
 
             <form id="form_metadata">
+
+              <h2 id='h2_title'></h2>
+
+              <div className="form-row">
+
+                <div className="form-group col-md-6">
+                  <Label>Title
+                    <input type="text" className="form-control" placeholder="First name" />
+                  </Label>
+                </div>
+
+                <div className="form-group col-md-6">
+                  <Label>Title
+                    <input type="email" className="form-control" id="input_title" />
+                  </Label>
+                </div>
+
+              </div>
+
+              <div className="row">
+                <div className="col-6">
+                  <input type="text" className="form-control" placeholder="First name" />
+                </div>
+                <div className="col-6">
+                  <input type="text" className="form-control" placeholder="Last name" />
+                </div>
+              </div>
+
+              //coumans la
+
+              <div className="row">
+                <div className="col-6">
+                  <Label>Title
+                    <input type="email" className="form-control" id="input_title" />
+                  </Label>
+                </div>
+                <div className="col-3">
+                  <Label>Type
+                    <input type="email" className="form-control" id="input_type" />
+                  </Label>
+                </div>
+                <div className="col-3">
+                  <Label>Document Number
+                    <input type="text" id='input_number' className='form-control' />
+                  </Label>
+                  </div>
+              </div>
+
+              //2ieme
+
+              <div className="row">
+                <div className="col-3">
+                  <Label>Title
+                    <input type="email" className="form-control" id="input_title" />
+                  </Label>
+                </div>
+                <div className="col-3">
+                  <Label>Type
+                    <input type="email" className="form-control" id="input_type" />
+                  </Label>
+                </div>
+                <div className="col-3">
+                  <Label>Document Number
+                    <input type="text" id='input_number' className='form-control' />
+                  </Label>
+                  </div>
+                  <div className="col-3">
+                  <Label>Document Number
+                    <input type="text" id='input_number' className='form-control' />
+                  </Label>
+                  </div>
+              </div>
+
+
+              <div className='form-group col-6'>
+
+                <Label>Title
+                  <input type="email" className="form-control" id="input_title" />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>Type
+                  <input type="email" className="form-control" id="input_type" />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>Document Number
+                  <input type="text" id='input_number' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>
+                  Revision
+                  <input type="text" id='input_revision' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>
+                  Status
+                  <input type="text" id='input_status' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>
+                  Owner
+                  <input type="text" id='input_owner' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>
+                  Active Date
+                  <input type="text" id='input_activeDate' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-6'>
+
+                <Label>
+                  Filename
+                  <input type="text" id='input_filename' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>
+                  Author
+                  <input type="text" id='input_author' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-3'>
+
+                <Label>
+                  Review Date
+                  <input type="text" id='input_reviewDate' className='form-control' />
+                </Label>
+
+              </div>
+
+              <div className='form-group col-6'>
+
+                <Label>
+                  Keywords
+                  <textarea id='input_keywords' className='form-control' rows={3} />
+                </Label>
+
+              </div>
+
+              <button type="button" className="btn btn-primary mb-2" id='view'>View Document</button>
+
+
+
+
+
+            </form>
+
+
+            {/* 
+            <form id="form_metadata">
+              <h2 className="h2_title"></h2>
+
               <label>
                 Title
                 <input type="text" id='input_title' className='form-control' />
@@ -319,8 +543,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 <input type="text" id='input_keywords' className='form-control' />
               </label>
 
-              <button type="button" id='view'>View File</button>
-            </form>
+              
+            </form> */}
 
 
           </div>
@@ -351,7 +575,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private onSelect(items: ITreeItem[]) {
     items.forEach((item: ITreeItem) => {
-      console.log("Items selected: ", item.label);
+
+      item.iconProps.color = "black";
+
     })
   }
 
@@ -382,7 +608,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             var urlFile = '';
 
-            sp.web.lists.getByTitle('Documents').items
+            await sp.web.lists.getByTitle('Documents').items
               .select('Id', 'Title')
               .get()
               .then(response => {
@@ -392,6 +618,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       .items
                       .getById(parseInt(item.id));
 
+                    console.log("ITEMS", _Item);
 
 
                     _Item.attachmentFiles
@@ -414,34 +641,36 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   });
               })
-              .then(() => {
-
-                var item1: any = sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id));
-
-                console.log(item1);
-
-                Object.keys(item1).forEach((key) => {
-
-                  $("#input_title").val(item1.Title);
-                  $("#input_type").val(item1.type);
-                  $("#input_number").val(item1.doc_number);
-                  $("#input_revision").val(item1.revision);
-                  $("#input_status").val(item1.status);
-                  $("#input_owner").val(item1.owner);
-                  $("#input_activeDate").val(item1.active_date);
-                  $("#input_filename").val(item1.filename);
-                  $("#input_author").val(item1.author);
-                  // $("#input_reviewDate").val(item1.);
-                  $("#input_keywords").val(item1.keywords);
-
-                  document.getElementById('view').onclick = function () {
-                    window.open(`${urlFile}`, '_blank');
-                  };
-
-                });
 
 
-              });
+            //  var item1: any = sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id));
+            const item1: any = await sp.web.lists.getByTitle("Documents").items.getById(parseInt(item.id))();
+            console.log(item1);
+
+            console.log(item1);
+
+            Object.keys(item1).forEach((key) => {
+
+              $("#input_title").val(item1.Title);
+              $("#input_type").val(item1.type);
+              $("#input_number").val(item1.doc_number);
+              $("#input_revision").val(item1.revision);
+              $("#input_status").val(item1.status);
+              $("#input_owner").val(item1.owner);
+              $("#input_activeDate").val(item1.active_date);
+              $("#input_filename").val(item1.filename);
+              $("#input_author").val(item1.author);
+              // $("#input_reviewDate").val(item1.);
+              $("#input_keywords").val(item1.keywords);
+              $("#h2_title").text(item1.Title);
+
+              document.getElementById('view').onclick = function () {
+                window.open(`${urlFile}`, '_blank');
+              };
+
+            });
+
+
 
           }
 
