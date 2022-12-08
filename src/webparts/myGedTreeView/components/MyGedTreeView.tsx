@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import styles from './MyGedTreeView.module.scss';
 import { IMyGedTreeViewProps, IMyGedTreeViewState } from './IMyGedTreeView';
 import { escape } from '@microsoft/sp-lodash-subset';
@@ -25,12 +26,18 @@ import { IAttachmentInfo } from "@pnp/sp/attachments";
 import "@pnp/sp/attachments";
 import { IItem } from "@pnp/sp/items/types";
 
+
+
 var parentIDArray = [];
 
 var sorted = [];
 
+var val = [];
+
+
 
 import 'bootstrap/dist/css/bootstrap.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 // import Form from 'react-bootstrap/Form';
@@ -39,6 +46,8 @@ import 'bootstrap/dist/css/bootstrap.css';
 require('./../../../common/css/common.css');
 require('./../../../common/css/sidebar.css');
 require('./../../../common/css/pagecontent.css');
+require('./../../../common/css/spinner.css');
+
 
 
 
@@ -57,6 +66,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       //props.context
     });
 
+    var x = this.getItemId();
+
+    this.getParentID(x);
+
     // const sp = spfi().using(SPFx(this.props.context));
     this.state = {
       TreeLinks: [],
@@ -64,12 +77,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     };
 
 
-
-
     // this._getLinks(sp);
     this._getLinks2(sp);
 
-    this.getParentID(this.getItemId());
+    this.render();
+
 
     // this.getFirstParent();
 
@@ -79,9 +91,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     console.log("NODES", parentIDArray);
 
   }
-
-
-
 
   private async _getLinks(sp) {
 
@@ -97,7 +106,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var treearr: ITreeItem[] = [];
     var treeSub: ITreeItem[] = [];
-    var tree: ITreeItem[] = [];
+    var tree: any = [];
 
     // var treearr: any = [];
     // var treeSub: any = [];
@@ -245,19 +254,33 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   private async _getLinks2(sp) {
 
     var treearr: ITreeItem[] = [];
+
+    //var treearr;
     var treeSub: ITreeItem[] = [];
     var tree: ITreeItem[] = [];
 
     var value1 = "TRUE";
     var value2 = "FALSE";
 
+    var keysMissing: any = [];
+    var allKeys: any = [];
+    var keysPresent: any = [];
+
+    var counter = 0;
+    var counterSUB = 0;
+
 
     const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder").filter("IsFolder eq '" + value1 + "'").getAll();
     const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder").filter("IsFolder eq '" + value2 + "'").getAll();
 
+    const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.ParentID - b.ParentID);
+    // const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.FolderID - b.FolderID);
+
+    var x = 0;
 
 
-    allItemsMain.forEach((v, i) => {
+    allItemsMain_sorted.forEach(v => {
+
 
 
       if (v["ParentID"] == -1) {
@@ -287,6 +310,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       // v["FileSystemObjectType"] ==> v["IsFolder"]
       else {
 
+        allKeys.push(v["FolderID"]);
 
         console.log("We have a sub folder here.");
         var str = v["Title"];
@@ -310,21 +334,98 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
         // ParentID ==> FolderID
-        var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
+
+
+
+        var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key === v["ParentID"]; });
 
 
         if (treecol.length != 0) {
 
-          treecol[0].children.push(tree);
 
+          counterSUB = counterSUB + 1;
+          keysPresent.push(tree.key);
+          treecol[0].children.push(tree);
           // console.log("TREE COL", treecol);
           // console.log("COL SUB", treeSub);
-
+          treearr.push(tree);
         }
+
         treearr.push(tree);
+
+
       }
 
+
+
+
+
     });
+
+
+
+    keysMissing = allKeys
+      .filter(x => !keysPresent.includes(x))
+      .concat(keysPresent.filter(x => !allKeys.includes(x)));
+
+
+
+
+
+    keysMissing.forEach(v => {
+
+      allItemsMain_sorted.forEach(x => {
+
+        if (v === x["FolderID"]) {
+
+          var str = x["Title"];
+
+          const tree: ITreeItem = {
+            // v.id ==> v.FolderID
+            id: v["ID"],
+            key: v["FolderID"],
+            // key: v["Title"],
+            // label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
+            label: str,
+            data: 1,
+            icon: faFolderOpen,
+            children: [],
+            revision: "",
+            file: "No"
+
+          };
+
+          var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key === x["ParentID"]; });
+
+          if (treecol.length != 0) {
+            keysPresent.push(tree.key);
+            treecol[0].children.push(tree);
+          }
+
+          treearr.push(tree);
+
+        }
+      });
+
+
+
+
+
+    });
+
+
+
+
+    console.log("KEYS MISSING LENGTH", keysMissing.length);
+    console.log("KEYS MISSING", keysMissing);
+
+    console.log("KEYS PRESENT LENGTH", keysPresent.length);
+    console.log("KEYS MISSING LENGTH", 763 - keysPresent.length);
+
+
+    console.log("COUNTER", counter);
+    console.log("COUNTERSUB", counterSUB);
+    console.log("TREE ARRAY LENGTH", treearr.length);
 
     allItemsFile.forEach((v) => {
       console.log("We have a file here.");
@@ -336,6 +437,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       const tree: ITreeItem = {
         // v.id ==> v.FolderID
         id: v["ID"],
+        //    key: v["FolderID"],
         key: v["FolderID"],
         label: v["Title"] + "-" + v["revision"],
         icon: faFile,
@@ -347,7 +449,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
       // ParentID ==> FolderID
-      var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
+
+      var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.file === "No" && value.key == v["ParentID"]; });
 
       if (treecol.length != 0) {
         treecol[0].children.push(tree);
@@ -355,17 +458,42 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     });
 
-    var remainingArr = treearr.filter(data => data.data == 0);
+    // var remainingArr = treearr.filter(data => data.data === 0);
+
+    var remainingArr = treearr.filter(data => data.key == 1);
+
+
+    console.log("REMAINING ARRAY ", remainingArr);
+    console.log("REMAINING ARRAY LENGTH", remainingArr.length);
+
+    //  Array.prototype.push.apply(allItemsFile, allItemsMain);
+    // const mergedArray = [ ...allItemsFile, ...allItemsMain ];
+
+    const unique = [];
+
+    // mergedArray.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
+
+
+
+    // all.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
+
+    // console.log(unique);
+
 
     // tree = remainingArr;
 
 
 
+
+
+    // this.setState({ TreeLinks: remainingArr });
     this.setState({ TreeLinks: remainingArr });
 
 
     console.log("FOLDERS", allItemsMain.length);
-    console.log("FILES", allItemsMain.length);
+    // console.log("FILES", allItemsFile.length);
+    // console.log("MERGED", mergedArray.length);
+
 
 
   }
@@ -377,6 +505,67 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       return myParm.trim();
     }
   }
+
+  // private async getParentID(id: any) {
+
+  //   var parentID = null;
+  //   var counter = 1;
+
+
+
+  //   try {
+  //     await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "'").get().then((results) => {
+
+  //       parentID = results[0].ParentID;
+  //       //  parentIDArray.unshift(parseInt(parentID));
+  //       parentIDArray.push(parseInt(parentID));
+
+  //       console.log("Parent 1", parentID);
+  //     });
+
+
+  //     //  while (parentID != null || parentID != undefined) {
+  //     while (parentID != -1) {
+
+
+  //       await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parentID + "'").get().then((results) => {
+  //         parentID = results[0].ParentID;
+  //         //  parentIDArray.unshift(parseInt(parentID));
+  //         parentIDArray.push(parseInt(parentID));
+
+  //       });
+
+  //       counter = counter + 1;
+  //       console.log(`Parent ${counter}`, parentID);
+
+  //     }
+
+  //     parentIDArray.push(parseInt(this.getItemId()));
+
+
+  //     //parentIDArray.push(parseInt(this.getItemId()));
+  //     // parentIDArray.sort(function (a, b) { return a - b });
+  //     console.log("ArrayParent", parentIDArray);
+
+
+  //     parentIDArray.forEach(x => {
+
+  //       val.push(x);
+
+  //     });
+
+
+
+  //     //return parentIDArray;
+
+  //   }
+  //   catch (e) {
+  //     console.log(e.message);
+  //   }
+
+
+
+  // }
 
   private async getParentID(id: any) {
 
@@ -393,18 +582,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     });
 
 
-    while (parentID != null) {
+    while (parentID != -1) {
       await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parentID + "'").get().then((results) => {
         parentID = results[0].ParentID;
-        parentIDArray.push(parentID);
+        parentIDArray.unshift(parentID);
 
         console.log("Parent 2", parentID);
       });
     }
 
 
-    //parentIDArray.push(parseInt(this.getItemId()));
-    parentIDArray.sort(function (a, b) { return a - b });
+    parentIDArray.push(parseInt(this.getItemId()));
+    // parentIDArray.sort(function (a, b) { return a - b });
     console.log("ArrayParent", parentIDArray);
 
     //return parentIDArray;
@@ -413,8 +602,15 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
-    parentIDArray.unshift(1, parseInt(this.getItemId()));
 
+
+
+
+    var x = this.getItemId();
+
+
+
+    console.log("ITEM TO EXPAND", this.getItemId());
 
     return (
 
@@ -428,27 +624,39 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               <div className="position-sticky">
                 <div className="list-group list-group-flush mx-3 mt-4" id="tree">
 
+
+
                   <TreeView
 
                     items={this.state.TreeLinks}
 
+                    // defaultExpandedKeys={parentIDArray}
+                    defaultExpandedKeys={parentIDArray}
                     defaultExpanded={true}
                     defaultExpandedChildren={false}
 
-                    defaultExpandedKeys={parentIDArray.sort(function (a, b) { return a - b })}
-                    // selectionMode={TreeViewSelectionMode.None}
+
                     selectChildrenIfParentSelected={false}
                     showCheckboxes={true}
                     treeItemActionsDisplayMode={TreeItemActionsDisplayMode.Buttons}
                     onSelect={this.onSelect}
                     onExpandCollapse={this.onTreeItemExpandCollapse}
                     onRenderItem={this.renderCustomTreeItem}
-                    defaultSelectedKeys={[parseInt(this.getItemId())]}
+                    // defaultSelectedKeys={[parseInt(this.getItemId())]}
+                    defaultSelectedKeys={[parseInt(x)]}
                     expandToSelected={true}
                   />
                 </div>
               </div>
+
+
             </div>
+
+            <div className="loader-container" id="spinner">
+              <div className="spinner"></div>
+            </div>
+
+
 
           </div>
 
@@ -458,259 +666,153 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             <form id="form_metadata">
 
-              <h2 id='h2_title'></h2>
+              <div id="doc_form">
+                <h2 id='h2_title'></h2>
 
-              <div className="form-row">
-
-                <div className="form-group col-md-6">
-                  <Label>Title
-                    <input type="text" className="form-control" placeholder="First name" />
-                  </Label>
+                <div className="row">
+                  <div className="col-6">
+                    <Label>Title
+                      <input type="email" className="form-control" id="input_title" />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+                    <Label>Type
+                      <input type="email" className="form-control" id="input_type" />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+                    <Label>Document Number
+                      <input type="text" id='input_number' className='form-control' />
+                    </Label>
+                  </div>
                 </div>
 
-                <div className="form-group col-md-6">
-                  <Label>Title
-                    <input type="email" className="form-control" id="input_title" />
-                  </Label>
+
+                <div className="row">
+                  <div className="col-3">
+                    <Label>
+                      Revision
+                      <input type="text" id='input_revision' className='form-control' />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+                    <Label>
+                      Status
+                      <input type="text" id='input_status' className='form-control' />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+                    <Label>
+                      Owner
+                      <input type="text" id='input_owner' className='form-control' />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+                    <Label>
+                      Active Date
+                      <input type="text" id='input_activeDate' className='form-control' />
+                    </Label>
+                  </div>
+                </div>
+
+
+
+                <div className="row">
+                  <div className="col-6">
+                    <Label>
+                      Filename
+                      <input type="text" id='input_filename' className='form-control' />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+                    <Label>
+                      Author
+                      <input type="text" id='input_author' className='form-control' />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+
+                    <button type="button" className="btn btn-primary mb-2" id='view'>View Document</button>
+
+                  </div>
+                </div>
+
+
+                <div className="row">
+                  <div className="col-8">
+                    <Label>
+                      Keywords
+                      <textarea id='input_keywords' className='form-control' rows={2} />
+                    </Label>
+                  </div>
+                  <div className="col-3">
+                    <Label>
+                      Review Date
+                      <input type="text" id='input_reviewDate' className='form-control' />
+                    </Label>
+                  </div>
                 </div>
 
               </div>
 
-              <div className="row">
-                <div className="col-6">
-                  <input type="text" className="form-control" placeholder="First name" />
+              <div id="access_form">
+
+                <nav aria-label="breadcrumb" id='nav'>
+                  <ol className="breadcrumb">
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); }}>Access Rights</a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); }}>Add Subfolders</a></li>
+                  </ol>
+                </nav>
+
+                <div id="access_rights_form">
+                  <div className="row">
+                    <div className="col-6">
+                      <Label>Group name
+                        <input type="text" className="form-control" id="group_name" />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>Permission Type
+                        <input type="text" className="form-control" id="permission_type" />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <button type="button" className="btn btn-primary mb-2" id='add_group'>Add group</button>
+                    </div>
+                  </div>
                 </div>
-                <div className="col-6">
-                  <input type="text" className="form-control" placeholder="Last name" />
+
+                <div id="subfolders_form">
+                  <div className="row">
+                    <div className="col-8">
+                      <Label>Folder name
+                        <input type="text" className="form-control" id="folder_name" />
+                      </Label>
+                    </div>
+
+                    <div className="col-3">
+                      <button type="button" className="btn btn-primary mb-2" id='add_subfolder'>Add subfolder</button>
+                    </div>
+                  </div>
+
                 </div>
-              </div>
-
-              //coumans la
-
-              <div className="row">
-                <div className="col-6">
-                  <Label>Title
-                    <input type="email" className="form-control" id="input_title" />
-                  </Label>
-                </div>
-                <div className="col-3">
-                  <Label>Type
-                    <input type="email" className="form-control" id="input_type" />
-                  </Label>
-                </div>
-                <div className="col-3">
-                  <Label>Document Number
-                    <input type="text" id='input_number' className='form-control' />
-                  </Label>
-                </div>
-              </div>
-
-              //2ieme
-
-              <div className="row">
-                <div className="col-3">
-                  <Label>Title
-                    <input type="email" className="form-control" id="input_title" />
-                  </Label>
-                </div>
-                <div className="col-3">
-                  <Label>Type
-                    <input type="email" className="form-control" id="input_type" />
-                  </Label>
-                </div>
-                <div className="col-3">
-                  <Label>Document Number
-                    <input type="text" id='input_number' className='form-control' />
-                  </Label>
-                </div>
-                <div className="col-3">
-                  <Label>Document Number
-                    <input type="text" id='input_number' className='form-control' />
-                  </Label>
-                </div>
-              </div>
-
-
-              <div className='form-group col-6'>
-
-                <Label>Title
-                  <input type="email" className="form-control" id="input_title" />
-                </Label>
 
               </div>
-
-              <div className='form-group col-3'>
-
-                <Label>Type
-                  <input type="email" className="form-control" id="input_type" />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-3'>
-
-                <Label>Document Number
-                  <input type="text" id='input_number' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-3'>
-
-                <Label>
-                  Revision
-                  <input type="text" id='input_revision' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-3'>
-
-                <Label>
-                  Status
-                  <input type="text" id='input_status' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-3'>
-
-                <Label>
-                  Owner
-                  <input type="text" id='input_owner' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-3'>
-
-                <Label>
-                  Active Date
-                  <input type="text" id='input_activeDate' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-6'>
-
-                <Label>
-                  Filename
-                  <input type="text" id='input_filename' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-3'>
-
-                <Label>
-                  Author
-                  <input type="text" id='input_author' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-3'>
-
-                <Label>
-                  Review Date
-                  <input type="text" id='input_reviewDate' className='form-control' />
-                </Label>
-
-              </div>
-
-              <div className='form-group col-6'>
-
-                <Label>
-                  Keywords
-                  <textarea id='input_keywords' className='form-control' rows={3} />
-                </Label>
-
-              </div>
-
-              <button type="button" className="btn btn-primary mb-2" id='view'>View Document</button>
-
-
-
-
 
             </form>
-
-
-            {/* 
-            <form id="form_metadata">
-              <h2 className="h2_title"></h2>
-
-              <label>
-                Title
-                <input type="text" id='input_title' className='form-control' />
-              </label>
-              <label>
-                Type
-                <input type="text" id='input_type' className='form-control' />
-              </label>
-              <label>
-                Document Number
-                <input type="text" id='input_number' className='form-control' />
-              </label>
-              <label>
-                Revision
-                <input type="text" id='input_revision' className='form-control' />
-              </label>
-              <label>
-                Status
-                <input type="text" id='input_status' className='form-control' />
-              </label>
-
-              <label>
-                Owner
-                <input type="text" id='input_owner' className='form-control' />
-              </label>
-
-              <label>
-                Active Date
-                <input type="text" id='input_activeDate' className='form-control' />
-              </label>
-
-              <label>
-                Filename
-                <input type="text" id='input_filename' className='form-control' />
-              </label>
-
-              <label>
-                Author
-                <input type="text" id='input_author' className='form-control' />
-              </label>
-
-              <label>
-                Review Date
-                <input type="text" id='input_reviewDate' className='form-control' />
-              </label>
-
-              <label>
-                Keywords
-                <input type="text" id='input_keywords' className='form-control' />
-              </label>
-
-              
-            </form> */}
-
 
           </div>
         </div>
       </div>
 
 
+
+
     );
 
+
+
   }
-
-  // expandNode(key: any) {
-  //   this.treeView.expandItem(key);
-  // }
-  // collapseNode(key: any) {
-  //   this.treeView.collapseItem(key);
-  // }
-
 
 
   private async onTreeItemSelect(items: ITreeItem[]) {
@@ -750,9 +852,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         onClick={async event => {
           console.log("DATA value", item.data);
           if (item.data == 1 || item.data == 0) {
+
+            $("#access_form").css("display", "block");
+
+            $("#doc_form").css("display", "none");
+
           }
 
           else {
+
+            $("#access_form").css("display", "none");
+
+            $("#doc_form").css("display", "block");
 
             var urlFile = '';
 
@@ -839,3 +950,5 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
 }
+
+

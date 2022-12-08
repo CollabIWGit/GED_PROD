@@ -10,7 +10,11 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 import * as strings from 'MyGedTreeViewWebPartStrings';
 import MyGedTreeView from './components/MyGedTreeView';
-import { IMyGedTreeViewProps } from './components/IMyGedTreeView';
+import { IMyGedTreeViewProps, IMyGedTreeViewState } from './components/IMyGedTreeView';
+
+var myVar;
+
+
 
 export interface IMyGedTreeViewWebPartProps {
   description: string;
@@ -29,7 +33,10 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
   }
 
   public render(): void {
+
+    
     const element: React.ReactElement<IMyGedTreeViewProps> = React.createElement(
+      
       MyGedTreeView,
       {
         description: this.properties.description,
@@ -38,7 +45,9 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
     );
 
     ReactDom.render(element, this.domElement);
+    
   }
+
 
   private _getEnvironmentMessage(): string {
     if (!!this.context.sdks.microsoftTeams) { // running in Teams
