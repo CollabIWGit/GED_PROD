@@ -40,6 +40,7 @@ import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 
+
 // import Form from 'react-bootstrap/Form';
 // import Button from 'react-bootstrap/Button';
 
@@ -732,7 +733,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   </div>
                   <div className="col-3">
 
-                    <button type="button" className="btn btn-primary mb-2" id='view'>View Document</button>
+                    <button type="button" className="btn btn-primary mb-2" id='view' >View Document</button>
 
                   </div>
                 </div>
@@ -756,6 +757,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               </div>
 
               <div id="access_form">
+
+              <h2 id='h2_folderName'></h2>
 
                 <nav aria-label="breadcrumb" id='nav'>
                   <ol className="breadcrumb">
@@ -810,8 +813,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     );
 
+    
 
 
+  }
+
+  private async addSubfolders(item: ITreeItem){
+
+  
+
+      console.log("ID", item.id);
+ 
   }
 
 
@@ -819,7 +831,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     items.forEach((item: any) => {
       console.log("Items selected: ", item.label);
-    })
+    });
 
   }
 
@@ -850,15 +862,37 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       <span
         //onclick
         onClick={async event => {
-          console.log("DATA value", item.data);
+          console.log("DATA value", item.label);
+          
           if (item.data == 1 || item.data == 0) {
+            $("#h2_folderName").text(item.label);
 
+           
             $("#access_form").css("display", "block");
 
             $("#doc_form").css("display", "none");
 
-          }
+            $("#add_subfolder").click(async function(){
+              console.log("ID", item.id);
 
+               await sp.web.lists.getByTitle("Documents").items.add({
+                Title: $("#folder_name").val(),
+                ParentID: item.key,
+                IsFolder: "TRUE"
+              })
+              .then(async (iar) => {
+
+                const list = sp.web.lists.getByTitle("Documents");
+
+                await list.items.getById(iar.data.ID).update({
+                  FolderID: parseInt(iar.data.ID)
+                });
+              });
+
+            });
+          }
+    
+           
           else {
 
             $("#access_form").css("display", "none");
@@ -934,7 +968,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           }
 
         }
-        }
+      }
       >
 
         {

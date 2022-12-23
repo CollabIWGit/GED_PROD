@@ -19,7 +19,10 @@ span:hover{
     color: black;
 }
 
-#h2_title{
+#h2_title, #h2_folderName{
     padding-bottom: 1em;
 }
 
+#view, #add_group, #add_subfolder {
+    margin-top: 34px
+}
