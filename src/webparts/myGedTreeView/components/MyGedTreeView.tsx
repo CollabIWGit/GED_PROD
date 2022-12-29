@@ -279,6 +279,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var x = 0;
 
+    
 
     allItemsMain_sorted.forEach(v => {
 
@@ -488,7 +489,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
     // this.setState({ TreeLinks: remainingArr });
-    this.setState({ TreeLinks: remainingArr });
+    this.setState({ TreeLinks: remainingArr.sort() });
 
 
     console.log("FOLDERS", allItemsMain.length);
@@ -629,11 +630,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   <TreeView
 
-                    items={this.state.TreeLinks}
-
+                    items={this.state.TreeLinks.sort()}
+                    defaultExpanded={true}
                     // defaultExpandedKeys={parentIDArray}
                     defaultExpandedKeys={parentIDArray}
-                    defaultExpanded={true}
+                    
                     defaultExpandedChildren={false}
 
 

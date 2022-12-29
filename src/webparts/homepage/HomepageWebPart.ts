@@ -224,7 +224,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                         <div class="mg-cta-repeated w100">
                             <a href="javascript:void(0)" class="w100 flex-basic flex-justify-between flex-align-center">
                                 <div class="info-emploi-text w85">
-                                    <div class="info-emploi-title">
+                                    <div class="info-emploi-title" id="manorg">
                                         Consultation du MANORG
                                     </div>
                                 </div>
@@ -375,8 +375,8 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
   private eventTriggers() {
 
-    $(".info-emploi-title").on("click", () => {
-      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=2`, true);
+    $("#manorg").on("click", () => {
+      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=1312`, true);
     });
 
 
