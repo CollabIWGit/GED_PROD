@@ -1,9 +1,9 @@
 #spSiteHeader {
   display: none;
 }
-#spCommandBar {
+/* #spCommandBar {
   display: none;
-}
+} */
 .webPartContainer{
     display: none!important;
 }
