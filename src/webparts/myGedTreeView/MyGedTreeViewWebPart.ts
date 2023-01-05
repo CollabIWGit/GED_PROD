@@ -24,10 +24,9 @@ export interface IMyGedTreeViewWebPartProps {
 export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTreeViewWebPartProps> {
 
   private _isDarkTheme: boolean = false;
-  private _environmentMessage: string = '';
+  private _environmentMessage: string = '';s
 
   protected onInit(): Promise<void> {
-    this._environmentMessage = this._getEnvironmentMessage();
 
     return super.onInit();
   }
@@ -48,14 +47,6 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
     
   }
 
-
-  private _getEnvironmentMessage(): string {
-    if (!!this.context.sdks.microsoftTeams) { // running in Teams
-      return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
-    }
-
-    return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment;
-  }
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
     if (!currentTheme) {

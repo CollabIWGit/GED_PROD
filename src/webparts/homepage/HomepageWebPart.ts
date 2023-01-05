@@ -16,7 +16,7 @@ import { Navigation } from 'spfx-navigation';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import { SPHttpClientResponse } from '@microsoft/sp-http';
-import { SPHttpClient } from '@pnp/sp';
+import { SPHttpClient } from '@microsoft/sp-http';
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.2/TweenMax.min.js");
@@ -32,7 +32,7 @@ require('./../../../src/common/css/media.css');
 require('./../../../src/common/css/basic.css');
 require('./../../../src/common/css/global.css');
 require('./../../../src/common/css/common.css');
-require('./../../../src/common/css/qlf5ifj.css');
+// require('./../../../src/common/css/qlf5ifj.css');
 require('./../../../src/common/js/custom.js');
 require('./../../../src/common/js/animation.js');
 
@@ -50,16 +50,19 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
     private _environmentMessage: string = '';
 
     protected onInit(): Promise<void> {
-        this._environmentMessage = this._getEnvironmentMessage();
+        // this._environmentMessage = this._getEnvironmentMessage();
 
         return super.onInit();
     }
 
     public render(): void {
-        this.domElement.innerHTML = ` <main>
+        this.domElement.innerHTML = ` 
+        <main>
     <div class="main-container w100">
         <section class="banner-section w100">
-            <div class="photo w100" id="navImage">                
+            <div class="photo w100" id="navImage"> 
+            <img src="./../../common/images/img-banner-myGed.jpg" class="img-responsive" alt="" />
+ 
             </div>
         </section>
 
@@ -229,8 +232,9 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 </main>`;
 
         this.eventTriggers();
-        this._renderNavImage();
-        this._renderHomepageLinks();
+        // this._renderNavImage();
+        // this._renderHomepageLinks();
+        
         this._renderHomepageLinks2();
         this._renderHomepageLinks3();
         this._renderHomepageLinks4();
@@ -238,10 +242,11 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
     private eventTriggers() {
 
-    $(".info-emploi-title").on("click", () => {
-      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=2`, true);
-    });
+        $(".info-emploi-title").on("click", () => {
+            Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=2`, true);
+        });
 
+    }
 
     //API to get homepageLinks2
     private async _gethomepageLinks2(): Promise<any> {
@@ -371,14 +376,13 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
 
 
+    // private _getEnvironmentMessage(): string {
+    //     if (!!this.context.sdks.microsoftTeams) { // running in Teams
+    //         return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
+    //     }
 
-    private _getEnvironmentMessage(): string {
-        if (!!this.context.sdks.microsoftTeams) { // running in Teams
-            return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
-        }
-
-        return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment;
-    }
+    //     return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment;
+    // }
 
     protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
         if (!currentTheme) {
