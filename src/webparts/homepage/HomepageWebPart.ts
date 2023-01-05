@@ -17,6 +17,7 @@ import { Navigation } from 'spfx-navigation';
 import 'bootstrap/dist/css/bootstrap.css';
 import { SPHttpClientResponse } from '@microsoft/sp-http';
 import { SPHttpClient } from '@microsoft/sp-http';
+import * as _ from 'lodash';
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.2/TweenMax.min.js");
@@ -48,6 +49,8 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
     private _isDarkTheme: boolean = false;
     private _environmentMessage: string = '';
+    
+
 
     protected onInit(): Promise<void> {
         // this._environmentMessage = this._getEnvironmentMessage();
@@ -56,12 +59,13 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
     }
 
     public render(): void {
+
+
         this.domElement.innerHTML = ` 
         <main>
     <div class="main-container w100">
         <section class="banner-section w100">
             <div class="photo w100" id="navImage"> 
-            <img src="./../../common/images/img-banner-myGed.jpg" class="img-responsive" alt="" />
  
             </div>
         </section>
@@ -105,8 +109,12 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div id="homepageLinksDivers1">
+                  
+                        <div class="mg-cta-repeated w100" id="list1">
+
                         </div>
+
+                       
                     </div>
                     <div class="mg-text-repeated">
                         <!-- for mobile only -->
@@ -116,8 +124,15 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div class="optionDrivers" id="homepageLinksDivers2">
+
+
+                        <div class="mg-cta-repeated w100" id="list2">
+
+                 
+                        
+        
                         </div>
+
                     </div>
                     <div class="mg-text-repeated">
                         <!-- for mobile only -->
@@ -127,8 +142,13 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div id="homepageLinksDivers3">
+             
+
+                        <div class="mg-cta-repeated w100" id="list3">
+
                         </div>
+
+
                     </div>   
                     <div class="mg-text-repeated">
                         <!-- for mobile only -->
@@ -138,8 +158,13 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div id="homepageLinksDivers4">
+                   
+
+                        <div class="mg-cta-repeated w100" id="list4">
+
                         </div>
+                        
+                        
                     </div>
                 </div>
             </div>
@@ -160,12 +185,14 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 </main>`;
 
         this.eventTriggers();
-        // this._renderNavImage();
-        // this._renderHomepageLinks();
-        
-        this._renderHomepageLinks2();
-        this._renderHomepageLinks3();
-        this._renderHomepageLinks4();
+        this._renderNavImage();
+         this._getBuildingsList();
+
+        // this._gethomepageLinks();
+        //this._renderHomepageLinks();
+        // this._renderHomepageLinks2();
+        // this._renderHomepageLinks3();
+        // this._renderHomepageLinks4();
     }
 
     private eventTriggers() {
@@ -186,7 +213,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         const listContainerImage: Element = this.domElement.querySelector('#navImage');
         this._getNavImage().then(async (response) => {
             console.log(response.value);
-            var navImage = [];
+
             await Promise.all(response.value.map(async (result) => {
                 let html: string = ''
 
@@ -195,14 +222,13 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                     Image: result.Image
                 };
 
-                await navImage.reduce(async (memo, item) => {
-                    await memo;
-                    const imageJson = ((JSON.parse(item.Photo)).serverRelativeUrl)
+                const imageJson = ((JSON.parse(item.Image)).serverRelativeUrl);
 
-                    html += `<img src="${imageJson}" class="img-responsive" alt="" />`
 
-                    listContainerImage.innerHTML += html;
-                })
+                html += `<img src="https://ncaircalin.sharepoint.com/${imageJson}" class="img-responsive" alt="" />`
+
+
+                listContainerImage.innerHTML += html;
             }
             ))
         });
@@ -210,170 +236,119 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
     //API to get homepageLinks
     private async _gethomepageLinks(): Promise<any> {
-        const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('HomepageLinks')/Items?$select=Title,url,order,permission,linksType&$filter=order eq 1,2,3,4,5", SPHttpClient.configurations.v1);
-        return await response.json();
-    }
 
-    private _renderHomepageLinks() {
-        const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinks');
-        this._gethomepageLinks().then(async (response) => {
-            console.log(response.value);
-            await Promise.all(response.value.map(async (result) => {
-                let homepageLinkshtml: string = '<div class="mg-cta-repeated w100">'
+        const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('HomepageLinks')/Items?$select=Title,url,Order,permission,linksType", SPHttpClient.configurations.v1);
 
-                const item = {
-                    Title: result.Title,
-                    url: result.url,
-                    order: result.order,
-                    permission: result.permission,
-                    linksType: result.linksType
-                };
-
-                homepageLinkshtml += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
-                    <div class="info-emploi-text w85">
-                        <div class="info-emploi-title">
-                            ${item.Title}
-                        </div>
-                    </div>`;
-            }))})
-
-    }
-
-    //API to get homepageLinks2
-    private async _gethomepageLinks2(): Promise<any> {
-        const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('HomepageLinks')/Items?$select=Title,url,order,permission,linksType&$filter=order eq 6,7,8,9", SPHttpClient.configurations.v1);
-        return await response.json();
-    }
-
-    private _renderHomepageLinks2() {
-        const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinksDiver2');
-        this._gethomepageLinks2().then(async (response) => {
-            console.log(response.value);
-            await Promise.all(response.value.map(async (result: { Title: any; url: any; order: any; permission: any; linksType: any; }) => {
-                let homepageLinkshtml2: string = '<div class="mg-cta-repeated w100">'
-
-                const item = {
-                    Title: result.Title,
-                    url: result.url,
-                    order: result.order,
-                    permission: result.permission,
-                    linksType: result.linksType
-                };
-
-                homepageLinkshtml2 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
-                    <div class="info-emploi-text w85">
-                        <div class="info-emploi-title">
-                            ${item.Title}
-                        </div>
-                    </div>
-
-                    <div class="info-emplo-cta w10">
-                        <div class="cta-arrow blue">
-                            <span class="btn">
-                                <span class="arrow"></span>
-                            </span>
-                        </div>
-                    </div>
-                </a>`
-                homepageLinkshtml2 += `</div>`
-                listContainerHomepageLinks.innerHTML += homepageLinkshtml2;
-            }))
+        response.json().then(async (response) => {
+            this.arrayLinks = response.value;
+            console.log("ARRAYLINKS", this.arrayLinks);
+            return this.arrayLinks;
         });
     }
 
-    //API to get homepageLinks3
-    private async _gethomepageLinks3(): Promise<any> {
-        const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('HomepageLinks')/Items?$select=Title,url,order,permission,linksType&$filter=order eq 10,11", SPHttpClient.configurations.v1);
-        return await response.json();
-    }
+    private _getBuildingsList() {
 
-    private _renderHomepageLinks3() {
-        const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinksDiver3');
-        this._gethomepageLinks3().then(async (response) => {
-            console.log(response.value);
-            await Promise.all(response.value.map(async (result: { Title: any; url: any; order: any; permission: any; linksType: any; }) => {
-                let homepageLinkshtml3: string = '<div class="mg-cta-repeated w100">'
+  var arrayLinks: any[];
 
-                const item = {
-                    Title: result.Title,
-                    url: result.url,
-                    order: result.order,
-                    permission: result.permission,
-                    linksType: result.linksType
-                };
+        let html1: string = '';
+        let html2: string = '';
+        let html3: string = '';
+        let html4: string = '';
 
-                homepageLinkshtml3 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
-                    <div class="info-emploi-text w85">
-                        <div class="info-emploi-title">
-                            ${item.Title}
-                        </div>
-                    </div>
+        return new Promise(async (resolve, reject) => {
+            try {
+                this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('HomepageLinks')/items`, SPHttpClient.configurations.v1)
+                    .then(response => {
+                        return response.json()
+                            .then((items: any): void => {
+                                arrayLinks = items.value;
 
-                    <div class="info-emplo-cta w10">
-                        <div class="cta-arrow blue">
-                            <span class="btn">
-                                <span class="arrow"></span>
-                            </span>
-                        </div>
-                    </div>
-                </a>`
-                homepageLinkshtml3 += `</div>`
-                listContainerHomepageLinks.innerHTML += homepageLinkshtml3;
-            }))
+                                console.log("ARRAYLINKS", arrayLinks);
+
+                                // if ((item.Order === 1) || (item.Order === 2 )|| ( item.Order === 3 ) || (item.Order === 4) || (item.Order === 5 ) ) {
+                               
+
+                                arrayLinks.forEach((item: any) => {
+
+                                    console.log("URL", item.url);
+
+                                    if ((item.order0 == "1") || (item.order0 == "2" )|| ( item.order0 == "3" ) || (item.order0 == "4") || (item.order0 == "5" ) ) {
+
+                                        console.log("ORDER 1-5", item.Title);
+                                        
+                                        html1 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                                        <div class="info-emploi-text w85">
+                                            <div class="info-emploi-title">
+                                                ${item.Title}
+                                            </div>
+                                        </div>`;
+
+                                    
+
+                                    }
+
+                                    // else if ((item.Order === 6) || (item.Order === 7) || (item.Order === 8) || (item.Order === 9)) {
+
+                                    else if ((item.order0 == "6") || (item.order0 == "7") || (item.order0 == "8") || (item.order0 == "9")) {
+                                        html2 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                                        <div class="info-emploi-text w85">
+                                            <div class="info-emploi-title">
+                                                ${item.Title}
+                                            </div>
+                                        </div>`;
+
+                                    }
+                                   // else if ((item.Order === 10) || (item.Order === 11)) {
+
+                                     else if ((item.order0 == "10") || (item.order0 == "11")) {
+                                        html3 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                                        <div class="info-emploi-text w85">
+                                            <div class="info-emploi-title">
+                                                ${item.Title}
+                                            </div>
+                                        </div>`;
+
+                                    }
+
+                                    else {
+
+
+                                        html4 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                                        <div class="info-emploi-text w85">
+                                            <div class="info-emploi-title">
+                                                ${item.Title}
+                                            </div>
+                                        </div>`;
+
+                                    }
+
+                                });
+
+                                const listContainer1: Element = this.domElement.querySelector('#list1');
+                                listContainer1.innerHTML += html1;
+    
+                                const listContainer2: Element = this.domElement.querySelector('#list2');
+                                listContainer2.innerHTML += html2;
+    
+                                const listContainer3: Element = this.domElement.querySelector('#list3');
+                                listContainer3.innerHTML += html3;
+    
+                                const listContainer4: Element = this.domElement.querySelector('#list4');
+                                listContainer4.innerHTML += html4;
+    
+                            });
+                    });
+
+            }
+            catch (error) {
+                console.log(error);
+                reject(error);
+            }
         });
-    }
 
-    //API to get homepageLinks4
-    private async _gethomepageLinks4(): Promise<any> {
-        const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('HomepageLinks')/Items?$select=Title,url,order,permission,linksType&$filter=order eq 12", SPHttpClient.configurations.v1);
-        return await response.json();
-    }
-
-    private _renderHomepageLinks4() {
-        const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinksDiver3');
-        this._gethomepageLinks4().then(async (response) => {
-            console.log(response.value);
-            await Promise.all(response.value.map(async (result: { Title: any; url: any; order: any; permission: any; linksType: any; }) => {
-                let homepageLinkshtml4: string = '<div class="mg-cta-repeated w100">'
-
-                const item = {
-                    Title: result.Title,
-                    url: result.url,
-                    order: result.order,
-                    permission: result.permission,
-                    linksType: result.linksType
-                };
-
-                homepageLinkshtml4 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
-                    <div class="info-emploi-text w85">
-                        <div class="info-emploi-title">
-                            ${item.Title}
-                        </div>
-                    </div>
-
-                    <div class="info-emplo-cta w10">
-                        <div class="cta-arrow blue">
-                            <span class="btn">
-                                <span class="arrow"></span>
-                            </span>
-                        </div>
-                    </div>
-                </a>`
-                homepageLinkshtml4 += `</div>`
-                listContainerHomepageLinks.innerHTML += homepageLinkshtml4;
-            }))
-        });
     }
 
 
-
-    // private _getEnvironmentMessage(): string {
-    //     if (!!this.context.sdks.microsoftTeams) { // running in Teams
-    //         return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
-    //     }
-
-    //     return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment;
-    // }
 
     protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
         if (!currentTheme) {

@@ -273,7 +273,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     var counterSUB = 0;
 
 
-    const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder").filter("IsFolder eq '" + value1 + "'").getAll();
+    const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder").filter("IsFolder eq '" + value1 + "'");
     const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder").filter("IsFolder eq '" + value2 + "'").getAll();
 
     const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
