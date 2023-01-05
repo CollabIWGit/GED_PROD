@@ -3,7 +3,8 @@ import { ITreeItem } from "@pnp/spfx-controls-react/lib/TreeView";
 
 
 export interface IMyGedTreeViewState {
-    TreeLinks: ITreeItem[];
+    //TreeLinks: ITreeItem[];
+     TreeLinks: any[];
    
     // TreeLinks: any;
     // data: any | null; //ine zouter

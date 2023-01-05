@@ -254,7 +254,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async _getLinks2(sp) {
 
-    var treearr: ITreeItem[] = [];
+    // var treearr: ITreeItem[] = [];
+    var treearr: any[] = [];
+
 
     //var treearr;
     var treeSub: ITreeItem[] = [];
@@ -274,14 +276,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder").filter("IsFolder eq '" + value1 + "'").getAll();
     const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder").filter("IsFolder eq '" + value2 + "'").getAll();
 
-    const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.ParentID - b.ParentID);
-    // const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.FolderID - b.FolderID);
+    const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
+    // const allItemsMain_sorted: any[] = allItemsMain.sort();
 
+
+    console.log("ARRRANGED ARRAY: " + allItemsMain_sorted);
+
+    // const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.FolderID - b.FolderID);
     var x = 0;
 
 
-    allItemsMain_sorted.forEach(v => {
 
+    allItemsMain_sorted.forEach(v => {
 
 
       if (v["ParentID"] == -1) {
@@ -303,6 +309,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         };
 
+
+
         treearr.push(tree);
         // console.log("Tree 1", tree);
 
@@ -316,7 +324,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         console.log("We have a sub folder here.");
         var str = v["Title"];
 
-        const tree: ITreeItem = {
+        const tree: any = {
           // v.id ==> v.FolderID
           id: v["ID"],
           key: v["FolderID"],
@@ -328,21 +336,23 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           children: [],
           revision: "",
           file: "No"
-
         };
 
         // console.log("Tree 2", tree);
 
+       
 
         // ParentID ==> FolderID
 
 
 
-        var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key === v["ParentID"]; });
+        //  var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; }).sort((a, b) => {return a.label - b.label} );
+
+        var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; });
+
 
 
         if (treecol.length != 0) {
-
 
           counterSUB = counterSUB + 1;
           keysPresent.push(tree.key);
@@ -353,25 +363,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         }
 
         treearr.push(tree);
-
-
       }
 
-
-
-
-
     });
-
 
 
     keysMissing = allKeys
       .filter(x => !keysPresent.includes(x))
       .concat(keysPresent.filter(x => !allKeys.includes(x)));
-
-
-
-
 
     keysMissing.forEach(v => {
 
@@ -408,22 +407,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         }
       });
 
-
-
-
-
     });
-
-
 
 
     console.log("KEYS MISSING LENGTH", keysMissing.length);
     console.log("KEYS MISSING", keysMissing);
-
     console.log("KEYS PRESENT LENGTH", keysPresent.length);
     console.log("KEYS MISSING LENGTH", 763 - keysPresent.length);
-
-
     console.log("COUNTER", counter);
     console.log("COUNTERSUB", counterSUB);
     console.log("TREE ARRAY LENGTH", treearr.length);
@@ -463,6 +453,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var remainingArr = treearr.filter(data => data.key == 1);
 
+    //   var finalArr = remainingArr.sort((a, b) =>{
+    //     return a.label - b.label;
+    // });
+
 
     console.log("REMAINING ARRAY ", remainingArr);
     console.log("REMAINING ARRAY LENGTH", remainingArr.length);
@@ -474,28 +468,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     // mergedArray.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
 
-
-
     // all.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
 
     // console.log(unique);
 
-
     // tree = remainingArr;
-
-
-
-
 
     // this.setState({ TreeLinks: remainingArr });
     this.setState({ TreeLinks: remainingArr });
-
-
     console.log("FOLDERS", allItemsMain.length);
     // console.log("FILES", allItemsFile.length);
     // console.log("MERGED", mergedArray.length);
-
-
 
   }
 
@@ -604,13 +587,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
 
-
-
-
     var x = this.getItemId();
-
-
-
     console.log("ITEM TO EXPAND", this.getItemId());
 
     return (
@@ -630,10 +607,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   <TreeView
 
                     items={this.state.TreeLinks}
-
+                    defaultExpanded={true}
                     // defaultExpandedKeys={parentIDArray}
                     defaultExpandedKeys={parentIDArray}
-                    defaultExpanded={true}
+
                     defaultExpandedChildren={false}
 
 
@@ -758,7 +735,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               <div id="access_form">
 
-              <h2 id='h2_folderName'></h2>
+                <h2 id='h2_folderName'></h2>
 
                 <nav aria-label="breadcrumb" id='nav'>
                   <ol className="breadcrumb">
@@ -776,7 +753,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     </div>
                     <div className="col-3">
                       <Label>Permission Type
-                        <input type="text" className="form-control" id="permission_type" />
+                        <select className='form-select' name="permissions" id="permissions">
+                          <option value="none">NONE</option>
+                          <option value="read">READ</option>
+                          <option value="read_write">READ_WRITE</option>
+                          <option value="all">ALL</option>
+                        </select>
                       </Label>
                     </div>
                     <div className="col-3">
@@ -813,17 +795,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     );
 
-    
+
 
 
   }
 
-  private async addSubfolders(item: ITreeItem){
+  private async addSubfolders(item: ITreeItem) {
 
-  
 
-      console.log("ID", item.id);
- 
+
+    console.log("ID", item.id);
+
   }
 
 
@@ -863,36 +845,50 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         //onclick
         onClick={async event => {
           console.log("DATA value", item.label);
-          
+
           if (item.data == 1 || item.data == 0) {
             $("#h2_folderName").text(item.label);
 
-           
+
             $("#access_form").css("display", "block");
 
             $("#doc_form").css("display", "none");
 
-            $("#add_subfolder").click(async function(){
+            $("#add_subfolder").click(async function () {
               console.log("ID", item.id);
 
-               await sp.web.lists.getByTitle("Documents").items.add({
+              await sp.web.lists.getByTitle("Documents").items.add({
                 Title: $("#folder_name").val(),
                 ParentID: item.key,
                 IsFolder: "TRUE"
               })
-              .then(async (iar) => {
+                .then(async (iar) => {
 
-                const list = sp.web.lists.getByTitle("Documents");
+                  const list = sp.web.lists.getByTitle("Documents");
 
-                await list.items.getById(iar.data.ID).update({
-                  FolderID: parseInt(iar.data.ID)
+                  await list.items.getById(iar.data.ID).update({
+                    FolderID: parseInt(iar.data.ID)
+                  });
                 });
-              });
 
             });
+
+            $("#add_group").click(async function () {
+
+              await sp.web.lists.getByTitle("AccessRights").items.add({
+                Title: item.label,
+                groupName: $("#group_name").val(),
+                permission: $("#permissions option:selected").val(),
+                FolderIDId: item.key
+              }).then(() =>{
+                console.log("Permission added to this folder.")
+              })
+
+            });
+
           }
-    
-           
+
+
           else {
 
             $("#access_form").css("display", "none");
@@ -968,7 +964,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           }
 
         }
-      }
+        }
       >
 
         {
