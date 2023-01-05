@@ -102,7 +102,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div class="optionDrivers" id="homepageLinksDivers1">
+                        <div id="homepageLinksDivers1">
                         </div>
                     </div>
                     <div class="mg-text-repeated">
@@ -113,7 +113,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div class="optionDrivers" id="homepageLinksDivers2">
+                        <div id="homepageLinksDivers2">
                         </div>
                     </div>
                     <div class="mg-text-repeated">
@@ -124,20 +124,18 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div class="optionDrivers" id="homepageLinksDivers3">
+                        <div id="homepageLinksDivers3">
                         </div>
                     </div>   
                     <div class="mg-text-repeated">
                         <!-- for mobile only -->
                         <div class="cta-mg-repeated">
-                        
-                        
                             <a href="javascript:void(0)" style="background-image: url('${require<string>("./../../common/images/bg-cta4.png")}')">
                                 Divers
                             </a>
                         </div>
                         <!-- end for mobile only -->
-                        <div class="optionDrivers" id="homepageLinksDivers4">
+                        <div id="homepageLinksDivers4">
                         </div>
                     </div>
                 </div>
@@ -185,7 +183,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         this._getNavImage().then(async (response) => {
             console.log(response.value);
             var navImage = [];
-            await Promise.all(response.value.map(async (result) => {
+            await Promise.all(response.value.map(async (result: { Title: any; Image: any; }) => {
                 let html: string = ''
 
                 const item = {
@@ -195,9 +193,9 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
                 await navImage.reduce(async (memo, item) => {
                     await memo;
-                    const imageJson = ((JSON.parse(item.Photo)).serverRelativeUrl)
+                    const imageJson = ((JSON.parse(item.Image)).serverRelativeUrl)
 
-                    html += `<img src="${imageJson}" class="img-responsive" alt="" />`
+                    html += `<img src="https://ncaircalin.sharepoint.com/${imageJson}" class="img-responsive" alt="" />`
 
                     listContainerImage.innerHTML += html;
                 })
@@ -216,7 +214,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinks');
         this._gethomepageLinks().then(async (response) => {
             console.log(response.value);
-            await Promise.all(response.value.map(async (result) => {
+            await Promise.all(response.value.map(async (result: { Title: any; url: any; order: any; permission: any; linksType: any; }) => {
                 let homepageLinkshtml: string = '<div class="mg-cta-repeated w100">'
 
                 const item = {
@@ -259,7 +257,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinksDiver2');
         this._gethomepageLinks2().then(async (response) => {
             console.log(response.value);
-            await Promise.all(response.value.map(async (result) => {
+            await Promise.all(response.value.map(async (result: { Title: any; url: any; order: any; permission: any; linksType: any; }) => {
                 let homepageLinkshtml2: string = '<div class="mg-cta-repeated w100">'
 
                 const item = {
@@ -301,7 +299,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinksDiver3');
         this._gethomepageLinks3().then(async (response) => {
             console.log(response.value);
-            await Promise.all(response.value.map(async (result) => {
+            await Promise.all(response.value.map(async (result: { Title: any; url: any; order: any; permission: any; linksType: any; }) => {
                 let homepageLinkshtml3: string = '<div class="mg-cta-repeated w100">'
 
                 const item = {
@@ -343,7 +341,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         const listContainerHomepageLinks: Element = this.domElement.querySelector('#homepageLinksDiver3');
         this._gethomepageLinks4().then(async (response) => {
             console.log(response.value);
-            await Promise.all(response.value.map(async (result) => {
+            await Promise.all(response.value.map(async (result: { Title: any; url: any; order: any; permission: any; linksType: any; }) => {
                 let homepageLinkshtml4: string = '<div class="mg-cta-repeated w100">'
 
                 const item = {
