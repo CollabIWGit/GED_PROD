@@ -22,26 +22,42 @@
     margin: 0.5em;
 }
 
-#subfolders_form{
-display: none;
+#subfolders_form,
+#edit_details {
+    display: none;
+}
+
+#update_details {
+    float: right;
 }
 
 .scp-breadcrumb {
     margin: 2px;
 }
 
-#access_form{
+#access_form {
     display: none;
 }
 
-#nav{
+#nav {
     font-size: large;
 }
+
+.breadcrumb breadcrumb-item li+li:before {
+    padding: 8px;
+    content: "";   
+}
+
+.breadcrumb{
+    --bs-breadcrumb-divider-color: #f8f9fa;
+}
+
 
 @keyframes spin-anim {
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }

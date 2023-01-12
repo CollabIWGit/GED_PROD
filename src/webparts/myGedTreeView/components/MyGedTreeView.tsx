@@ -17,8 +17,8 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import { getIconClassName, Label } from 'office-ui-fabric-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFolder, faFolderOpen, faFileWord } from '@fortawesome/free-regular-svg-icons'
-import { faFile } from '@fortawesome/free-solid-svg-icons'
+import { faFolder, faFolderOpen, faFileWord, faEdit, faTrashCan, faBell } from '@fortawesome/free-regular-svg-icons'
+import { faFile, faLock, faFolderPlus, faDownload } from '@fortawesome/free-solid-svg-icons'
 import { IconName, IconProp, parse } from '@fortawesome/fontawesome-svg-core';
 import { useEffect, useState } from 'react';
 import { SPHttpClient, SPHttpClientResponse, SPHttpClientConfiguration } from '@microsoft/sp-http';
@@ -67,9 +67,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       //props.context
     });
 
-    var x = this.getItemId();
+    // var x = this.getItemId();
 
-    this.getParentID(x);
+    // this.getParentID(x);
 
     // const sp = spfi().using(SPFx(this.props.context));
     this.state = {
@@ -138,7 +138,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           icon: faFolder,
           children: [],
           revision: "",
-          file: "No"
+          file: "No",
+          description: v["description"],
+          parentID: v["ParentID"]
 
         };
 
@@ -165,7 +167,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           icon: faFolderOpen,
           children: [],
           revision: "",
-          file: "No"
+          file: "No",
+          description: v["description"],
+          parentID: v["ParentID"]
         };
 
         // console.log("Tree 2", tree);
@@ -204,7 +208,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           icon: faFile,
           data: v["FileUrl"],
           revision: v['revision'],
-          file: "Yes"
+          file: "Yes",
+          description: v["description"],
+          parentID: v["ParentID"]
 
         };
 
@@ -273,21 +279,21 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     var counterSUB = 0;
 
 
-    const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder").filter("IsFolder eq '" + value1 + "'");
-    const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder").filter("IsFolder eq '" + value2 + "'").getAll();
+    const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
+    const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("IsFolder eq '" + value2 + "'").getAll();
 
-    const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
+    //const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
     // const allItemsMain_sorted: any[] = allItemsMain.sort();
 
 
-    console.log("ARRRANGED ARRAY: " + allItemsMain_sorted);
+    console.log("ARRRANGED ARRAY: " + allItemsMain.length);
 
     // const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.FolderID - b.FolderID);
     var x = 0;
 
 
 
-    allItemsMain_sorted.forEach(v => {
+    allItemsMain.forEach(v => {
 
 
       if (v["ParentID"] == -1) {
@@ -305,7 +311,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           icon: faFolder,
           children: [],
           revision: "",
-          file: "No"
+          file: "No",
+          description: v["description"],
+          parentID: v["ParentID"]
 
         };
 
@@ -335,12 +343,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           icon: faFolderOpen,
           children: [],
           revision: "",
-          file: "No"
+          file: "No",
+          description: v["description"],
+          parentID: v["ParentID"]
         };
 
         // console.log("Tree 2", tree);
 
-       
+
 
         // ParentID ==> FolderID
 
@@ -374,7 +384,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     keysMissing.forEach(v => {
 
-      allItemsMain_sorted.forEach(x => {
+      allItemsMain.forEach(x => {
 
         if (v === x["FolderID"]) {
 
@@ -391,7 +401,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             icon: faFolderOpen,
             children: [],
             revision: "",
-            file: "No"
+            file: "No",
+            description: v["description"],
+            parentID: v["ParentID"]
 
           };
 
@@ -434,7 +446,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         icon: faFile,
         data: v["FileUrl"],
         revision: v['revision'],
-        file: "Yes"
+        file: "Yes",
+        description: v["description"],
+        parentID: v["ParentID"]
 
       };
 
@@ -645,104 +659,186 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             <form id="form_metadata">
 
               <div id="doc_form">
-                <h2 id='h2_title'></h2>
+                <h2 id='h2_title'>
 
-                <div className="row">
-                  <div className="col-6">
-                    <Label>Title
-                      <input type="email" className="form-control" id="input_title" />
-                    </Label>
+
+                </h2>
+
+                <nav aria-label="breadcrumb" id='nav_file'>
+                  <ul className="breadcrumb">
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "block"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faDownload} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" id='delete_file'><FontAwesomeIcon icon={faTrashCan} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                  </ul>
+                </nav>
+
+
+                <div id="doc_details">
+
+                  <div className="row">
+                    <div className="col-6">
+                      <Label>Title
+                        <input type="email" className="form-control" id="input_title" />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>Type
+                        <input type="email" className="form-control" id="input_type" />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>Document Number
+                        <input type="text" id='input_number' className='form-control' />
+                      </Label>
+                    </div>
                   </div>
-                  <div className="col-3">
-                    <Label>Type
-                      <input type="email" className="form-control" id="input_type" />
-                    </Label>
+
+                  <div className="row">
+                    <div className="col-3">
+                      <Label>
+                        Revision
+                        <input type="text" id='input_revision' className='form-control' />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>
+                        Status
+                        <input type="text" id='input_status' className='form-control' />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>
+                        Owner
+                        <input type="text" id='input_owner' className='form-control' />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>
+                        Active Date
+                        <input type="text" id='input_activeDate' className='form-control' />
+                      </Label>
+                    </div>
                   </div>
-                  <div className="col-3">
-                    <Label>Document Number
-                      <input type="text" id='input_number' className='form-control' />
-                    </Label>
+
+                  <div className="row">
+                    <div className="col-6">
+                      <Label>
+                        Filename
+                        <input type="text" id='input_filename' className='form-control' />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>
+                        Author
+                        <input type="text" id='input_author' className='form-control' />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+
+                      <button type="button" className="btn btn-primary mb-2" id='view' >View Document</button>
+
+                    </div>
+                  </div>
+
+                  <div className="row">
+                    <div className="col-8">
+                      <Label>
+                        Keywords
+                        <textarea id='input_keywords' className='form-control' rows={2} />
+                      </Label>
+                    </div>
+                    <div className="col-3">
+                      <Label>
+                        Review Date
+                        <input type="text" id='input_reviewDate' className='form-control' />
+                      </Label>
+                    </div>
                   </div>
                 </div>
 
-
-                <div className="row">
-                  <div className="col-3">
-                    <Label>
-                      Revision
-                      <input type="text" id='input_revision' className='form-control' />
-                    </Label>
-                  </div>
-                  <div className="col-3">
-                    <Label>
-                      Status
-                      <input type="text" id='input_status' className='form-control' />
-                    </Label>
-                  </div>
-                  <div className="col-3">
-                    <Label>
-                      Owner
-                      <input type="text" id='input_owner' className='form-control' />
-                    </Label>
-                  </div>
-                  <div className="col-3">
-                    <Label>
-                      Active Date
-                      <input type="text" id='input_activeDate' className='form-control' />
-                    </Label>
-                  </div>
-                </div>
+                <div id="doc_permission"></div>
+                <div id="doc_notif"></div>
 
 
 
-                <div className="row">
-                  <div className="col-6">
-                    <Label>
-                      Filename
-                      <input type="text" id='input_filename' className='form-control' />
-                    </Label>
-                  </div>
-                  <div className="col-3">
-                    <Label>
-                      Author
-                      <input type="text" id='input_author' className='form-control' />
-                    </Label>
-                  </div>
-                  <div className="col-3">
-
-                    <button type="button" className="btn btn-primary mb-2" id='view' >View Document</button>
-
-                  </div>
-                </div>
 
 
-                <div className="row">
-                  <div className="col-8">
-                    <Label>
-                      Keywords
-                      <textarea id='input_keywords' className='form-control' rows={2} />
-                    </Label>
-                  </div>
-                  <div className="col-3">
-                    <Label>
-                      Review Date
-                      <input type="text" id='input_reviewDate' className='form-control' />
-                    </Label>
-                  </div>
-                </div>
 
               </div>
 
               <div id="access_form">
 
-                <h2 id='h2_folderName'></h2>
+                <h2 id='h2_folderName'>
+                  <img src='./../../../common/images/flower.png' />
+                </h2>
 
                 <nav aria-label="breadcrumb" id='nav'>
-                  <ol className="breadcrumb">
-                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); }}>Access Rights</a></li>
-                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); }}>Add Subfolders</a></li>
-                  </ol>
+                  <ul className="breadcrumb">
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "block"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faFolderPlus} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" id='delete_folder'><FontAwesomeIcon icon={faTrashCan} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                  </ul>
                 </nav>
+
+                <div id="edit_details">
+                  <div className="row">
+                    <div className="col-6">
+                      <Label>Folder Name
+                        <input type="text" className="form-control" id="folder_name1" />
+                      </Label>
+                    </div>
+
+                    <div className="col-6">
+                      <Label>Folder Description
+                        <input type="text" className="form-control" id="folder_desc" />
+                      </Label>
+                    </div>
+
+
+                  </div>
+
+                  <div className="row">
+                    <div className="col-6">
+                      <Label>Parent Folder
+                        <input type="text" className="form-control" id="parent_folder" />
+                        {/* <select className='form-select' name="parentFolder" id="parent_folder">
+
+                        </select> */}
+                      </Label>
+                    </div>
+
+                    <div className="col-6">
+                      <Label>Folder Order
+                        <input type="text" className="form-control" id="folder_order" />
+                      </Label>
+                    </div>
+
+
+                  </div>
+
+                  <div className="row">
+                    <div className="col-8">
+
+                    </div>
+                    <div className="col-2">
+
+                      <button type="button" className="btn btn-primary" id='update_details'>Edit Details</button>
+
+                    </div>
+
+                    <div className="col-2">
+                      <button type="button" className="btn btn-primary" id='edit_cancel'>Cancel</button>
+
+                    </div>
+
+                  </div>
+
+
+                </div>
 
                 <div id="access_rights_form">
                   <div className="row">
@@ -782,6 +878,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 </div>
 
+
               </div>
 
             </form>
@@ -791,21 +888,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       </div>
 
 
-
-
     );
-
-
-
 
   }
 
   private async addSubfolders(item: ITreeItem) {
 
-
-
     console.log("ID", item.id);
-
   }
 
 
@@ -819,10 +908,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private onSelect(items: ITreeItem[]) {
     items.forEach((item: ITreeItem) => {
-
       item.iconProps.color = "black";
-
-    })
+    });
   }
 
 
@@ -847,44 +934,135 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           console.log("DATA value", item.label);
 
           if (item.data == 1 || item.data == 0) {
-            $("#h2_folderName").text(item.label);
+
+            var titleFolder = "";
+
+            const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("FolderID eq '" + item.parentID + "'").getAll();
+
+            allItemsFolder.forEach((x) => {
+
+              titleFolder = x.Title;
+
+            });
+
+            console.log("TITLE", titleFolder);
+
+            $("#h2_folderName").text("<img src = 'https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/flower.png' />  " + item.label);
+
+            $("#folder_name1").val(item.label);
+            $("#folder_desc").val(item.description);
+            $("#parent_folder").val(titleFolder);
+            // $("#h2_folderName").text(item.label);
 
 
             $("#access_form").css("display", "block");
 
             $("#doc_form").css("display", "none");
 
-            $("#add_subfolder").click(async function () {
-              console.log("ID", item.id);
 
-              await sp.web.lists.getByTitle("Documents").items.add({
-                Title: $("#folder_name").val(),
-                ParentID: item.key,
-                IsFolder: "TRUE"
-              })
-                .then(async (iar) => {
+            $('#add_subfolder').one('click', async function () {
+              console.log("ID", item.key);
 
-                  const list = sp.web.lists.getByTitle("Documents");
+              try {
+                await sp.web.lists.getByTitle("Documents").items.add({
+                  Title: $("#folder_name").val(),
+                  ParentID: item.key,
+                  IsFolder: "TRUE"
+                })
+                  .then(async (iar) => {
 
-                  await list.items.getById(iar.data.ID).update({
-                    FolderID: parseInt(iar.data.ID)
+                    const list = sp.web.lists.getByTitle("Documents");
+
+                    await list.items.getById(iar.data.ID).update({
+                      FolderID: parseInt(iar.data.ID)
+                    });
+                  })
+                  .then(() => {
+                    alert(`Dossier ajouté avec succès`);
                   });
-                });
+
+              }
+              catch (err) {
+
+                console.log("Erreur:", err.message);
+              }
+
 
             });
 
-            $("#add_group").click(async function () {
+
+            $('#add_group').one('click', async function () {
+
+
+              console.log("KEY", item.key);
 
               await sp.web.lists.getByTitle("AccessRights").items.add({
                 Title: item.label,
                 groupName: $("#group_name").val(),
                 permission: $("#permissions option:selected").val(),
                 FolderIDId: item.key
-              }).then(() =>{
+              }).then(() => {
                 console.log("Permission added to this folder.")
-              })
+              });
 
             });
+
+
+            $('#delete_folder').one('click', async function () {
+
+              if (confirm(`Êtes-vous sûr de vouloir supprimer ${item.label} ?`)) {
+
+                try {
+                  var res = await sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id)).delete()
+                    .then(() => {
+                      alert("Dossier supprimé avec succès.");
+                    });
+                }
+                catch (err) {
+                  alert(err.message);
+                }
+
+
+              }
+              else {
+
+              }
+
+
+            });
+
+
+            $('#update_details').one('click', async function () {
+
+              if (confirm(`Etes-vous sûr de vouloir mettre à jour les détails de ${item.label} ?`)) {
+
+                try {
+
+                  const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id)).update({
+                    Title: $("#folder_name1").val(),
+                    description: $("#folder_name1").val()
+
+                  })
+                    .then(() => {
+
+                      alert("Détails mis à jour avec succès");
+                    });
+
+                }
+                catch (err) {
+                  alert(err.message);
+                }
+
+
+              }
+              else {
+
+              }
+
+
+            });
+
+
 
           }
 
@@ -929,7 +1107,31 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       });
 
                   });
-              })
+              });
+
+
+            $('#delete_file').one('click', async function () {
+
+              if (confirm(`Êtes-vous sûr de vouloir supprimer ${item.label} ?`)) {
+
+                try {
+                  var res = await sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id)).delete()
+                    .then(() => {
+                      alert("Document supprimé avec succès.");
+                    });
+                }
+                catch (err) {
+                  alert(err.message);
+                }
+
+
+              }
+              else {
+
+              }
+
+
+            });
 
 
             //  var item1: any = sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id));
@@ -951,7 +1153,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               $("#input_author").val(item1.author);
               // $("#input_reviewDate").val(item1.);
               $("#input_keywords").val(item1.keywords);
-              $("#h2_title").text(item1.Title);
+              $("#h2_title").text("<img src = 'https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/flower.png' />  " + item1.Title);
 
               document.getElementById('view').onclick = function () {
                 window.open(`${urlFile}`, '_blank');
