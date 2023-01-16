@@ -95,10 +95,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
-
-
-
-
   private async _getLinks(sp) {
 
     // const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView").items();
@@ -322,7 +318,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           parentID: v["ParentID"]
         };
 
-
         treearr.push(tree);
         // console.log("Tree 1", tree);
 
@@ -345,27 +340,28 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           label: str,
           data: 1,
           icon: faFolderOpen,
-          children: [],
           revision: "",
           file: "No",
           description: v["description"],
-          parentID: v["ParentID"]
+          parentID: v["ParentID"],
+          children: []
         };
 
         // console.log("Tree 2", tree);
-
-
 
         // ParentID ==> FolderID
 
         //  var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; }).sort((a, b) => {return a.label - b.label} );
 
-       // var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; });
+        // var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; });
         var treecol: Array<any> = treearr.filter((value) => { return value.key === tree.parentID; });
 
+        treecol.forEach(() => {
 
+          console.log("TREEEEEEEECCCCOOOOL", treecol[0].label);
+        });
 
-      //  if (treecol.length != 0) {
+        //  if (treecol.length != 0) {
         if (treecol.length != 0) {
 
           counterSUB = counterSUB + 1;
@@ -601,8 +597,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     //return parentIDArray;
   }
 
-
-
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
 
@@ -820,7 +814,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   </ul>
                 </nav>
 
-                
+
 
                 <div id="edit_details">
                   <div className="row">
@@ -1035,7 +1029,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     console.log("ID", item.id);
   }
 
-
   private async onTreeItemSelect(items: ITreeItem[]) {
 
     items.forEach((item: any) => {
@@ -1049,7 +1042,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       item.iconProps.color = "black";
     });
   }
-
 
   private onTreeItemExpandCollapse(item: ITreeItem, isExpanded: boolean) {
     console.log((isExpanded ? "Item expanded: " : "Item collapsed: ") + item.label);
