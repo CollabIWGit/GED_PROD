@@ -39,6 +39,10 @@
     display: none;
 }
 
+#doc_details_add{
+    display: none;
+}
+
 #nav {
     font-size: large;
 }
@@ -52,6 +56,16 @@
     --bs-breadcrumb-divider-color: #f8f9fa;
 }
 
+.image img {
+    float: left;
+    padding-right: 16px;
+}
+
+#update_details_doc{
+    display: none;
+    float: right;
+
+}
 
 @keyframes spin-anim {
     0% {
