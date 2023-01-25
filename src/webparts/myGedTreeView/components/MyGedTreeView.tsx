@@ -1,11 +1,8 @@
 import * as React from 'react';
-
 import styles from './MyGedTreeView.module.scss';
+import { MSGraphClient } from '@microsoft/sp-http';
 import { IMyGedTreeViewProps, IMyGedTreeViewState } from './IMyGedTreeView';
-import { escape } from '@microsoft/sp-lodash-subset';
-import { TreeView, ITreeItem, TreeViewSelectionMode, TreeItemActionsDisplayMode, ITreeItemActions } from "@pnp/spfx-controls-react/lib/TreeView";
-// import { SPFI, spfi, SPFx } from "@pnp/sp";
-// import { Container, Row, Col, Card, Form, Nav } from "react-bootstrap";
+import { TreeView, ITreeItem, TreeViewSelectionMode, TreeItemActionsDisplayMode } from "@pnp/spfx-controls-react/lib/TreeView";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import $ from 'jquery';
 import Popper from 'popper.js';
@@ -21,26 +18,28 @@ import { faFolder, faFolderOpen, faFileWord, faEdit, faTrashCan, faBell, faEye }
 import { faFile, faLock, faFolderPlus, faDownload } from '@fortawesome/free-solid-svg-icons'
 import { IconName, IconProp, parse } from '@fortawesome/fontawesome-svg-core';
 import { useEffect, useState } from 'react';
-import { SPHttpClient, SPHttpClientResponse, SPHttpClientConfiguration } from '@microsoft/sp-http';
+//import { SPHttpClient, SPHttpClientResponse, SPHttpClientConfiguration } from '@microsoft/sp-http';
 import { IAttachmentInfo } from "@pnp/sp/attachments";
 import "@pnp/sp/attachments";
 import { IItem } from "@pnp/sp/items/types";
+// import Form from 'react-bootstrap-form';
+import * as sharepointConfig from './../../../common/utils/sharepoint-config.json';
+
 
 
 
 
 
 var parentIDArray = [];
-
 var sorted = [];
-
 var val = [];
+var folders = [];
 
 
 
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-
+import { ITreeViewState } from '@pnp/spfx-controls-react/lib/controls/treeView/ITreeViewState';
 
 
 // import Form from 'react-bootstrap/Form';
@@ -51,23 +50,25 @@ require('./../../../common/css/sidebar.css');
 require('./../../../common/css/pagecontent.css');
 require('./../../../common/css/spinner.css');
 
-
+var department;
 
 
 export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, IMyGedTreeViewState, any> {
 
-
+  private graphClient: MSGraphClient;
 
   constructor(props: IMyGedTreeViewProps, context) {
 
-
-
     super(props, context);
+
 
     sp.setup({
       spfxContext: this.props.context
       //props.context
     });
+
+
+
 
     var x = this.getItemId();
 
@@ -79,186 +80,23 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     };
 
 
-
-    // this._getLinks(sp);
     this._getLinks2(sp);
 
+    // this._getLinks3(sp);  //sa pu tester doc library
+
+    // this._getLinks(sp);
     this.render();
 
 
-    // this.getFirstParent();
 
 
-    //var node = this.getParent();
 
-    console.log("NODES", parentIDArray);
+
+
+    // console.log("NODES", parentIDArray);
 
   }
 
-  private async _getLinks(sp) {
-
-    // const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView").items();
-    // const allItems: any[] = await sp.web.lists.getByTitle("TestTreeView1").items.getAll();
-    //const allItems: any[] = await sp.web.lists.getByTitle("TestDocument").items.getAll();
-    const allItems: any[] = await sp.web.lists.getByTitle("Documents").items.getAll();
-
-
-
-    console.log("ALL ITEMS", allItems);
-
-
-    var treearr: ITreeItem[] = [];
-    var treeSub: ITreeItem[] = [];
-    var tree: any = [];
-
-    // var treearr: any = [];
-    // var treeSub: any = [];
-    // var tree: any = [];
-
-
-
-
-
-    allItems.forEach((v, i) => {
-
-      //ParentId ==> ParentID
-
-
-      if (v["ParentID"] == -1) {
-
-
-        console.log("We have the main folder here.");
-
-        var str = v["Title"];
-
-        const tree: ITreeItem = {
-          // v.id ==> v.FolderID
-          id: v["ID"],
-          key: v["FolderID"],
-          label: str,
-          data: 0,
-          icon: faFolder,
-          children: [],
-          revision: "",
-          file: "No",
-          description: v["description"],
-          parentID: v["ParentID"]
-
-        };
-
-        treearr.push(tree);
-        // console.log("Tree 1", tree);
-
-      }
-
-      // v["FileSystemObjectType"] ==> v["IsFolder"]
-      else if (v["ParentID"] !== -1 && v["IsFolder"] === "TRUE") {
-
-
-        console.log("We have a sub folder here.");
-        var str = v["Title"];
-
-        const tree: ITreeItem = {
-          // v.id ==> v.FolderID
-          id: v["ID"],
-          key: v["FolderID"],
-          // key: v["Title"],
-          // label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
-          label: str,
-          data: 1,
-          icon: faFolderOpen,
-          children: [],
-          revision: "",
-          file: "No",
-          description: v["description"],
-          parentID: v["ParentID"]
-        };
-
-        // console.log("Tree 2", tree);
-
-
-        // ParentID ==> FolderID
-        var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
-
-
-        if (treecol.length != 0) {
-
-          treearr.push(tree);
-          // console.log("TREE COL", treecol);
-          // console.log("COL SUB", treeSub);
-          treecol[0].children.push(tree);
-        }
-      }
-
-      // else if (v["ParentID"] !== -1 && v["IsFolder"] === "FALSE") {
-      else if (v["IsFolder"] === "FALSE") {
-
-
-        // console.log("We have a file here with ParentId :" + v["ParentID"]);
-
-        console.log("We have a file here.");
-
-
-        //v["ServerRedirectedEmbedUrl"] ==> v["FileUrl"]
-        const iconName: IconProp = faFile;
-
-        const tree: ITreeItem = {
-          // v.id ==> v.FolderID
-          id: v["ID"],
-          key: v["FolderID"],
-          label: v["Title"] + "-" + v["revision"],
-          icon: faFile,
-          data: v["FileUrl"],
-          revision: v['revision'],
-          file: "Yes",
-          description: v["description"],
-          parentID: v["ParentID"]
-
-        };
-
-
-        // ParentID ==> FolderID
-        var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
-
-
-        if (treecol.length != 0) {
-          treecol[0].children.push(tree);
-        }
-      }
-    });
-
-
-
-    // console.log("TREE ARRAY", treearr);
-    // console.log("TREE ARRAY SUB", treeSub);
-
-    //var remainingArr = treearr.filter(data => (data.data == 0 || data.data == 1));
-
-    var remainingArr = treearr.filter(data => data.data == 0);
-
-
-
-
-    //  var x = remainingArr.filter((a, i) => remainingArr.findIndex((s) => a.label === s.age) === i);
-
-    // var remainingArr = treearr.filter(data => data.data == 0).map(item => item.label).filter((value, index, self) => self.indexOf(value) === index);
-
-    // const key = 'label';
-    // const arrayUniqueByKey = [...new Map(remainingArr.map(item =>
-    //   [item[key], item])).values()];
-
-    tree = remainingArr;
-
-    console.log("LENGTH", remainingArr.length);
-
-
-    // console.log("DISTINCT ITEMS", remainingArr);
-
-    this.setState({ TreeLinks: remainingArr });
-
-    // this.setState({ TreeLinks: treearr });
-
-  }
 
   private async _getLinks2(sp) {
 
@@ -284,6 +122,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
     const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("IsFolder eq '" + value2 + "'").getAll();
 
+
     //const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
     // const allItemsMain_sorted: any[] = allItemsMain.sort();
 
@@ -300,7 +139,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
       if (v["ParentID"] == -1) {
 
-        console.log("We have the main folder here.");
+        // console.log("We have the main folder here.");
 
         var str = v["Title"];
 
@@ -328,7 +167,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         allKeys.push(v["FolderID"]);
 
-        console.log("We have a sub folder here.");
+        // console.log("We have a sub folder here.");
         var str = v["Title"];
 
         const tree: any = {
@@ -358,7 +197,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         treecol.forEach(() => {
 
-          console.log("TREEEEEEEECCCCOOOOL", treecol[0].label);
+          // console.log("TREEEEEEEECCCCOOOOL", treecol[0].label);
         });
 
         //  if (treecol.length != 0) {
@@ -422,16 +261,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     });
 
 
-    console.log("KEYS MISSING LENGTH", keysMissing.length);
-    console.log("KEYS MISSING", keysMissing);
-    console.log("KEYS PRESENT LENGTH", keysPresent.length);
-    console.log("KEYS MISSING LENGTH", 763 - keysPresent.length);
-    console.log("COUNTER", counter);
-    console.log("COUNTERSUB", counterSUB);
-    console.log("TREE ARRAY LENGTH", treearr.length);
+    // console.log("KEYS MISSING LENGTH", keysMissing.length);
+    // console.log("KEYS MISSING", keysMissing);
+    // console.log("KEYS PRESENT LENGTH", keysPresent.length);
+    // console.log("KEYS MISSING LENGTH", 763 - keysPresent.length);
+    // console.log("COUNTER", counter);
+    // console.log("COUNTERSUB", counterSUB);
+    // console.log("TREE ARRAY LENGTH", treearr.length);
 
     allItemsFile.forEach((v) => {
-      console.log("We have a file here.");
+      // console.log("We have a file here.");
 
 
       //v["ServerRedirectedEmbedUrl"] ==> v["FileUrl"]
@@ -493,6 +332,249 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     console.log("FOLDERS", allItemsMain.length);
     // console.log("FILES", allItemsFile.length);
     // console.log("MERGED", mergedArray.length);
+
+
+
+  }
+
+
+  //testing doc library
+  private async _getLinks3(sp) {
+
+    // var treearr: ITreeItem[] = [];
+    var treearr: any[] = [];
+
+
+    //var treearr;
+    var treeSub: ITreeItem[] = [];
+    var tree: ITreeItem[] = [];
+
+    var value1 = "TRUE";
+    var value2 = "FALSE";
+
+    var keysMissing: any = [];
+    var allKeys: any = [];
+    var keysPresent: any = [];
+
+    var counter = 0;
+    var counterSUB = 0;
+
+
+    const allItemsMain: any[] = await sp.web.lists.getByTitle('Test').items.select("ID,ParentID,FolderID,Title,IsFolder").top(5000).filter("IsFolder eq '" + value1 + "'").get();
+    const allItemsFile: any[] = await sp.web.lists.getByTitle('Test').items.select("ID,ParentID,FolderID,Title,IsFolder").filter("IsFolder eq '" + value2 + "'").get();
+
+
+    //const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
+    // const allItemsMain_sorted: any[] = allItemsMain.sort();
+
+
+    console.log("ARRRANGED ARRAY: " + allItemsMain.length);
+
+    // const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.FolderID - b.FolderID);
+    var x = 0;
+
+
+
+    allItemsMain.forEach(v => {
+
+
+      if (v["ParentID"] == -1) {
+
+        // console.log("We have the main folder here.");
+
+        var str = v["Title"];
+
+        const tree: ITreeItem = {
+          // v.id ==> v.FolderID
+          id: v["ID"],
+          key: v["FolderID"],
+          label: str,
+          data: 0,
+          icon: faFolder,
+          children: [],
+          // revision: "",
+          // file: "No",
+          //description: v["description"],
+          parentID: v["ParentID"]
+        };
+
+        treearr.push(tree);
+        // console.log("Tree 1", tree);
+
+      }
+
+      // v["FileSystemObjectType"] ==> v["IsFolder"]
+      else {
+
+        allKeys.push(v["FolderID"]);
+
+        // console.log("We have a sub folder here.");
+        var str = v["Title"];
+
+        const tree: any = {
+          // v.id ==> v.FolderID
+          id: v["ID"],
+          key: v["FolderID"],
+          // key: v["Title"],
+          // label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
+          label: str,
+          data: 1,
+          icon: faFolderOpen,
+          // revision: "",
+          // file: "No",
+          // description: v["description"],
+          parentID: v["ParentID"],
+          children: []
+        };
+
+        // console.log("Tree 2", tree);
+
+        // ParentID ==> FolderID
+
+        //  var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; }).sort((a, b) => {return a.label - b.label} );
+
+        // var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; });
+        var treecol: Array<any> = treearr.filter((value) => { return value.key === tree.parentID; });
+
+        treecol.forEach(() => {
+
+          // console.log("TREEEEEEEECCCCOOOOL", treecol[0].label);
+        });
+
+        //  if (treecol.length != 0) {
+        if (treecol.length != 0) {
+
+          counterSUB = counterSUB + 1;
+          keysPresent.push(tree.key);
+          treecol[0].children.push(tree);
+          // console.log("TREE COL", treecol);
+          // console.log("COL SUB", treeSub);
+          treearr.push(tree);
+        }
+
+        treearr.push(tree);
+      }
+
+    });
+
+
+    keysMissing = allKeys
+      .filter(x => !keysPresent.includes(x))
+      .concat(keysPresent.filter(x => !allKeys.includes(x)));
+
+    keysMissing.forEach(v => {
+
+      allItemsMain.forEach(x => {
+
+        if (v === x["FolderID"]) {
+
+          var str = x["Title"];
+
+          const tree: ITreeItem = {
+            // v.id ==> v.FolderID
+            id: v["ID"],
+            key: v["FolderID"],
+            // key: v["Title"],
+            // label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
+            label: str,
+            data: 1,
+            icon: faFolderOpen,
+            children: [],
+            // revision: "",
+            // file: "No",
+            // description: v["description"],
+            parentID: v["ParentID"]
+
+          };
+
+          var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key === x["ParentID"]; });
+
+          if (treecol.length != 0) {
+            keysPresent.push(tree.key);
+            treecol[0].children.push(tree);
+          }
+
+          treearr.push(tree);
+
+        }
+      });
+
+    });
+
+
+    // console.log("KEYS MISSING LENGTH", keysMissing.length);
+    // console.log("KEYS MISSING", keysMissing);
+    // console.log("KEYS PRESENT LENGTH", keysPresent.length);
+    // console.log("KEYS MISSING LENGTH", 763 - keysPresent.length);
+    // console.log("COUNTER", counter);
+    // console.log("COUNTERSUB", counterSUB);
+    // console.log("TREE ARRAY LENGTH", treearr.length);
+
+    allItemsFile.forEach((v) => {
+      console.log("We have a file here.");
+
+
+      //v["ServerRedirectedEmbedUrl"] ==> v["FileUrl"]
+      const iconName: IconProp = faFile;
+
+      const tree: ITreeItem = {
+        // v.id ==> v.FolderID
+        id: v["ID"],
+        //    key: v["FolderID"],
+        key: v["FolderID"],
+        label: v["Title"],
+        icon: faFile,
+        data: v["FileUrl"],
+        // revision: v['revision'],
+        // file: "Yes",
+        // description: v["description"],
+        parentID: v["ParentID"]
+
+      };
+
+
+      // ParentID ==> FolderID
+
+      var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key == v["ParentID"]; });
+
+      if (treecol.length != 0) {
+        treecol[0].children.push(tree);
+      }
+
+    });
+
+    // var remainingArr = treearr.filter(data => data.data === 0);
+
+    var remainingArr = treearr.filter(data => data.key == 1);
+
+    //   var finalArr = remainingArr.sort((a, b) =>{
+    //     return a.label - b.label;
+    // });
+
+
+    console.log("REMAINING ARRAY ", remainingArr);
+    console.log("REMAINING ARRAY LENGTH", remainingArr.length);
+
+    //  Array.prototype.push.apply(allItemsFile, allItemsMain);
+    // const mergedArray = [ ...allItemsFile, ...allItemsMain ];
+
+    const unique = [];
+
+    // mergedArray.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
+
+    // all.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
+
+    // console.log(unique);
+
+    // tree = remainingArr;
+
+    // this.setState({ TreeLinks: remainingArr });
+    this.setState({ TreeLinks: remainingArr });
+    console.log("FOLDERS", allItemsMain.length);
+    // console.log("FILES", allItemsFile.length);
+    // console.log("MERGED", mergedArray.length);
+
+
 
   }
 
@@ -601,6 +683,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
     var x = this.getItemId();
+
+
+
     console.log("ITEM TO EXPAND", this.getItemId());
 
     return (
@@ -616,19 +701,15 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 <div className="list-group list-group-flush mx-3 mt-4" id="tree">
 
 
-
                   <TreeView
 
                     items={this.state.TreeLinks}
-                    defaultExpanded={true}
-                    // defaultExpandedKeys={parentIDArray}
+                    //defaultExpanded={true}
                     defaultExpandedKeys={parentIDArray}
+                    //defaultExpandedKeys={[2]}
 
-                    defaultExpandedChildren={false}
-
-
-                    selectChildrenIfParentSelected={false}
-                    showCheckboxes={true}
+                    // selectionMode={TreeViewSelectionMode.Multiple}
+                    showCheckboxes={false}
                     treeItemActionsDisplayMode={TreeItemActionsDisplayMode.Buttons}
                     onSelect={this.onSelect}
                     onExpandCollapse={this.onTreeItemExpandCollapse}
@@ -636,7 +717,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     // defaultSelectedKeys={[parseInt(this.getItemId())]}
                     defaultSelectedKeys={[parseInt(x)]}
                     expandToSelected={true}
+                    defaultExpandedChildren={false}
+
                   />
+
+
                 </div>
               </div>
 
@@ -647,11 +732,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               <div className="spinner"></div>
             </div>
 
-
-
           </div>
-
-
 
           <div className="col-sm-9">
 
@@ -667,12 +748,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 </div>
 
-
-
-
                 <nav aria-label="breadcrumb" id='nav_file'>
                   <ul className="breadcrumb">
-                    <li className="breadcrumb-item"><a href="#" role="button" title="Mettre à jour le document" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#edit_cancel_doc").css("display", "block"); $("#update_details_doc").css("display", "block"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" title="Mettre à jour le document" onClick={(event: React.MouseEvent<HTMLElement>) => { this.load_folders(); $("#edit_cancel_doc").css("display", "block"); $("#update_details_doc").css("display", "block"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                     <li className="breadcrumb-item"><a href="#" role="button" title="Voir le document" id="view_doc"><FontAwesomeIcon icon={faEye} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                     <li className="breadcrumb-item"><a href="#" role="button" title="Autorisation sur le document" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                     <li className="breadcrumb-item"><a href="#" role="button" title="Télécharger" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faDownload} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
@@ -680,7 +758,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     <li className="breadcrumb-item"><a href="#" role="button" title="Notifier" ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                   </ul>
                 </nav>
-
 
 
                 <div id="doc_details">
@@ -697,8 +774,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       </Label>
                     </div>
                     <div className="col-6">
-                      <Label>Type
-                        <input type="text" className="form-control" id="input_type" />
+                      <Label>Dossier
+                        <input type="text" className="form-control" id="input_type_doc" list='folders' />
+
+                        <datalist id="folders">
+                          <select id="select_folders"></select>
+                        </datalist>
                       </Label>
                     </div>
 
@@ -805,15 +886,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 <nav aria-label="breadcrumb" id='nav'>
                   <ul className="breadcrumb">
-                    <li className="breadcrumb-item"><a href="#" title="Mettre à jour le dossier" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "block"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                    <li className="breadcrumb-item"><a href="#" title="Créer un document" role="button" ><FontAwesomeIcon icon={faFile} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                    <li className="breadcrumb-item"><a href="#" title="Autorisation sur le dossier" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                    <li className="breadcrumb-item"><a href="#" title="Ajouter des sous-dossiers" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faFolderPlus} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" title="Mettre à jour le dossier" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { this.load_folders(); $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "block"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" title="Créer un document" role="button" id='add_document' onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "block"); }}><FontAwesomeIcon icon={faFile} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" title="Autorisation sur le dossier" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" title="Ajouter des sous-dossiers" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faFolderPlus} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                     <li className="breadcrumb-item"><a href="#" title="Supprimer" role="button" id='delete_folder'><FontAwesomeIcon icon={faTrashCan} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                     <li className="breadcrumb-item"><a href="#" title="Notifier" role="button" ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                   </ul>
                 </nav>
-
 
 
                 <div id="edit_details">
@@ -834,7 +914,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   <div className="row">
                     <div className="col-6">
                       <Label>Parent Folder
-                        <input type="text" className="form-control" id="parent_folder" />
+                        <input type="text" className="form-control" id="parent_folder" list='folders' />
+
+                        <datalist id="folders">
+                          <select id="select_folders"></select>
+                        </datalist>
                         {/* <select className='form-select' name="parentFolder" id="parent_folder">
 
                         </select> */}
@@ -912,19 +996,27 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   <div className="row">
                     {/* <div className="col-6">
-                      <Label>Title
-                        <input type="text" className="form-control" id="input_title_add" />
-                      </Label>
-                    </div> */}
+            <Label>Title
+                <input type="text" className="form-control" id="input_title_add" />
+            </Label>
+        </div> */}
                     <div className="col-6">
                       <Label>Nom du fichier
-                        <input type="text" id='input_number_add' className='form-control' />
+                        <input type="text" id='input_doc_number_add' className='form-control' />
                       </Label>
                     </div>
+
+
                     <div className="col-6">
-                      <Label>Dossier
-                        <input type="text" className="form-control" id="input_type_add" />
+                      <Label>Fichier
+                        <input type="file" name="file" id="file_ammendment" className="form-control-file mb-3" />
                       </Label>
+
+                      {/* <Form.Group controlId="formFile" className="mb-3">
+                        <Form.Label>Fichier</Form.Label>
+                        <Form.Control type="file" />
+                      </Form.Group> */}
+
                     </div>
 
                   </div>
@@ -1019,10 +1111,41 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         </div>
       </div>
 
-
     );
 
+
   }
+
+  private async load_folders() {
+
+
+
+    var value1 = "TRUE";
+
+    var drp_folders = document.getElementById("select_folders");
+
+    // const allItems: any = await sp.web.lists.getByTitle('Documents').items.getAll(),
+
+    const all_folders: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
+
+
+    // console.log("ALL FOLDERS", all_folders.length);
+
+    folders = all_folders;
+
+    folders.forEach((result: any) => {
+      // if(result.IsFolder == "TRUE"){
+      console.log("SELECT_FOLDERS", result.Title);
+      var opt = document.createElement('option');
+      opt.appendChild(document.createTextNode(result.Title));
+      opt.value = result.FolderID;
+      drp_folders.appendChild(opt);
+      // }
+
+    });
+
+  }
+
 
   private async addSubfolders(item: ITreeItem) {
 
@@ -1032,14 +1155,15 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   private async onTreeItemSelect(items: ITreeItem[]) {
 
     items.forEach((item: any) => {
-      console.log("Items selected: ", item.label);
+      $("#h2_folderName").text(item.label);
     });
 
   }
 
   private onSelect(items: ITreeItem[]) {
     items.forEach((item: ITreeItem) => {
-      item.iconProps.color = "black";
+      console.log("ONSELECT", item.label);
+
     });
   }
 
@@ -1051,6 +1175,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     $("#text").text(item.label);
   }
 
+  private setEventHandlersFolders() {
+
+
+
+  }
 
   private renderCustomTreeItem(item: ITreeItem): JSX.Element {
 
@@ -1060,10 +1189,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     return (
       <span
         //onclick
+
         onClick={async event => {
           console.log("DATA value", item.label);
 
+
           if (item.data == 1 || item.data == 0) {
+
+
+
+            var fileName = "";
+            var content = null;
 
             var titleFolder = "";
 
@@ -1092,8 +1228,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             $("#doc_form").css("display", "none");
 
-
-            $('#add_subfolder').one('click', async function () {
+            $("#add_subfolder").click(async () => {
               console.log("ID", item.key);
 
               var subId = null;
@@ -1129,43 +1264,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               }
               catch (err) {
-
                 console.log("Erreur:", err.message);
               }
 
-
             });
 
-
-            $('#add_group').one('click', async function () {
-
-
-              try {
-
-                console.log("KEY", item.key);
-
-                await sp.web.lists.getByTitle("AccessRights").items.add({
-                  Title: item.label,
-                  groupName: $("#group_name").val(),
-                  permission: $("#permissions option:selected").val(),
-                  FolderIDId: item.key
-                }).then(() => {
-                  console.log("Autorisation ajoutée à ce dossier avec succès.")
-                })
-                  .then(() => {
-                    window.location.reload();
-                  });
-              }
-
-              catch (e) {
-                alert("Erreur: " + e.message);
-
-              }
-
-            });
-
-
-            $('#delete_folder').one('click', async function () {
+            $("#delete_folder").click(async () => {
 
               if (confirm(`Êtes-vous sûr de vouloir supprimer ${item.label} ?`)) {
 
@@ -1191,8 +1295,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             });
 
-
-            $('#update_details').one('click', async function () {
+            $("#update_details").click(async () => {
+              // $('#update_details').one('click', async function () {
 
               if (confirm(`Etes-vous sûr de vouloir mettre à jour les détails de ${item.label} ?`)) {
 
@@ -1200,12 +1304,88 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id)).update({
                     Title: $("#folder_name1").val(),
-                    description: $("#folder_name1").val()
+                    description: $("#folder_desc").val(),
+                    ParentID: $("#parent_folder").val()
 
                   })
                     .then(() => {
 
                       alert("Détails mis à jour avec succès");
+                    })
+                    .then(() => {
+                      window.location.reload();
+                    });
+
+                }
+                catch (err) {
+                  alert(err.message);
+                }
+
+              }
+              else {
+
+              }
+
+
+            });
+
+            $('#file_ammendment').on('change', () => {
+              const input = document.getElementById('file_ammendment') as HTMLInputElement | null;
+
+
+              var file = input.files[0];
+              var reader = new FileReader();
+
+              reader.onload = ((file1) => {
+                return (e) => {
+                  console.log(file1.name);
+
+                  fileName = file1.name,
+                    content = e.target.result
+
+                };
+              })(file);
+
+              reader.readAsArrayBuffer(file);
+            });
+
+            $("#add_doc").click(async () => {
+
+
+              if (confirm(`Etes-vous sûr de vouloir creer un document ?`)) {
+
+                try {
+
+                  const i = await await sp.web.lists.getByTitle('Documents').items.add({
+                    Title: $("#input_doc_number_add").val(),
+                    description: $("#input_description_add").val(),
+                    doc_number: $("#input_doc_number_add").val(),
+                    revision: $("#input_revision_add").val(),
+                    ParentID: item.key,
+                    IsFolder: "FALSE",
+                    keywords: $("#input_keywords_add").val(),
+
+                  })
+                    .then(async (iar) => {
+
+                      item = iar.data.ID;
+
+
+                      const list = sp.web.lists.getByTitle("Documents");
+
+                      await list.items.getById(iar.data.ID).attachmentFiles.add(fileName, content)
+                        .then(async () => {
+
+                          await list.items.getById(iar.data.ID).update({
+                            FolderID: parseInt(iar.data.ID),
+                            filename: fileName
+                          });
+                        });
+
+                    })
+                    .then(() => {
+
+                      alert("Document creer avec succès");
                     })
                     .then(() => {
                       window.location.reload();
@@ -1223,21 +1403,56 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               }
 
 
+
+
             });
 
+            $("#add_group").click(async () => {
 
+              try {
+                console.log("KEY", item.key);
+
+                await sp.web.lists.getByTitle("AccessRights").items.add({
+                  Title: item.label,
+                  groupName: $("#group_name").val(),
+                  permission: $("#permissions option:selected").val(),
+                  FolderIDId: item.key
+                })
+                  .then(() => {
+                    console.log("Autorisation ajoutée à ce dossier avec succès.")
+                  })
+                  .then(() => {
+                    window.location.reload();
+                  });
+              }
+
+              catch (e) {
+                alert("Erreur: " + e.message);
+              }
+            });
 
           }
 
-
           else {
+            $("#doc_details").css("display", "block");
 
+            $("#nav_file").css("display", "block");
 
             $("#access_form").css("display", "none");
 
             $("#doc_form").css("display", "block");
 
             var urlFile = '';
+
+            var titleFolder = "";
+
+            const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("FolderID eq '" + item.parentID + "'").getAll();
+
+            allItemsFolder.forEach((x) => {
+
+              titleFolder = x.Title;
+
+            });
 
             await sp.web.lists.getByTitle('Documents').items
               .select('Id', 'Title')
@@ -1312,6 +1527,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     keywords: $("#input_keywords").val(),
                     doc_number: $("#input_number").val(),
                     revision: $("#input_revision").val(),
+                    ParentID: $("#input_type_doc").val()
 
                   })
                     .then(() => {
@@ -1363,7 +1579,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             Object.keys(item1).forEach((key) => {
 
               // $("#input_title").val(item1.Title);
-              $("#input_type").val(item1.type);
+              $("#input_type_doc").val(titleFolder);
               $("#input_number").val(item1.doc_number);
               $("#input_revision").val(item1.revision);
               $("#input_status").val(item1.status);
@@ -1387,8 +1603,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           }
 
         }
-        }
-      >
+        }>
 
         {
           <FontAwesomeIcon icon={item.icon} className="fa-icon"></FontAwesomeIcon>

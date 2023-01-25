@@ -24,7 +24,7 @@ export interface IMyGedTreeViewWebPartProps {
 export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTreeViewWebPartProps> {
 
   private _isDarkTheme: boolean = false;
-  private _environmentMessage: string = '';s
+  private _environmentMessage: string = ''; s
 
   protected onInit(): Promise<void> {
 
@@ -33,18 +33,21 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
 
   public render(): void {
 
-    
+
     const element: React.ReactElement<IMyGedTreeViewProps> = React.createElement(
-      
+
       MyGedTreeView,
       {
         description: this.properties.description,
-        context: this.context
-      }
+        context: this.context,
+        msGraphClientFactory: this.context.msGraphClientFactory
+      },
+
+
     );
 
     ReactDom.render(element, this.domElement);
-    
+
   }
 
 

@@ -1,0 +1,51 @@
+{
+    "Page": {
+        "NewContractPage": "Bank-One-Checklist-Form.aspx",
+        "ContractMgtPage": "Contract-Mgt.aspx",
+        "SignedContractPage": "Signed-Contract-Mgt.aspx",
+        "HomePage": "home.aspx",
+        "ContractDraft": "Contract-Draft.aspx",
+        "InProcessContracts": "In-Process-Draft.aspx",
+        "ExpiringContracts": "Expiring-Contracts.aspx",
+        "MasterPage": "Master-Page.aspx"
+    },
+    "DocumentLibrary": {
+        "ContractDraft": "ContractDraft",
+        "ContractMgt": "ContractMgt",
+        "EmployeeContracts": "EmployeeContracts",
+        "AgreementCheckList": "Contracts",
+        "ApprovalMinutes": "ApprovalMinutes",
+        "SignedDoc": "Signed Contracts",
+        "ExistingDoc": "Existing Contracts"
+    },
+    "List": {
+        "Supplier": "Suppliers",
+        "Department": "Department",
+        "Country": "Country",
+        "Company": "Company",
+        "Shareholder": "Shareholder",
+        "LitigationCase": "LitigationCases",
+        "CaseStage": "CaseStage",
+        "DocumentList": "Document",
+        "Ammendment": "Amendments",
+        "Departments": "Department List",
+        "ContractDetails": "Contract Details"
+    },
+    "Link": {
+        "RepositoryLink": "/Existing%20Contracts/Forms/AllItems.aspx"
+    },
+    "Groups": {
+        "JobGroup": [
+            "Infras",
+            "Struc",
+            "Eaux"
+        ],
+        "AdminGroup": "Administration",
+        "ManageActionsGroup": "Manage Actions",
+        "AdminMain": "GR_ADMIN_MAIN",
+        "AdminSub": "GR_ADMIN_SUB",
+        "Procurement_group": "ProcurementGrp",
+        "BusinessUnit_group": "BusinessUnitGrp",
+        "Legal_group": "LegalGrp"
+    }
+}

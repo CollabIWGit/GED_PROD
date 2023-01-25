@@ -13,7 +13,9 @@
     "outDir": "lib",
     "inlineSources": false,
     "strictNullChecks": false,
+    "resolveJsonModule": true,
     "noUnusedLocals": false,
+    "allowSyntheticDefaultImports": true,
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules/@microsoft"
