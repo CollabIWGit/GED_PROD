@@ -948,7 +948,7 @@ body {
 
 .inner-ctamg-section {
     top: -32.5px;
-    margin-bottom: -32.5px;
+    margin: 0 12%;
 }
 
 .cta-mg-section {
@@ -962,6 +962,11 @@ body {
 .inner-mg-text {
     background: #FFF;
     border-radius: 15px;
+    bottom: 7.5rem;
+}
+
+.mg-text-bloc{
+    padding: 0 1%;
 }
 
 .mg-text-repeated {
@@ -992,6 +997,7 @@ body {
 .mg-cta-repeated .info-emploi-title {
     font-size: .875rem;
     transition: all .5s ease-in-out;
+    margin: 3% 0;
 }
 
 .mg-cta-repeated a:hover .info-emploi-title {

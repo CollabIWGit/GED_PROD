@@ -243,8 +243,8 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
     //API to get navImage
     private async _getNavImage(): Promise<any> {
         //  const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('PageDaccueilPhoto')/Items", SPHttpClient.configurations.v1);
-        const response: any[] = await sp.web.lists.getByTitle("PageDaccueilPhoto").items();
-
+        const response: any[] = (await sp.web.lists.getByTitle("PageDaccueilPhoto").items.orderBy("Order", false).get());
+        console.log("order",response.sort);
         return response;
         // return await response.json();
     }
@@ -257,31 +257,20 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         let swiper_html: string = '';
 
         this._getNavImage().then(async (response) => {
-            console.log("IMAGE", response);
+            // console.log("IMAGE", response);
 
             response.forEach((item) => {
-
-
                 const imageJson = ((JSON.parse(item.Image)).serverRelativeUrl);
-
-                console.log("JSONIMAGE", imageJson);
-
-
+                // console.log("JSONIMAGE", imageJson);
                 let html = ` <div class="swiper-slide">
-            <div>
-                <img src="https://ncaircalin.sharepoint.com/${imageJson}"
-                    class="img-responsive" alt="" />
-            </div>
-        </div>`;
-
-
+                    <div>
+                        <img src="https://ncaircalin.sharepoint.com/${imageJson}"
+                            class="img-responsive" alt="" />
+                    </div>
+                </div>`;
                 swiper_html += html;
-
-
             });
-
             listContainerImage.innerHTML = swiper_html;
-
         })
             .then(() => {
                 this._swipe();
@@ -333,37 +322,26 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 //                 console.log("ARRAYLINKS", arrayLinks);
 
                 const response: any[] = await sp.web.lists.getByTitle("HomepageLinks").items();
-
-                console.log("RESPONSE", response);
-
+                // console.log("RESPONSE", response);
                 arrayLinks = response;
-
                 // if ((item.Order === 1) || (item.Order === 2 )|| ( item.Order === 3 ) || (item.Order === 4) || (item.Order === 5 ) ) {
-
-
                 arrayLinks.forEach((item: any) => {
-
-                    console.log("URL", item.url);
-
-                    if ((item.order0 == "1") || (item.order0 == "2") || (item.order0 == "3") || (item.order0 == "4") || (item.order0 == "5")) {
-
-                        console.log("ORDER 1-5", item.Title);
-
-                        html1 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                    // console.log("URL", item.url);
+                    // if ((item.order0 == "1") || (item.order0 == "2") || (item.order0 == "3") || (item.order0 == "4") || (item.order0 == "5")) {
+                    if ((item.linksType == "Divers")) {
+                        // console.log("ORDER 1-5" , item.title);
+                        html1 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
                                                 ${item.Title}
                                             </div>
                                         </div>`;
 
-
-
                     }
-
                     // else if ((item.Order === 6) || (item.Order === 7) || (item.Order === 8) || (item.Order === 9)) {
-
-                    else if ((item.order0 == "6") || (item.order0 == "7") || (item.order0 == "8") || (item.order0 == "9")) {
-                        html2 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                    // else if ((item.order0 == "6") || (item.order0 == "7") || (item.order0 == "8") || (item.order0 == "9")) {
+                    else if ((item.linksType == "Documentation")) {
+                        html2 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
                                                 ${item.Title}
@@ -372,29 +350,23 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
                     }
                     // else if ((item.Order === 10) || (item.Order === 11)) {
-
-                    else if ((item.order0 == "10") || (item.order0 == "11")) {
-                        html3 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                    // else if ((item.order0 == "10") || (item.order0 == "11")) {
+                    else if ((item.linksType == "Crise")) {
+                        html3 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
                                                 ${item.Title}
                                             </div>
                                         </div>`;
-
                     }
-
                     else {
-
-
-                        html4 += `<a href="${item.url}" class="w100 flex-basic flex-justify-between flex-align-center">
+                        html4 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
                                                 ${item.Title}
                                             </div>
                                         </div>`;
-
                     }
-
                 });
 
                 const listContainer1: Element = this.domElement.querySelector('#list1');
