@@ -257,31 +257,20 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         let swiper_html: string = '';
 
         this._getNavImage().then(async (response) => {
-            console.log("IMAGE", response);
+            // console.log("IMAGE", response);
 
             response.forEach((item) => {
-
-
                 const imageJson = ((JSON.parse(item.Image)).serverRelativeUrl);
-
-                console.log("JSONIMAGE", imageJson);
-
-
+                // console.log("JSONIMAGE", imageJson);
                 let html = ` <div class="swiper-slide">
-            <div>
-                <img src="https://ncaircalin.sharepoint.com/${imageJson}"
-                    class="img-responsive" alt="" />
-            </div>
-        </div>`;
-
-
+                    <div>
+                        <img src="https://ncaircalin.sharepoint.com/${imageJson}"
+                            class="img-responsive" alt="" />
+                    </div>
+                </div>`;
                 swiper_html += html;
-
-
             });
-
             listContainerImage.innerHTML = swiper_html;
-
         })
             .then(() => {
                 this._swipe();
