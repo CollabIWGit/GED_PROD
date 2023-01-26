@@ -9,9 +9,19 @@
     z-index: 1;
 }
 
-.treeView_91515d42 .itemContent_91515d42.noCheckBox_91515d42:not(.disabled_91515d42).checked_91515d42 {
+/* .treeView_91515d42 .itemContent_91515d42.noCheckBox_91515d42:not(.disabled_91515d42).checked_91515d42 {
+    background-color: #ee4822;
+} */
+
+.noCheckBox_91515d42 span:hover {
+    color: #212529;
+}
+
+.treeView_91515d42 .itemContent_91515d42.noCheckBox_91515d42:not(.disabled_91515d42):hover {
     background-color: #ee4822;
 }
+
+
 
 .spinner {
     width: 64px;
@@ -45,7 +55,7 @@
     display: none;
 }
 
-#update_details {
+.btn_edit_dossier {
     float: right;
 }
 
@@ -61,7 +71,7 @@
     display: none;
 }
 
-#add_doc{
+.add_doc{
     float: right;
 }
 
@@ -83,6 +93,10 @@
     box-shadow: rgb(0 0 0 / 25%) 0px 54px 55px, rgb(0 0 0 / 12%) 0px -12px 30px, rgb(0 0 0 / 12%) 0px 4px 6px, rgb(0 0 0 / 17%) 0px 12px 13px, rgb(0 0 0 / 9%) 0px -3px 5px;
 }
 
+.treeView_91515d42 .itemContent_91515d42.noCheckBox_91515d42:not(.disabled_91515d42).checked_91515d42 {
+    background-color: #ee4822;
+}
+
 
 .breadcrumb {
     --bs-breadcrumb-divider-color: #f8f9fa;
@@ -93,7 +107,7 @@
     padding-right: 16px;
 }
 
-#update_details_doc {
+.update_details_doc {
     display: none;
     float: right;
 

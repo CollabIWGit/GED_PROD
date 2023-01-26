@@ -6,9 +6,20 @@
     color: white;
 }
 
+.treeView_91515d42 .treeSelector_91515d42>button {
+    height: 20px;
+    width: 20px;
+    padding: 0;
+    color: ivory;
+}
+
 span:hover{
     color: rgb(212, 189, 43);
 
+}
+
+.update_details_doc{
+    float: right;
 }
 
 #form_metadata label {
@@ -23,6 +34,6 @@ span:hover{
     padding-bottom: 1em;
 }
 
-#view, #add_group, #add_subfolder {
+#view, .add_group, .add_subfolder {
     margin-top: 34px
 }

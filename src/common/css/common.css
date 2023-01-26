@@ -1,9 +1,9 @@
 #spSiteHeader {
   display: none;
 }
-/* #spCommandBar {
+#spCommandBar {
   display: none;
-} */
+}
 .webPartContainer{
     display: none!important;
 }
@@ -13,7 +13,11 @@
 #sp-appBar{
   display:none; 
 }
-
+.i_a_beed2cf1 {
+  position: relative;
+  z-index: 7;
+  display: none;
+}
 .CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read {
   padding: 0px;
 }
