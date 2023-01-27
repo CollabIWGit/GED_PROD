@@ -8,7 +8,7 @@ import { SPComponentLoader } from '@microsoft/sp-loader';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { escape } from '@microsoft/sp-lodash-subset';
-import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item } from "@pnp/sp/presets/all";
+import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item, Web } from "@pnp/sp/presets/all";
 
 
 import styles from './HomepageWebPart.module.scss';
@@ -79,24 +79,10 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         <main>
     <div class="main-container w100">
 
-   
     <section class="banner-section w100">
     <div class="swiper">
 
     <div class="swiper-wrapper" id="swiper_image">
-
-
-
-
-<!--
-        <div class="swiper-slide">
-            <div>
-                <img src="https://ncaircalin.sharepoint.com/_api/v2.1/drives/b!TJzETbpajUqGtfPJsWksqWErw-iLhtBGoH3-FDfGzVBrQiISVJfoS5ZZYXsOSHV8/items/0124XHCXPOEPXUW5EXKVGIUOVDSIVE5MB4/thumbnails/0/c3000x2000/content?prefer=noredirect%2Cclosestavailablesize&cb=2&s=L3NpdGVzL215R2VkL0xpc3RzL1BhZ2VEYWNjdWVpbFBob3RvfEltYWdlfDI"
-                    class="img-responsive" alt="" />
-            </div>
-        </div>
-
-        -->
 
 
     </div>
@@ -111,30 +97,8 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
       
 
         <section class="cta-mg-section w100">
-            <div class="inner-ctamg-section w100 cnt-80 flex-basic" style="z-index: 121;">
-                <div class="cta-mg-repeated">
-                    <a href="javascript:void(0)" style="background-image: url('${require<string>("./../../common/images/bg-cta1.png")}')">
-                        Divers
-                    </a>
-                </div>
-
-                <div class="cta-mg-repeated">
-                    <a href="javascript:void(0)" style="background-image: url('${require<string>("./../../common/images/bg-cta2.png")}')">
-                        DOCUMENTATION
-                    </a>
-                </div>
-
-                <div class="cta-mg-repeated">
-                    <a href="javascript:void(0)" style="background-image: url('${require<string>("./../../common/images/bg-cta3.png")}')">
-                        CRISE
-                    </a>
-                </div>
-
-                <div class="cta-mg-repeated">
-                    <a href="javascript:void(0)" style="background-image: url('${require<string>("./../../common/images/bg-cta4.png")}')">
-                        PNT
-                    </a>
-                </div>
+            <div class="inner-ctamg-section w100 cnt-80 flex-basic" style="z-index: 121;" id="catBtn">
+                
             </div>
         </section>
 
@@ -228,15 +192,9 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
 
         this._renderNavImage();
-
+        this._renderCatBtn();
         this._getBuildingsList();
 
-
-        // this._gethomepageLinks();
-        //this._renderHomepageLinks();
-        // this._renderHomepageLinks2();
-        // this._renderHomepageLinks3();
-        // this._renderHomepageLinks4();
     }
 
 
@@ -244,7 +202,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
     private async _getNavImage(): Promise<any> {
         //  const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('PageDaccueilPhoto')/Items", SPHttpClient.configurations.v1);
         const response: any[] = (await sp.web.lists.getByTitle("PageDaccueilPhoto").items.orderBy("Order", false).get());
-        console.log("order",response.sort);
+        console.log("order", response.sort);
         return response;
         // return await response.json();
     }
@@ -264,7 +222,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 // console.log("JSONIMAGE", imageJson);
                 let html = ` <div class="swiper-slide">
                     <div>
-                        <img src="https://ncaircalin.sharepoint.com/${imageJson}"
+                        <img src="https://frcidevtest.sharepoint.com/${imageJson}"
                             class="img-responsive" alt="" />
                     </div>
                 </div>`;
@@ -313,13 +271,6 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
         return new Promise(async (resolve, reject) => {
             try {
-                // this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('HomepageLinks')/items`, SPHttpClient.configurations.v1)
-                //     .then(response => {
-                //         return response.json()
-                //             .then((items: any): void => {
-                //                 arrayLinks = items.value;
-
-                //                 console.log("ARRAYLINKS", arrayLinks);
 
                 const response: any[] = await sp.web.lists.getByTitle("HomepageLinks").items();
                 // console.log("RESPONSE", response);
@@ -333,7 +284,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                         html1 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
-                                                ${item.Title}
+                                                > ${item.Title}
                                             </div>
                                         </div>`;
 
@@ -344,7 +295,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                         html2 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
-                                                ${item.Title}
+                                                > ${item.Title}
                                             </div>
                                         </div>`;
 
@@ -355,7 +306,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                         html3 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
-                                                ${item.Title}
+                                                > ${item.Title}
                                             </div>
                                         </div>`;
                     }
@@ -363,7 +314,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                         html4 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
-                                                ${item.Title}
+                                                > ${item.Title}
                                             </div>
                                         </div>`;
                     }
@@ -393,44 +344,66 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
     }
 
+    private async _renderCatBtn() {
+        let web = Web(this.context.pageContext.web.absoluteUrl);
+        const items = await web.lists.getByTitle("HomepageCategoryLinks").items.get();
+        let htmlcatBtn = '';
+        const catBtn: Element = this.domElement.querySelector('#catBtn');
+        items.forEach((element) => {
+            element = {
+                Title: element.Title,
+                url: element.url,
+                bgImage: element.bgImage
+            };
+            const imageJson2 = ((JSON.parse(element.bgImage)).serverRelativeUrl);
+            htmlcatBtn +=`
+            <div class="cta-mg-repeated">
+                <a href="${element.url}" style="background-image: url('https://frcidevtest.sharepoint.com/${imageJson2}')">
+                    ${element.Title}
+                </a>
+            </div>`;
+        });
+        catBtn.innerHTML += htmlcatBtn;
+    }
+
     protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
-        if (!currentTheme) {
-            return;
-        }
+            if(!currentTheme) {
+                return;
+            }
 
         this._isDarkTheme = !!currentTheme.isInverted;
-        const {
-            semanticColors
-        } = currentTheme;
-        this.domElement.style.setProperty('--bodyText', semanticColors.bodyText);
-        this.domElement.style.setProperty('--link', semanticColors.link);
-        this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered);
+            const {
+                semanticColors
+            } = currentTheme;
+            this.domElement.style.setProperty('--bodyText', semanticColors.bodyText);
+            this.domElement.style.setProperty('--link', semanticColors.link);
+            this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered);
 
-    }
+        }
 
     protected get dataVersion(): Version {
-        return Version.parse('1.0');
-    }
+            return Version.parse('1.0');
+        }
 
     protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
-        return {
-            pages: [
-                {
-                    header: {
-                        description: strings.PropertyPaneDescription
-                    },
-                    groups: [
-                        {
-                            groupName: strings.BasicGroupName,
-                            groupFields: [
-                                PropertyPaneTextField('description', {
-                                    label: strings.DescriptionFieldLabel
-                                })
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-    }
+            return {
+                pages: [
+                    {
+                        header: {
+                            description: strings.PropertyPaneDescription
+                        },
+                        groups: [
+                            {
+                                groupName: strings.BasicGroupName,
+                                groupFields: [
+                                    PropertyPaneTextField('description', {
+                                        label: strings.DescriptionFieldLabel
+                                    })
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
 }
