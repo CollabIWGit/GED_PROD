@@ -222,7 +222,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 // console.log("JSONIMAGE", imageJson);
                 let html = ` <div class="swiper-slide">
                     <div>
-                        <img src="https://frcidevtest.sharepoint.com/${imageJson}"
+                        <img src="https://ncaircalin.sharepoint.com/${imageJson}"
                             class="img-responsive" alt="" />
                     </div>
                 </div>`;
@@ -346,7 +346,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
     private async _renderCatBtn() {
         let web = Web(this.context.pageContext.web.absoluteUrl);
-        const items = await web.lists.getByTitle("HomepageCategoryLinks").items.get();
+        const items = await web.lists.getByTitle("HomepageCatergoryLinks").items.get();
         let htmlcatBtn = '';
         const catBtn: Element = this.domElement.querySelector('#catBtn');
         items.forEach((element) => {
@@ -358,10 +358,11 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
             const imageJson2 = ((JSON.parse(element.bgImage)).serverRelativeUrl);
             htmlcatBtn +=`
             <div class="cta-mg-repeated">
-                <a href="${element.url}" style="background-image: url('https://frcidevtest.sharepoint.com/${imageJson2}')">
+                <a href="${element.url}" style="background-image: url('https://ncaircalin.sharepoint.com/${imageJson2}')">
                     ${element.Title}
                 </a>
             </div>`;
+            console.log("url",element.url);
         });
         catBtn.innerHTML += htmlcatBtn;
     }
