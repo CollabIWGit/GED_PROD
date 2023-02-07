@@ -18,6 +18,15 @@ span:hover{
 
 }
 
+.simpleFooterContainer-215{
+    display: none;
+}
+
+.e_a_ada2ac09 {
+display: none;
+}
+
+
 .update_details_doc{
     float: right;
 }
@@ -36,4 +45,12 @@ span:hover{
 
 #view, .add_group, .add_subfolder {
     margin-top: 34px
+}
+#table_documents{
+    display: none;
+}
+
+#alert_0_doc{
+    display: none;
+    text-align: center;
 }

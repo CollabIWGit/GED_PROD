@@ -520,6 +520,7 @@ cd-popup-container2 {
   list-style: none;
   background: local;
   background-color: #212121;
+  padding-bottom: 1em;
 }
 
 .contractChecklist_088534fa .controls_088534fa label {

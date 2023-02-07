@@ -1363,6 +1363,11 @@
             "resolved": "https://registry.npmjs.org/@fortawesome/fontawesome-common-types/-/fontawesome-common-types-6.2.1.tgz",
             "integrity": "sha512-Sz07mnQrTekFWLz5BMjOzHl/+NooTdW8F8kDQxjWwbpOJcnoSg4vUDng8d/WR1wOxM0O+CY9Zw0nR054riNYtQ=="
         },
+        "@fortawesome/fontawesome-free": {
+            "version": "6.2.1",
+            "resolved": "https://registry.npmjs.org/@fortawesome/fontawesome-free/-/fontawesome-free-6.2.1.tgz",
+            "integrity": "sha512-viouXhegu/TjkvYQoiRZK3aax69dGXxgEjpvZW81wIJdxm5Fnvp3VVIP4VHKqX4SvFw6qpmkILkD4RJWAdrt7A=="
+        },
         "@fortawesome/fontawesome-svg-core": {
             "version": "6.2.1",
             "resolved": "https://registry.npmjs.org/@fortawesome/fontawesome-svg-core/-/fontawesome-svg-core-6.2.1.tgz",
@@ -4857,10 +4862,9 @@
             },
             "dependencies": {
                 "@microsoft/microsoft-graph-clientv1": {
-                    "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                    "version": "npm:@microsoft/microsoft-graph-clientv1@1.7.2-spfx",
                     "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
                     "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
-                    "dev": true,
                     "requires": {
                         "es6-promise": "^4.2.6",
                         "isomorphic-fetch": "^3.0.0",
@@ -4870,8 +4874,7 @@
                         "tslib": {
                             "version": "1.14.1",
                             "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
-                            "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==",
-                            "dev": true
+                            "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
                         }
                     }
                 },
@@ -4922,6 +4925,27 @@
                         "@microsoft/sp-http-base": "1.16.1",
                         "@microsoft/sp-http-msgraph": "1.16.1",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "dev": true,
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==",
+                                    "dev": true
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-lodash-subset": {
@@ -5034,7 +5058,6 @@
                     "version": "3.0.0",
                     "resolved": "https://registry.npmjs.org/isomorphic-fetch/-/isomorphic-fetch-3.0.0.tgz",
                     "integrity": "sha512-qvUtwJ3j6qwsF3jLxkZ72qCgjMysPzDfeV240JHiGZsANBYd+EEuu35v7dfrJ9Up0Ak07D7GGSkGhCHTqg/5wA==",
-                    "dev": true,
                     "requires": {
                         "node-fetch": "^2.6.1",
                         "whatwg-fetch": "^3.4.1"
@@ -5044,7 +5067,6 @@
                     "version": "2.6.8",
                     "resolved": "https://registry.npmjs.org/node-fetch/-/node-fetch-2.6.8.tgz",
                     "integrity": "sha512-RZ6dBYuj8dRSfxpUSu+NsdF1dpPpluJxwOp+6IoDp/sH2QNDSvurYsAa+F1WxY2RjA1iP93xhcsUoYbF2XBqVg==",
-                    "dev": true,
                     "requires": {
                         "whatwg-url": "^5.0.0"
                     }
@@ -5096,7 +5118,6 @@
                     "version": "5.0.0",
                     "resolved": "https://registry.npmjs.org/whatwg-url/-/whatwg-url-5.0.0.tgz",
                     "integrity": "sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==",
-                    "dev": true,
                     "requires": {
                         "tr46": "~0.0.3",
                         "webidl-conversions": "^3.0.0"
@@ -5902,15 +5923,6 @@
                     "integrity": "sha512-BRy6vZOseN9F/MG0NWTojYpenuo9XlZ4AfAvwnsG+C36UDPPgW0skWlZ6ub+7RBPhOHcxz8sNg2uHOdGRebWkQ==",
                     "dev": true
                 },
-                "@microsoft/teams-js-v2": {
-                    "version": "npm:@microsoft/teams-js@2.4.1",
-                    "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
-                    "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
-                    "dev": true,
-                    "requires": {
-                        "debug": "4.3.3"
-                    }
-                },
                 "@rushstack/node-core-library": {
                     "version": "3.52.0",
                     "resolved": "https://registry.npmjs.org/@rushstack/node-core-library/-/node-core-library-3.52.0.tgz",
@@ -5954,53 +5966,10 @@
                     "dev": true,
                     "optional": true
                 },
-                "debug": {
-                    "version": "4.3.3",
-                    "resolved": "https://registry.npmjs.org/debug/-/debug-4.3.3.tgz",
-                    "integrity": "sha512-/zxw5+vh1Tfv+4Qn7a5nsbcJKPaSvCDhojn6FEl9vupwK2VCSDtEiEtqr8DFtzYFOdz63LBkxec7DYuc2jon6Q==",
-                    "dev": true,
-                    "requires": {
-                        "ms": "2.1.2"
-                    }
-                },
                 "msal": {
                     "version": "1.4.17",
                     "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.17.tgz",
                     "integrity": "sha512-RjHwP2cCIWQ9iUIk1SziUMb9+jj5mC4OqG2w16E5yig8jySi/TwiFvKlwcjNrPsndph0HtgCtbENnk5julf3yQ==",
-                    "dev": true,
-                    "requires": {
-                        "tslib": "^1.9.3"
-                    },
-                    "dependencies": {
-                        "tslib": {
-                            "version": "1.14.1",
-                            "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
-                            "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==",
-                            "dev": true
-                        }
-                    }
-                },
-                "msalBrowserLegacy": {
-                    "version": "npm:@azure/msal-browser@2.22.0",
-                    "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
-                    "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
-                    "dev": true,
-                    "requires": {
-                        "@azure/msal-common": "^6.1.0"
-                    },
-                    "dependencies": {
-                        "@azure/msal-common": {
-                            "version": "6.4.0",
-                            "resolved": "https://registry.npmjs.org/@azure/msal-common/-/msal-common-6.4.0.tgz",
-                            "integrity": "sha512-WZdgq9f9O8cbxGzdRwLLMM5xjmLJ2mdtuzgXeiGxIRkVVlJ9nZ6sWnDFKa2TX8j72UXD1IfL0p/RYNoTXYoGfg==",
-                            "dev": true
-                        }
-                    }
-                },
-                "msalLegacy": {
-                    "version": "npm:msal@1.4.12",
-                    "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
-                    "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
                     "dev": true,
                     "requires": {
                         "tslib": "^1.9.3"
@@ -6268,9 +6237,9 @@
                     }
                 },
                 "node-fetch": {
-                    "version": "2.6.8",
-                    "resolved": "https://registry.npmjs.org/node-fetch/-/node-fetch-2.6.8.tgz",
-                    "integrity": "sha512-RZ6dBYuj8dRSfxpUSu+NsdF1dpPpluJxwOp+6IoDp/sH2QNDSvurYsAa+F1WxY2RjA1iP93xhcsUoYbF2XBqVg==",
+                    "version": "2.6.9",
+                    "resolved": "https://registry.npmjs.org/node-fetch/-/node-fetch-2.6.9.tgz",
+                    "integrity": "sha512-DJm/CJkZkRjKKj4Zi4BsKVZh3ValV5IR5s7LVZnW+6YMh0W1BfNA8XSs6DLMGYlId5F3KnA70uu2qepcR08Qqg==",
                     "dev": true,
                     "requires": {
                         "whatwg-url": "^5.0.0"
@@ -6407,7 +6376,7 @@
                     }
                 },
                 "@microsoft/microsoft-graph-clientv1": {
-                    "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                    "version": "npm:@microsoft/microsoft-graph-clientv1@1.7.2-spfx",
                     "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
                     "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
                     "requires": {
@@ -6466,6 +6435,25 @@
                         "@microsoft/sp-http-base": "1.16.0",
                         "@microsoft/sp-http-msgraph": "1.16.0",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-http-base": {
@@ -6484,6 +6472,44 @@
                         "msalBrowserLegacy": "npm:@azure/msal-browser@2.22.0",
                         "msalLegacy": "npm:msal@1.4.12",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@azure/msal-common": {
+                            "version": "6.4.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-common/-/msal-common-6.4.0.tgz",
+                            "integrity": "sha512-WZdgq9f9O8cbxGzdRwLLMM5xjmLJ2mdtuzgXeiGxIRkVVlJ9nZ6sWnDFKa2TX8j72UXD1IfL0p/RYNoTXYoGfg=="
+                        },
+                        "@microsoft/teams-js-v2": {
+                            "version": "npm:@microsoft/teams-js@2.4.1",
+                            "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
+                            "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
+                            "requires": {
+                                "debug": "4.3.3"
+                            }
+                        },
+                        "msalBrowserLegacy": {
+                            "version": "npm:@azure/msal-browser@2.22.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
+                            "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
+                            "requires": {
+                                "@azure/msal-common": "^6.1.0"
+                            }
+                        },
+                        "msalLegacy": {
+                            "version": "npm:msal@1.4.12",
+                            "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
+                            "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
+                            "requires": {
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-http-msgraph": {
@@ -6497,6 +6523,25 @@
                         "@microsoft/sp-http-base": "1.16.0",
                         "@microsoft/sp-loader": "1.16.0",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-loader": {
@@ -6568,7 +6613,7 @@
                     "integrity": "sha512-BRy6vZOseN9F/MG0NWTojYpenuo9XlZ4AfAvwnsG+C36UDPPgW0skWlZ6ub+7RBPhOHcxz8sNg2uHOdGRebWkQ=="
                 },
                 "@microsoft/teams-js-v2": {
-                    "version": "npm:@microsoft/teams-js@2.4.1",
+                    "version": "npm:@microsoft/teams-js-v2@2.4.1",
                     "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
                     "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
                     "requires": {
@@ -6673,7 +6718,7 @@
                     }
                 },
                 "msalBrowserLegacy": {
-                    "version": "npm:@azure/msal-browser@2.22.0",
+                    "version": "npm:msalBrowserLegacy@2.22.0",
                     "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
                     "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
                     "requires": {
@@ -6688,7 +6733,7 @@
                     }
                 },
                 "msalLegacy": {
-                    "version": "npm:msal@1.4.12",
+                    "version": "npm:msalLegacy@1.4.12",
                     "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
                     "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
                     "requires": {
@@ -6828,7 +6873,7 @@
                     }
                 },
                 "@microsoft/microsoft-graph-clientv1": {
-                    "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                    "version": "npm:@microsoft/microsoft-graph-clientv1@1.7.2-spfx",
                     "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
                     "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
                     "requires": {
@@ -6917,6 +6962,25 @@
                         "@microsoft/sp-http-base": "1.16.0",
                         "@microsoft/sp-http-msgraph": "1.16.0",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-http-base": {
@@ -6935,6 +6999,44 @@
                         "msalBrowserLegacy": "npm:@azure/msal-browser@2.22.0",
                         "msalLegacy": "npm:msal@1.4.12",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@azure/msal-common": {
+                            "version": "6.4.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-common/-/msal-common-6.4.0.tgz",
+                            "integrity": "sha512-WZdgq9f9O8cbxGzdRwLLMM5xjmLJ2mdtuzgXeiGxIRkVVlJ9nZ6sWnDFKa2TX8j72UXD1IfL0p/RYNoTXYoGfg=="
+                        },
+                        "@microsoft/teams-js-v2": {
+                            "version": "npm:@microsoft/teams-js@2.4.1",
+                            "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
+                            "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
+                            "requires": {
+                                "debug": "4.3.3"
+                            }
+                        },
+                        "msalBrowserLegacy": {
+                            "version": "npm:@azure/msal-browser@2.22.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
+                            "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
+                            "requires": {
+                                "@azure/msal-common": "^6.1.0"
+                            }
+                        },
+                        "msalLegacy": {
+                            "version": "npm:msal@1.4.12",
+                            "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
+                            "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
+                            "requires": {
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-http-msgraph": {
@@ -6948,6 +7050,25 @@
                         "@microsoft/sp-http-base": "1.16.0",
                         "@microsoft/sp-loader": "1.16.0",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-loader": {
@@ -7019,7 +7140,7 @@
                     "integrity": "sha512-BRy6vZOseN9F/MG0NWTojYpenuo9XlZ4AfAvwnsG+C36UDPPgW0skWlZ6ub+7RBPhOHcxz8sNg2uHOdGRebWkQ=="
                 },
                 "@microsoft/teams-js-v2": {
-                    "version": "npm:@microsoft/teams-js@2.4.1",
+                    "version": "npm:@microsoft/teams-js-v2@2.4.1",
                     "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
                     "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
                     "requires": {
@@ -7124,7 +7245,7 @@
                     }
                 },
                 "msalBrowserLegacy": {
-                    "version": "npm:@azure/msal-browser@2.22.0",
+                    "version": "npm:msalBrowserLegacy@2.22.0",
                     "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
                     "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
                     "requires": {
@@ -7139,7 +7260,7 @@
                     }
                 },
                 "msalLegacy": {
-                    "version": "npm:msal@1.4.12",
+                    "version": "npm:msalLegacy@1.4.12",
                     "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
                     "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
                     "requires": {
@@ -7791,7 +7912,7 @@
                     }
                 },
                 "@microsoft/microsoft-graph-clientv1": {
-                    "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                    "version": "npm:@microsoft/microsoft-graph-clientv1@1.7.2-spfx",
                     "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
                     "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
                     "requires": {
@@ -7867,6 +7988,25 @@
                         "@microsoft/sp-http-base": "1.16.0",
                         "@microsoft/sp-http-msgraph": "1.16.0",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-http-base": {
@@ -7885,6 +8025,44 @@
                         "msalBrowserLegacy": "npm:@azure/msal-browser@2.22.0",
                         "msalLegacy": "npm:msal@1.4.12",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@azure/msal-common": {
+                            "version": "6.4.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-common/-/msal-common-6.4.0.tgz",
+                            "integrity": "sha512-WZdgq9f9O8cbxGzdRwLLMM5xjmLJ2mdtuzgXeiGxIRkVVlJ9nZ6sWnDFKa2TX8j72UXD1IfL0p/RYNoTXYoGfg=="
+                        },
+                        "@microsoft/teams-js-v2": {
+                            "version": "npm:@microsoft/teams-js@2.4.1",
+                            "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
+                            "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
+                            "requires": {
+                                "debug": "4.3.3"
+                            }
+                        },
+                        "msalBrowserLegacy": {
+                            "version": "npm:@azure/msal-browser@2.22.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
+                            "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
+                            "requires": {
+                                "@azure/msal-common": "^6.1.0"
+                            }
+                        },
+                        "msalLegacy": {
+                            "version": "npm:msal@1.4.12",
+                            "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
+                            "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
+                            "requires": {
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-http-msgraph": {
@@ -7898,6 +8076,25 @@
                         "@microsoft/sp-http-base": "1.16.0",
                         "@microsoft/sp-loader": "1.16.0",
                         "tslib": "2.3.1"
+                    },
+                    "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        }
                     }
                 },
                 "@microsoft/sp-loader": {
@@ -7988,7 +8185,7 @@
                     "integrity": "sha512-BRy6vZOseN9F/MG0NWTojYpenuo9XlZ4AfAvwnsG+C36UDPPgW0skWlZ6ub+7RBPhOHcxz8sNg2uHOdGRebWkQ=="
                 },
                 "@microsoft/teams-js-v2": {
-                    "version": "npm:@microsoft/teams-js@2.4.1",
+                    "version": "npm:@microsoft/teams-js-v2@2.4.1",
                     "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
                     "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
                     "requires": {
@@ -8093,7 +8290,7 @@
                     }
                 },
                 "msalBrowserLegacy": {
-                    "version": "npm:@azure/msal-browser@2.22.0",
+                    "version": "npm:msalBrowserLegacy@2.22.0",
                     "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
                     "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
                     "requires": {
@@ -8108,7 +8305,7 @@
                     }
                 },
                 "msalLegacy": {
-                    "version": "npm:msal@1.4.12",
+                    "version": "npm:msalLegacy@1.4.12",
                     "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
                     "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
                     "requires": {
@@ -9198,6 +9395,26 @@
             "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-1.10.0.tgz",
             "integrity": "sha512-g8+ox5nWe9IjDFRHnCXk7mkQRGjHFcAMSn7JpUtJfuWu2tDUmXAp/4LUSgewvBbbmy68YtS+KTFPHRyUoTzk6w=="
         },
+        "@microsoft/teams-js-v2": {
+            "version": "npm:@microsoft/teams-js@2.4.1",
+            "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
+            "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
+            "dev": true,
+            "requires": {
+                "debug": "4.3.3"
+            },
+            "dependencies": {
+                "debug": {
+                    "version": "4.3.3",
+                    "resolved": "https://registry.npmjs.org/debug/-/debug-4.3.3.tgz",
+                    "integrity": "sha512-/zxw5+vh1Tfv+4Qn7a5nsbcJKPaSvCDhojn6FEl9vupwK2VCSDtEiEtqr8DFtzYFOdz63LBkxec7DYuc2jon6Q==",
+                    "dev": true,
+                    "requires": {
+                        "ms": "2.1.2"
+                    }
+                }
+            }
+        },
         "@microsoft/tsdoc": {
             "version": "0.13.2",
             "resolved": "https://registry.npmjs.org/@microsoft/tsdoc/-/tsdoc-0.13.2.tgz",
@@ -9309,6 +9526,22 @@
             "resolved": "https://registry.npmjs.org/@opentelemetry/api/-/api-1.4.0.tgz",
             "integrity": "sha512-IgMK9i3sFGNUqPMbjABm0G26g0QCKCUBfglhQ7rQq6WcxbKfEHRcmwsoER4hZcuYqJgkYn2OeuoJIv7Jsftp7g==",
             "dev": true
+        },
+        "@pdf-lib/standard-fonts": {
+            "version": "1.0.0",
+            "resolved": "https://registry.npmjs.org/@pdf-lib/standard-fonts/-/standard-fonts-1.0.0.tgz",
+            "integrity": "sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==",
+            "requires": {
+                "pako": "^1.0.6"
+            }
+        },
+        "@pdf-lib/upng": {
+            "version": "1.0.1",
+            "resolved": "https://registry.npmjs.org/@pdf-lib/upng/-/upng-1.0.1.tgz",
+            "integrity": "sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==",
+            "requires": {
+                "pako": "^1.0.10"
+            }
         },
         "@pnp/common": {
             "version": "2.15.0",
@@ -9529,7 +9762,7 @@
                     }
                 },
                 "@microsoft/microsoft-graph-clientv1": {
-                    "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                    "version": "npm:@microsoft/microsoft-graph-clientv1@1.7.2-spfx",
                     "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
                     "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
                     "requires": {
@@ -9621,6 +9854,23 @@
                         "tslib": "2.3.1"
                     },
                     "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        },
                         "tslib": {
                             "version": "2.3.1",
                             "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.3.1.tgz",
@@ -9646,6 +9896,42 @@
                         "tslib": "2.3.1"
                     },
                     "dependencies": {
+                        "@azure/msal-common": {
+                            "version": "6.4.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-common/-/msal-common-6.4.0.tgz",
+                            "integrity": "sha512-WZdgq9f9O8cbxGzdRwLLMM5xjmLJ2mdtuzgXeiGxIRkVVlJ9nZ6sWnDFKa2TX8j72UXD1IfL0p/RYNoTXYoGfg=="
+                        },
+                        "@microsoft/teams-js-v2": {
+                            "version": "npm:@microsoft/teams-js@2.4.1",
+                            "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
+                            "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
+                            "requires": {
+                                "debug": "4.3.3"
+                            }
+                        },
+                        "msalBrowserLegacy": {
+                            "version": "npm:@azure/msal-browser@2.22.0",
+                            "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
+                            "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
+                            "requires": {
+                                "@azure/msal-common": "^6.1.0"
+                            }
+                        },
+                        "msalLegacy": {
+                            "version": "npm:msal@1.4.12",
+                            "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
+                            "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
+                            "requires": {
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        },
                         "tslib": {
                             "version": "2.3.1",
                             "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.3.1.tgz",
@@ -9666,6 +9952,23 @@
                         "tslib": "2.3.1"
                     },
                     "dependencies": {
+                        "@microsoft/microsoft-graph-clientv1": {
+                            "version": "npm:@microsoft/microsoft-graph-client@1.7.2-spfx",
+                            "resolved": "https://registry.npmjs.org/@microsoft/microsoft-graph-client/-/microsoft-graph-client-1.7.2-spfx.tgz",
+                            "integrity": "sha512-BQN50r3tohWYOaQ0de7LJ5eCRjI6eg4RQqLhGDlgRmZIZhWzH0bhR6QBMmmxtYtwKWifhPhJSxYDW+cP67TJVw==",
+                            "requires": {
+                                "es6-promise": "^4.2.6",
+                                "isomorphic-fetch": "^3.0.0",
+                                "tslib": "^1.9.3"
+                            },
+                            "dependencies": {
+                                "tslib": {
+                                    "version": "1.14.1",
+                                    "resolved": "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz",
+                                    "integrity": "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="
+                                }
+                            }
+                        },
                         "tslib": {
                             "version": "2.3.1",
                             "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.3.1.tgz",
@@ -9833,6 +10136,14 @@
                         "tslib": "2.3.1"
                     },
                     "dependencies": {
+                        "@microsoft/teams-js-v2": {
+                            "version": "npm:@microsoft/teams-js@2.4.1",
+                            "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
+                            "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
+                            "requires": {
+                                "debug": "4.3.3"
+                            }
+                        },
                         "tslib": {
                             "version": "2.3.1",
                             "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.3.1.tgz",
@@ -9846,7 +10157,7 @@
                     "integrity": "sha512-BRy6vZOseN9F/MG0NWTojYpenuo9XlZ4AfAvwnsG+C36UDPPgW0skWlZ6ub+7RBPhOHcxz8sNg2uHOdGRebWkQ=="
                 },
                 "@microsoft/teams-js-v2": {
-                    "version": "npm:@microsoft/teams-js@2.4.1",
+                    "version": "npm:@microsoft/teams-js-v2@2.4.1",
                     "resolved": "https://registry.npmjs.org/@microsoft/teams-js/-/teams-js-2.4.1.tgz",
                     "integrity": "sha512-rHOVt3Duw1HJrsZq0FO09qMGVGI5eg6hkVKIxsuyJQ5WMPaGMAcF5A0QlXBzVwa9cocNyv8JYeMeJAh+svnLnw==",
                     "requires": {
@@ -10015,7 +10326,7 @@
                     }
                 },
                 "msalBrowserLegacy": {
-                    "version": "npm:@azure/msal-browser@2.22.0",
+                    "version": "npm:msalBrowserLegacy@2.22.0",
                     "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
                     "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
                     "requires": {
@@ -10030,7 +10341,7 @@
                     }
                 },
                 "msalLegacy": {
-                    "version": "npm:msal@1.4.12",
+                    "version": "npm:msalLegacy@1.4.12",
                     "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
                     "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
                     "requires": {
@@ -11768,9 +12079,9 @@
             "dev": true
         },
         "@types/react": {
-            "version": "18.0.27",
-            "resolved": "https://registry.npmjs.org/@types/react/-/react-18.0.27.tgz",
-            "integrity": "sha512-3vtRKHgVxu3Jp9t718R9BuzoD4NcQ8YJ5XRzsSKxNDiDonD2MXIT1TmSkenxuCycZJoQT5d2vE8LwWJxBC1gmA==",
+            "version": "16.14.35",
+            "resolved": "https://registry.npmjs.org/@types/react/-/react-16.14.35.tgz",
+            "integrity": "sha512-NUEiwmSS1XXtmBcsm1NyRRPYjoZF2YTE89/5QiLt5mlGffYK9FQqOKuOLuXNrjPQV04oQgaZG+Yq02ZfHoFyyg==",
             "requires": {
                 "@types/prop-types": "*",
                 "@types/scheduler": "*",
@@ -15443,6 +15754,22 @@
                 }
             }
         },
+        "datatables": {
+            "version": "1.10.18",
+            "resolved": "https://registry.npmjs.org/datatables/-/datatables-1.10.18.tgz",
+            "integrity": "sha512-ntatMgS9NN6UMpwbmO+QkYJuKlVeMA2Mi0Gu/QxyIh+dW7ZjLSDhPT2tWlzjpIWEkDYgieDzS9Nu7bdQCW0sbQ==",
+            "requires": {
+                "jquery": ">=1.7"
+            }
+        },
+        "datatables.net": {
+            "version": "1.13.1",
+            "resolved": "https://registry.npmjs.org/datatables.net/-/datatables.net-1.13.1.tgz",
+            "integrity": "sha512-cX5dDHsbVdLLYKsWOSE0MvuGUcV88zU5dZ/taK2puJV6F9Fw0CFsP3+U/kr+qpDSFOBLWISRyM4Q9wWWovPTNg==",
+            "requires": {
+                "jquery": ">=1.7"
+            }
+        },
         "date-fns": {
             "version": "2.29.3",
             "resolved": "https://registry.npmjs.org/date-fns/-/date-fns-2.29.3.tgz",
@@ -15916,6 +16243,11 @@
             "requires": {
                 "is-obj": "^2.0.0"
             }
+        },
+        "downloadjs": {
+            "version": "1.4.7",
+            "resolved": "https://registry.npmjs.org/downloadjs/-/downloadjs-1.4.7.tgz",
+            "integrity": "sha512-LN1gO7+u9xjU5oEScGFKvXhYf7Y/empUIIEAGBs1LzUq/rg5duiDrkuH5A2lQGd5jfMOb9X9usDa2oVXwJ0U/Q=="
         },
         "downshift": {
             "version": "5.0.5",
@@ -22389,6 +22721,32 @@
                 "tslib": "^1.9.3"
             }
         },
+        "msalBrowserLegacy": {
+            "version": "npm:@azure/msal-browser@2.22.0",
+            "resolved": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-2.22.0.tgz",
+            "integrity": "sha512-ZpnbnzjYGRGHjWDPOLjSp47CQvhK927+W9avtLoNNCMudqs2dBfwj76lnJwObDE7TAKmCUueTiieglBiPb1mgQ==",
+            "dev": true,
+            "requires": {
+                "@azure/msal-common": "^6.1.0"
+            },
+            "dependencies": {
+                "@azure/msal-common": {
+                    "version": "6.4.0",
+                    "resolved": "https://registry.npmjs.org/@azure/msal-common/-/msal-common-6.4.0.tgz",
+                    "integrity": "sha512-WZdgq9f9O8cbxGzdRwLLMM5xjmLJ2mdtuzgXeiGxIRkVVlJ9nZ6sWnDFKa2TX8j72UXD1IfL0p/RYNoTXYoGfg==",
+                    "dev": true
+                }
+            }
+        },
+        "msalLegacy": {
+            "version": "npm:msal@1.4.12",
+            "resolved": "https://registry.npmjs.org/msal/-/msal-1.4.12.tgz",
+            "integrity": "sha512-gjupwQ6nvNL6mZkl5NIXyUmZhTiEMRu5giNdgHMh8l5EPOnV2Xj6nukY1NIxFacSTkEYUSDB47Pej9GxDYf+1w==",
+            "dev": true,
+            "requires": {
+                "tslib": "^1.9.3"
+            }
+        },
         "multicast-dns": {
             "version": "7.2.5",
             "resolved": "https://registry.npmjs.org/multicast-dns/-/multicast-dns-7.2.5.tgz",
@@ -23163,8 +23521,7 @@
         "pako": {
             "version": "1.0.11",
             "resolved": "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz",
-            "integrity": "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==",
-            "dev": true
+            "integrity": "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="
         },
         "parallel-transform": {
             "version": "1.2.0",
@@ -23336,6 +23693,17 @@
                 "ripemd160": "^2.0.1",
                 "safe-buffer": "^5.0.1",
                 "sha.js": "^2.4.8"
+            }
+        },
+        "pdf-lib": {
+            "version": "1.17.1",
+            "resolved": "https://registry.npmjs.org/pdf-lib/-/pdf-lib-1.17.1.tgz",
+            "integrity": "sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==",
+            "requires": {
+                "@pdf-lib/standard-fonts": "^1.0.0",
+                "@pdf-lib/upng": "^1.0.1",
+                "pako": "^1.0.11",
+                "tslib": "^1.11.1"
             }
         },
         "performance-now": {
@@ -27401,6 +27769,18 @@
                 "@types/react": ">=16.9.11",
                 "invariant": "^2.2.4",
                 "react-lifecycles-compat": "^3.0.4"
+            },
+            "dependencies": {
+                "@types/react": {
+                    "version": "18.0.27",
+                    "resolved": "https://registry.npmjs.org/@types/react/-/react-18.0.27.tgz",
+                    "integrity": "sha512-3vtRKHgVxu3Jp9t718R9BuzoD4NcQ8YJ5XRzsSKxNDiDonD2MXIT1TmSkenxuCycZJoQT5d2vE8LwWJxBC1gmA==",
+                    "requires": {
+                        "@types/prop-types": "*",
+                        "@types/scheduler": "*",
+                        "csstype": "^3.0.2"
+                    }
+                }
             }
         },
         "undertaker": {
