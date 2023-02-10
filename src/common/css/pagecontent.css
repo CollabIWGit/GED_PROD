@@ -26,6 +26,14 @@ span:hover{
 display: none;
 }
 
+#spListPermissions{
+    display: none;
+}
+
+#table_version_doc{
+    display: none;
+}
+
 
 .update_details_doc{
     float: right;

@@ -12,10 +12,10 @@ import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item, ITerm, IS
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
-import { getIconClassName, Label } from 'office-ui-fabric-react';
+import { getIconClassName, Label, rgb2hex } from 'office-ui-fabric-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faFolderOpen, faFileWord, faEdit, faTrashCan, faBell, faEye } from '@fortawesome/free-regular-svg-icons'
-import { faFile, faLock, faFolderPlus, faDownload, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
+import { faFile, faLock, faFolderPlus, faDownload, faMagnifyingGlass, faDeleteLeft } from '@fortawesome/free-solid-svg-icons'
 import { icon, IconName, IconProp, parse } from '@fortawesome/fontawesome-svg-core';
 import { useEffect, useState } from 'react';
 import {
@@ -68,6 +68,7 @@ import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ITreeViewState } from '@pnp/spfx-controls-react/lib/controls/treeView/ITreeViewState';
 import { ISiteUserInfo } from '@pnp/sp/site-users/types';
+import { max } from 'lodash';
 
 
 // import Form from 'react-bootstrap/Form';
@@ -728,7 +729,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     <li className="breadcrumb-item" id='download_doc'></li>
                     <li className="breadcrumb-item" id='delete_document'></li>
                     <li className="breadcrumb-item"><a href="#" role="button" title="Notifier" ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+
                   </ul>
+
                 </nav>
 
 
@@ -841,6 +844,31 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 <div id="doc_permission"></div>
                 <div id="doc_notif"></div>
+
+                <div id='table_version_doc'>
+
+                  <div id="spListDocumentsVersions">
+
+                    <table id='tbl_documents_versions' className='table table-striped'>
+                      <thead>
+                        <tr>
+                          <th className="text-left">ID</th>
+                          <th className="text-left">Nom du document</th>
+                          <th className="text-left" >Version</th>
+
+                          <th className="text-left" >Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbl_documents_versions_bdy">
+
+
+
+                      </tbody>
+                    </table>
+                  </div>
+
+
+                </div>
 
 
               </div>
@@ -1010,8 +1038,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 </div>
 
-
-
                 <div id='table_documents'>
 
                   <div id="spListDocuments">
@@ -1022,8 +1048,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                           <th className="text-left">ID</th>
                           <th className="text-left">Nom du document</th>
                           <th className="text-left" >Description</th>
+
                           <th className="text-left" >Actions</th>
-                          <th className="text-left">URL</th>
                         </tr>
                       </thead>
                       <tbody id="tbl_documents_bdy">
@@ -1036,9 +1062,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
                 </div>
-
-
-
 
                 <div id="subfolders_form">
                   <div className="row">
@@ -1183,12 +1206,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     );
 
 
-
-
-
   }
-
-
 
 
   private async load_folders() {
@@ -1224,6 +1242,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   public async getSiteUsers() {
 
     var drp_users = document.getElementById("select_users");
+    drp_users.innerHTML = "";
 
 
     const users1: any = await sp.web.siteUsers();
@@ -1311,7 +1330,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   }
 
 
-
   private async onTreeItemExpandCollapse(item: ITreeItem, isExpanded: boolean) {
     console.log((isExpanded ? "Item expanded: " : "Item collapsed: ") + item.label);
     console.log(item.key);
@@ -1363,6 +1381,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           {
 
             var response_doc = null;
+            var response_distinc = [];
             var html_document: string = ``;
             var value1 = "FALSE";
 
@@ -1379,15 +1398,55 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               .filter("ParentID eq '" + item.key + "' and IsFolder eq '" + value1 + "'")
               .get();
 
-
-
-
-
             response_doc = all_documents;
 
-            console.log(response_doc);
+            //  var result = response_doc.filter((value, index, array) => array.lastIndexOf(value) === index);
 
-            if (response_doc.length > 0) {
+            var result = response_doc.filter((obj, pos, arr) => {
+              return arr.map(mapObj =>
+                mapObj.Title).lastIndexOf(obj.Title) == pos;
+            });
+
+
+
+            // var result = response_doc.reduce((acc, obj) => {
+            //   let last = acc.find(el => el.Title === obj.Title);
+            //   if (!last || parseInt(obj.Id) > parseInt(last.Id)) {
+            //     acc.push(obj);
+            //     response_distinc.push(obj);
+            //   }
+            //   return acc;
+            // }, []);
+
+
+
+
+            // return arr.reduce((maxIndex, mapObj, index) =>
+            //   (mapObj.Title === obj.Title && mapObj.Id > obj.Id) ? index : maxIndex, -1) === pos;
+
+
+
+            console.log("ALL", response_doc);
+
+
+
+            // var result = [...response_doc.reduce((r, o) =>
+            //   (!r.has(o.Title) || r.get(o.Title).length < o.Id) ? r.set(o.Title, o) : r
+            //   , new Map()).values()];
+
+            //   console.log(result);
+
+
+
+            console.log("RESULT DISTINCT", result);
+            console.log("RESULT DISTINCT ARRAY LOT LA", response_distinc);
+
+
+            // console.log(response_doc);
+
+            if (result.length > 0) {
+
+
               html_document = ``;
               $("#alert_0_doc").css("display", "none");
               $("#table_documents").css("display", "block");
@@ -1395,41 +1454,44 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               // $("#table_documents").css("display", "block");
 
 
-              await response_doc.forEach(async (element) => {
+              await result.forEach(async (element) => {
+
+
 
                 var urlFile = '';
-
                 html_document += `
-                 <tr>
-                 <td class="text-left">${element.Id}</td>
-                 
-                 <td class="text-left">${element.Title}</td>
-                 
-                 <td class="text-left"> 
-                 ${element.description}          
-                 </td>
-            
-                 <td>
-                 <a href="#" title="Mettre à jour le document" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details">
-                 <svg aria-hidden="true" focusable="false" data-prefix="far" 
-                 data-icon="pen-to-square" class="svg-inline--fa fa-pen-to-square fa-icon fa-2x" 
-                 role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                 <path fill="currentColor" d="M373.1 24.97C401.2-3.147 446.8-3.147 474.9 24.97L487 37.09C515.1 65.21 515.1 110.8 487 138.9L289.8 336.2C281.1 344.8 270.4 351.1 258.6 354.5L158.6 383.1C150.2 385.5 141.2 383.1 135 376.1C128.9 370.8 126.5 361.8 128.9 353.4L157.5 253.4C160.9 241.6 167.2 230.9 175.8 222.2L373.1 24.97zM440.1 58.91C431.6 49.54 416.4 49.54 407 58.91L377.9 88L424 134.1L453.1 104.1C462.5 95.6 462.5 80.4 453.1 71.03L440.1 58.91zM203.7 266.6L186.9 325.1L245.4 308.3C249.4 307.2 252.9 305.1 255.8 302.2L390.1 168L344 121.9L209.8 256.2C206.9 259.1 204.8 262.6 203.7 266.6zM200 64C213.3 64 224 74.75 224 88C224 101.3 213.3 112 200 112H88C65.91 112 48 129.9 48 152V424C48 446.1 65.91 464 88 464H360C382.1 464 400 446.1 400 424V312C400 298.7 410.7 288 424 288C437.3 288 448 298.7 448 312V424C448 472.6 408.6 512 360 512H88C39.4 512 0 472.6 0 424V152C0 103.4 39.4 64 88 64H200z"></path></svg></a>
+                <tr>
+                <td class="text-left">${element.Id}</td>
 
+                <td class="text-left">${element.Title}</td>
+
+                <td class="text-left"> 
+                ${element.description}          
+                </td>
 
                 
-                <a href="#"  title="Voir le document" id="${element.Id}_view_doc" class="btn_view_doc" style="padding-left: inherit;">
+                <td>
+                <a href="#" title="Mettre à jour le document" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details">
                 <svg aria-hidden="true" focusable="false" data-prefix="far" 
-                data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
-                role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                <path fill="currentColor" d="M160 256C160 185.3 217.3 128 288 128C358.7 128 416 185.3 416 256C416 326.7 358.7 384 288 384C217.3 384 160 326.7 160 256zM288 336C332.2 336 368 300.2 368 256C368 211.8 332.2 176 288 176C287.3 176 286.7 176 285.1 176C287.3 181.1 288 186.5 288 192C288 227.3 259.3 256 224 256C218.5 256 213.1 255.3 208 253.1C208 254.7 208 255.3 208 255.1C208 300.2 243.8 336 288 336L288 336zM95.42 112.6C142.5 68.84 207.2 32 288 32C368.8 32 433.5 68.84 480.6 112.6C527.4 156 558.7 207.1 573.5 243.7C576.8 251.6 576.8 260.4 573.5 268.3C558.7 304 527.4 355.1 480.6 399.4C433.5 443.2 368.8 480 288 480C207.2 480 142.5 443.2 95.42 399.4C48.62 355.1 17.34 304 2.461 268.3C-.8205 260.4-.8205 251.6 2.461 243.7C17.34 207.1 48.62 156 95.42 112.6V112.6zM288 80C222.8 80 169.2 109.6 128.1 147.7C89.6 183.5 63.02 225.1 49.44 256C63.02 286 89.6 328.5 128.1 364.3C169.2 402.4 222.8 432 288 432C353.2 432 406.8 402.4 447.9 364.3C486.4 328.5 512.1 286 526.6 256C512.1 225.1 486.4 183.5 447.9 147.7C406.8 109.6 353.2 80 288 80V80z">
-                </path></svg>
-                
-                </a>
-            
-                 </td>
-                 
-                `;
+                data-icon="pen-to-square" class="svg-inline--fa fa-pen-to-square fa-icon fa-2x" 
+                role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path fill="currentColor" d="M373.1 24.97C401.2-3.147 446.8-3.147 474.9 24.97L487 37.09C515.1 65.21 515.1 110.8 487 138.9L289.8 336.2C281.1 344.8 270.4 351.1 258.6 354.5L158.6 383.1C150.2 385.5 141.2 383.1 135 376.1C128.9 370.8 126.5 361.8 128.9 353.4L157.5 253.4C160.9 241.6 167.2 230.9 175.8 222.2L373.1 24.97zM440.1 58.91C431.6 49.54 416.4 49.54 407 58.91L377.9 88L424 134.1L453.1 104.1C462.5 95.6 462.5 80.4 453.1 71.03L440.1 58.91zM203.7 266.6L186.9 325.1L245.4 308.3C249.4 307.2 252.9 305.1 255.8 302.2L390.1 168L344 121.9L209.8 256.2C206.9 259.1 204.8 262.6 203.7 266.6zM200 64C213.3 64 224 74.75 224 88C224 101.3 213.3 112 200 112H88C65.91 112 48 129.9 48 152V424C48 446.1 65.91 464 88 464H360C382.1 464 400 446.1 400 424V312C400 298.7 410.7 288 424 288C437.3 288 448 298.7 448 312V424C448 472.6 408.6 512 360 512H88C39.4 512 0 472.6 0 424V152C0 103.4 39.4 64 88 64H200z"></path></svg></a>
+
+
+
+               <a href="#"  title="Voir le document" id="${element.Id}_view_doc" class="btn_view_doc" style="padding-left: inherit;">
+               <svg aria-hidden="true" focusable="false" data-prefix="far" 
+               data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
+               role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+               <path fill="currentColor" d="M160 256C160 185.3 217.3 128 288 128C358.7 128 416 185.3 416 256C416 326.7 358.7 384 288 384C217.3 384 160 326.7 160 256zM288 336C332.2 336 368 300.2 368 256C368 211.8 332.2 176 288 176C287.3 176 286.7 176 285.1 176C287.3 181.1 288 186.5 288 192C288 227.3 259.3 256 224 256C218.5 256 213.1 255.3 208 253.1C208 254.7 208 255.3 208 255.1C208 300.2 243.8 336 288 336L288 336zM95.42 112.6C142.5 68.84 207.2 32 288 32C368.8 32 433.5 68.84 480.6 112.6C527.4 156 558.7 207.1 573.5 243.7C576.8 251.6 576.8 260.4 573.5 268.3C558.7 304 527.4 355.1 480.6 399.4C433.5 443.2 368.8 480 288 480C207.2 480 142.5 443.2 95.42 399.4C48.62 355.1 17.34 304 2.461 268.3C-.8205 260.4-.8205 251.6 2.461 243.7C17.34 207.1 48.62 156 95.42 112.6V112.6zM288 80C222.8 80 169.2 109.6 128.1 147.7C89.6 183.5 63.02 225.1 49.44 256C63.02 286 89.6 328.5 128.1 364.3C169.2 402.4 222.8 432 288 432C353.2 432 406.8 402.4 447.9 364.3C486.4 328.5 512.1 286 526.6 256C512.1 225.1 486.4 183.5 447.9 147.7C406.8 109.6 353.2 80 288 80V80z">
+               </path></svg>
+
+               </a>
+
+                </td>
+              
+               `;
+
 
                 await sp.web.lists.getByTitle("Documents")
                   .items
@@ -1442,31 +1504,31 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       .forEach(attachmentItem => {
                         pdfName = attachmentItem.FileName;
                         urlFile = attachmentItem.ServerRelativeUrl;
-                 
-
-                     
                       });
+
+
+
                   })
+
 
                   .then(async () => {
 
-                    html_document += `
-                        
+                    // var table = $('#tbl_documents').DataTable({
+                    //   responsive: true,
+                    // });
 
-                    <td class="text-left">${urlFile}</td>
-                   
-                    
-                    </tr>`;
+                    // $('#tbl_documents tbody').on('click', '.btn_view_doc', async function () {
+                    //   var data = table.row($(this).parents('tr')).data();
+                    //   window.open(`${urlFile}`, '_blank');
+                    // });
+
 
 
                     //sey nuvo
 
                     {
-                
+
                     }
-
-
-
 
 
                     const btn_view_doc = document.getElementById(element.Id + '_view_doc');
@@ -1474,9 +1536,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
 
-                    // await btn_view_doc?.addEventListener('click', async () => {
-                    //   window.open(`${urlFile}`, '_blank');
-                    // });
+                    await btn_view_doc?.addEventListener('click', async () => {
+                      window.open(`${urlFile}`, '_blank');
+                    });
 
 
 
@@ -1506,9 +1568,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                             });
                         })
 
-
                       console.log(itemDoc);
-
 
 
                       const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents').items.select("FolderID,Title").filter("FolderID eq '" + itemDoc.ParentID + "'").getAll();
@@ -1544,6 +1604,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       $("#table_documents").css("display", "none");
                       $("#h2_title").text(element.Title);
                       $("#nav_file").css("display", "block");
+
 
                       //   $("#input_type_doc").val(element.parentID + "_" + titleFolder);
                       // $("#input_type_doc").val(element.ParentID);
@@ -1785,6 +1846,72 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       }
 
 
+                      //so bne lezot versions
+                      {
+                        //display so table
+                        // $("#table_version_doc").css("display", "block");
+
+                        var html_document_versions: string = ``;
+                        var response_doc_versions = null;
+                        var value1 = "FALSE";
+
+                        var document_versions_container: Element = document.getElementById("tbl_documents_versions_bdy");
+                        document_versions_container.innerHTML = "";
+
+                        const all_documents_versions: any[] = await sp.web.lists.getByTitle('Documents').items
+                          .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+                          .filter("Title eq '" + itemDoc.Title + "' and IsFolder eq '" + value1 + "'")
+                          .get();
+
+                        response_doc_versions = all_documents_versions;
+
+                        if (response_doc_versions.length > 0) {
+                          $("#table_version_doc").css("display", "block");
+                          await response_doc_versions.forEach(async (element_version) => {
+
+
+                            html_document_versions += `
+                            <tr>
+                            <td class="text-left">${element_version.Id}</td>
+            
+                            <td class="text-left">${element_version.Title}</td>
+            
+                            <td class="text-left"> 
+                            ${element_version.revision}          
+                            </td>
+            
+                            
+                            <td>
+
+                           <a href="#"  title="Voir le document" id="${element_version.Id}_view_doc_version" class="btn_view_doc" style="padding-left: inherit;">
+                           <svg aria-hidden="true" focusable="false" data-prefix="far" 
+                           data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
+                           role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                           <path fill="currentColor" d="M160 256C160 185.3 217.3 128 288 128C358.7 128 416 185.3 416 256C416 326.7 358.7 384 288 384C217.3 384 160 326.7 160 256zM288 336C332.2 336 368 300.2 368 256C368 211.8 332.2 176 288 176C287.3 176 286.7 176 285.1 176C287.3 181.1 288 186.5 288 192C288 227.3 259.3 256 224 256C218.5 256 213.1 255.3 208 253.1C208 254.7 208 255.3 208 255.1C208 300.2 243.8 336 288 336L288 336zM95.42 112.6C142.5 68.84 207.2 32 288 32C368.8 32 433.5 68.84 480.6 112.6C527.4 156 558.7 207.1 573.5 243.7C576.8 251.6 576.8 260.4 573.5 268.3C558.7 304 527.4 355.1 480.6 399.4C433.5 443.2 368.8 480 288 480C207.2 480 142.5 443.2 95.42 399.4C48.62 355.1 17.34 304 2.461 268.3C-.8205 260.4-.8205 251.6 2.461 243.7C17.34 207.1 48.62 156 95.42 112.6V112.6zM288 80C222.8 80 169.2 109.6 128.1 147.7C89.6 183.5 63.02 225.1 49.44 256C63.02 286 89.6 328.5 128.1 364.3C169.2 402.4 222.8 432 288 432C353.2 432 406.8 402.4 447.9 364.3C486.4 328.5 512.1 286 526.6 256C512.1 225.1 486.4 183.5 447.9 147.7C406.8 109.6 353.2 80 288 80V80z">
+                           </path></svg>
+            
+                           </a>
+            
+                            </td>
+                          
+                           `;
+
+
+
+                          });
+
+
+                        }
+
+                        document_versions_container.innerHTML += html_document_versions;
+
+
+
+
+                      }
+
+
+
 
                     });
 
@@ -1814,21 +1941,45 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
                 // <!-- <button id="btn${element.ID}_remove" class='buttoncss' type="button">Voir</button> -->
-
+                // html_document += `
+                // <td class="text-left">${urlFile}</td>
+                // </tr>`;
 
 
               });
+
 
               document_container.innerHTML += html_document;
 
+
+              // var table = $('#tbl_documents').DataTable({
+              //   responsive: true,
+              //   columnDefs: [{
+              //     visible: false,
+              //     targets: [0],
+              //     searchable: false
+              //   }]
+              // });
+
+              // $('#tbl_documents tbody').on('click', '.btn_view_doc', async function () {
+
+              //   var data = table.row($(this).parents('tr')).data();
+              //   window.open(data[3], '_blank');
+
+
+
+              // });
+
+
+
               // $("#tbl_documents").DataTable();
-              $('#tbl_documents').on('click', '.btn_view_doc', (event) => {
-                var data = $("#tbl_documents").DataTable({ retrieve: true }).row($(event.currentTarget).parents('tr')).data();
-                window.open(data[4], '_blank');
-              });
 
 
-              $("#tbl_permission").DataTable();
+              // $('#tbl_documents').on('click', '.btn_view_doc', (event) => {
+              //   var data = $("#tbl_documents").DataTable({ retrieve: true }).row($(event.currentTarget).parents('tr')).data();
+              //   window.open(data[3], '_blank');
+              // });
+
 
 
 
@@ -2238,6 +2389,75 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               $("#doc_details_add").css("display", "none");
             });
           }
+
+          //permission table 
+          //load table permission
+
+          {
+            var response = null;
+            let html: string = ``;
+
+            var permission_container: Element = document.getElementById("tbl_permission");
+            permission_container.innerHTML = "";
+
+
+            const allPermissions: any[] = await sp.web.lists.getByTitle('AccessRights').items.select("ID,groupName,permission,FolderIDId").filter("FolderIDId eq '" + item.id + "'").getAll();
+
+            response = allPermissions;
+
+            console.log(response);
+
+            if (response.length > 0) {
+              await response.forEach(element => {
+
+                html += `
+                               <tr>
+                               <td class="text-left">${element.groupName}</td>
+                               
+                               <td class="text-left"> 
+                               <input type="text" className="form-control" id="permission_value" list='perm' value='${element.permission}'/>
+                               
+                               
+                               <datalist id="perm">
+                               <select class='form-select' name="permissions_render" id="permissions_user_render">
+                               
+                               
+                               <option value="NONE">NONE</option>
+                               <option value="READ">READ</option>
+                               <option value="READ_WRITE">READ_WRITE</option>
+                               <option value="ALL">ALL</option>
+                               </select>
+                               
+                               </datalist>
+                               
+                               </td>
+                               
+                               <td>
+                               <button id="btn${element.ID}_edit" class='buttoncss' type="button">CHANGER</button>
+                               
+                               
+                               </td>
+                               </tr>
+                               `;
+
+              });
+
+
+              permission_container.innerHTML += html;
+
+              $("#spListPermissions").css("display", "block");
+
+
+            }
+            else {
+
+
+
+            }
+
+
+          }
+
 
 
 
