@@ -33,7 +33,6 @@ import { SPComponentLoader } from '@microsoft/sp-loader';
 import 'datatables.net';
 SPComponentLoader.loadCss('https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css');
 import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
 import { degrees, PDFDocument, radians, rgb, rotateDegrees, rotateRadians, StandardFonts, } from 'pdf-lib/cjs/api';
 import 'downloadjs';
 import * as download from 'downloadjs';
@@ -41,6 +40,10 @@ import "@pnp/sp/security/web";
 import "@pnp/sp/site-users/web";
 import { IList } from "@pnp/sp/lists";
 import { PermissionKind } from "@pnp/sp/security";
+// import Button from 'react-bootstrap/Button';
+// import Modal from 'react-bootstrap/Modal';
+import * as moment from 'moment';
+
 
 
 // import {
@@ -114,9 +117,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     // this._getLinks(sp);
     this.render();
-
-    $("#h2_folderName").text("Gestion Documentaire");
-
 
 
 
@@ -657,13 +657,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var x = this.getItemId();
 
-
     console.log("ITEM TO EXPAND", this.getItemId());
+
+    // $("#h2_folderName").text("Gestion Documentaire");
 
     return (
 
       // <div className={styles.myGedTreeView}>
-
 
       <div className="container-fluid" style={{ height: "100vh" }}>
 
@@ -684,6 +684,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     showCheckboxes={false}
                     treeItemActionsDisplayMode={TreeItemActionsDisplayMode.Buttons}
                     onSelect={this.onSelect}
+                    
                     onExpandCollapse={this.onTreeItemExpandCollapse}
                     onRenderItem={this.renderCustomTreeItem}
                     // defaultSelectedKeys={[parseInt(this.getItemId())]}
@@ -696,11 +697,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 </div>
               </div>
 
-
             </div>
-
-
-
           </div>
 
           <div className="col-sm-9">
@@ -723,35 +720,45 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 <nav aria-label="breadcrumb" id='nav_file'>
                   <ul className="breadcrumb">
-                    <li className="breadcrumb-item"><a href="#" role="button" title="Mettre à jour le document" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.load_folders(); $("#edit_cancel_doc").css("display", "block"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" title="Mettre à jour le document" onClick={async (event: React.MouseEvent<HTMLElement>) => {
+                      await this.load_folders(); $("#access_form").css("display", "none");
+                      $("#doc_form").css("display", "block");
+                      $("#doc_details").css("display", "block");
+                      $("#table_documents").css("display", "none");
+                      $("#nav_file").css("display", "block");
+                      $("#notifications_doc_form").css("display", "none");
+                    }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                     <li className="breadcrumb-item" id='view_doc'></li>
-                    <li className="breadcrumb-item"><a href="#" role="button" title="Autorisation sur le document" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.getSiteUsers(); await this.getSiteGroups(); $("#access_rights_form").css("display", "block"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    {/* <li className="breadcrumb-item"><a href="#" role="button" title="Autorisation sur le document" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.getSiteUsers(); await this.getSiteGroups(); $("#doc_form_access_rights").css("display", "block"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li> */}
+
+                    <li className="breadcrumb-item"><a href="#" title="Autorisation sur le document" role="button" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.getSiteUsers(); this.getSiteGroups(); $("#table_documents").css("display", "none"); $("#access_rights_form").css("display", "block"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "none"); $("#doc_details").css("display", "none"); $("#table_version_doc").css("display", "none"); $(".dossier_headers").css("display", "none"); $("#access_form").css("display", "block"); $("#notifications_doc_form").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+
                     <li className="breadcrumb-item" id='download_doc'></li>
                     <li className="breadcrumb-item" id='delete_document'></li>
-                    <li className="breadcrumb-item"><a href="#" role="button" title="Notifier" ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    <li className="breadcrumb-item"><a href="#" role="button" title="Notifier" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.getSiteUsers(); this.getSiteGroups(); $("#table_documents").css("display", "none"); $("#access_rights_form").css("display", "block"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "none"); $("#doc_details").css("display", "none"); $("#table_version_doc").css("display", "none"); $(".dossier_headers").css("display", "none"); $("#access_form").css("display", "none"); $("#notifications_doc_form").css("display", "block"); }} ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+
 
                   </ul>
 
                 </nav>
 
 
+                {<div id="doc_details">
 
-                <div id="doc_details">
+                  <legend>Détails</legend>
 
                   <div className="row">
-                    {/* <div className="col-6">
-          <Label>Title
-            <input type="text" className="form-control" id="input_title" />
-          </Label>
-        </div> */}
+
                     <div className="col-6">
-                      <Label>Document Number
-                        <input type="text" id='input_number' className='form-control' />
+                      <Label>Nom du fichier
+                        <input type="text" id='input_number' className='form-control' disabled />
                       </Label>
                     </div>
+
+
                     <div className="col-6">
                       <Label>Dossier
-                        <input type="text" className="form-control" id="input_type_doc" list='folders' />
+                        <input type="text" className="form-control" id="input_type_doc" list='folders' disabled />
 
                         <datalist id="folders">
                           <select id="select_folders"></select>
@@ -759,43 +766,112 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       </Label>
                     </div>
 
+                    {/* 
+                    <div className="col-6">
+                      <Label>Dossier
+                        <input type="text" className="form-control form-control-lg" id="input_type_doc" list='folders' disabled />
+
+                        <datalist id="folders">
+                          <select id="select_folders"></select>
+                        </datalist>
+                      </Label>
+                    </div> */}
+
                   </div>
 
                   <div className="row">
-                    <div className="col-3">
+                    <div className="col-8">
+                      <Label>
+                        Description
+                        <textarea id='input_description' className='form-control' rows={2} />
+                      </Label>
+                    </div>
+                    <div className="col-4">
+                      <Label>
+                        Mots-clés
+                        <textarea id='input_keywords' className='form-control' rows={2} />
+                      </Label>
+                    </div>
+
+                  </div>
+
+                  <div className='row'>
+                    <div className="col-4">
+                      <Label>
+                        Review Date
+                        <input type="text" id='input_reviewDate' className='form-control' disabled />
+                      </Label>
+                    </div>
+
+                    <div className="col-4">
+                      <Label>
+                        Owner
+                        <input type="text" id='created_by' className='form-control' disabled />
+                      </Label>
+                    </div>
+
+                    <div className="col-4">
+                      <Label>
+                        Date de création
+                        <input type="text" id='creation_date' className='form-control' disabled />
+                      </Label>
+                    </div>
+
+
+                  </div>
+
+                  <legend>Détails de dernière mise à jour</legend>
+
+                  <div className="row">
+
+                    <div className="col-8">
                       <Label>
                         Revision
                         <input type="text" id='input_revision' className='form-control' />
                       </Label>
                     </div>
-                    <div className="col-3">
+
+                    <div className="col-4">
                       <Label>
                         Status
-                        <input type="text" id='input_status' className='form-control' />
+                        <input type="text" id='input_status' className='form-control' hidden />
                       </Label>
                     </div>
+
                     <div className="col-3">
                       <Label>
                         Owner
                         <input type="text" id='input_owner' className='form-control' />
                       </Label>
                     </div>
+
                     <div className="col-3">
                       <Label>
                         Active Date
                         <input type="text" id='input_activeDate' className='form-control' />
                       </Label>
                     </div>
+
                   </div>
 
                   <div className="row">
-                    <div className="col-6">
+
+
+                    <div className="col-4">
+                      <Label>Fichier
+                        <input type="file" name="file" id="file_ammendment_update" className="form-control" />
+                      </Label>
+
+                    </div>
+
+                    <div className="col-4">
                       <Label>
                         Filename
-                        <input type="text" id='input_filename' className='form-control' />
+                        <input type="text" id='input_filename' className='form-control' disabled />
                       </Label>
                     </div>
-                    <div className="col-6">
+
+                    <div className="col-4">
                       <Label>
                         Author
                         <input type="text" id='input_author' className='form-control' />
@@ -804,26 +880,26 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   </div>
 
-                  <div className="row">
-                    <div className="col-5">
-                      <Label>
-                        Description
-                        <textarea id='input_description' className='form-control' rows={2} />
-                      </Label>
-                    </div>
+                  <div className='row'>
+
                     <div className="col-4">
                       <Label>
-                        Keywords
-                        <textarea id='input_keywords' className='form-control' rows={2} />
+                        Updated
+                        <input type="text" id='updated_by' className='form-control' disabled />
                       </Label>
                     </div>
-                    <div className="col-3">
+
+                    <div className="col-4">
                       <Label>
-                        Review Date
-                        <input type="text" id='input_reviewDate' className='form-control' />
+                        Date
+                        <input type="text" id='updated_time' className='form-control' disabled />
                       </Label>
                     </div>
+
+
                   </div>
+
+
 
                   <div className="row">
                     <div className="col-8">
@@ -840,10 +916,156 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   </div>
 
-                </div>
+                </div>}
+
+
+
+
+
+                {/* <div id="doc_form_access_rights">
+
+
+                  <div className="row">
+
+                    <div className="col-6">
+                      <Label>Ajouter un droit d'accès utilisateur
+
+                        <input type="text" className="form-control" id="users_name" list='users' />
+
+                        <datalist id="users">
+                          <select id="select_users"></select>
+                        </datalist>
+                      </Label>
+                    </div>
+
+
+                    <div className="col-3">
+                      <Label> Type
+                        <select className='form-select' name="permissions" id="permissions_user">
+                          <option value="NONE">NONE</option>
+                          <option value="READ">READ</option>
+                          <option value="READ_WRITE">READ_WRITE</option>
+                          <option value="ALL">ALL</option>
+                        </select>
+                      </Label>
+                    </div>
+                    <div className="col-3" id="add_btn_user">
+                    </div>
+                  </div>
+
+                  <div className="row">
+
+
+                    <div className="col-6">
+                      <Label>Ajouter un droit d'accès de groupe
+                        <input type="text" className="form-control" id="group_name" list='groups' />
+
+                        <datalist id="groups">
+                          <select id="select_groups"></select>
+                        </datalist>
+                      </Label>
+                    </div>
+
+
+                    <div className="col-3">
+                      <Label> Type
+                        <select className='form-select' name="permissions" id="permissions_group">
+                          <option value="NONE">NONE</option>
+                          <option value="READ">READ</option>
+                          <option value="READ_WRITE">READ_WRITE</option>
+                          <option value="ALL">ALL</option>
+                        </select>
+                      </Label>
+                    </div>
+                    <div className="col-3" id="add_btn_group">
+                    </div>
+                  </div>
+
+                  <div className='row'>
+                    <div id="spListPermissions">
+                      <table id='tbl_permission' className='table table-striped'>
+                        <thead>
+                          <tr>
+                            <th className="text-left">Nom</th>
+                            <th className="text-left" >Droits d'accès</th>
+                            <th className="text-left" >Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbl_permission_bdy">
+
+
+
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div> */}
+
 
                 <div id="doc_permission"></div>
-                <div id="doc_notif"></div>
+
+
+                <div id="notifications_doc_form">
+
+
+                  <h3>Notification</h3>
+                  <div className="row">
+
+                    <div className="col-6">
+                      <Label>Ajouter une notification utilisateur :
+
+                        <input type="text" className="form-control" id="users_name_notif" list='users' />
+
+                        <datalist id="users">
+                          <select id="select_users"></select>
+                        </datalist>
+                      </Label>
+                    </div>
+
+
+
+                    <div className="col-3" id="add_notif_btn_user_doc">
+                    </div>
+                  </div>
+
+                  <div className="row">
+
+
+                    <div className="col-6">
+                      <Label>Ajouter une notification de groupe :
+                        <input type="text" className="form-control" id="group_name" list='groups' />
+
+                        <datalist id="groups">
+                          <select id="select_groups"></select>
+                        </datalist>
+                      </Label>
+                    </div>
+
+
+                    <div className="col-3" id="add_notif_btn_group_doc">
+                    </div>
+                  </div>
+
+                  <div className='row'>
+                    <div id="spListPermissions">
+                      <table id='tbl_permission' className='table table-striped'>
+                        <thead>
+                          <tr>
+                            <th className="text-left">Nom</th>
+                            <th className="text-left" >Droits d'accès</th>
+                            <th className="text-left" >Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbl_permission_bdy">
+
+
+
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
 
                 <div id='table_version_doc'>
 
@@ -856,7 +1078,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                           <th className="text-left">Nom du document</th>
                           <th className="text-left" >Version</th>
 
-                          <th className="text-left" >Actions</th>
+                          <th className="text-right" >Actions</th>
                         </tr>
                       </thead>
                       <tbody id="tbl_documents_versions_bdy">
@@ -870,32 +1092,63 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 </div>
 
+                <div className="modal fade right" id="exampleModalPreview" tabIndex={-1} role="dialog"
+                  aria-labelledby="exampleModalPreviewLabel" aria-hidden="true" data-backdrop="false">
+                  <div className="modal-dialog-full-width modal-dialog momodel modal-fluid" role="document">
+                    <div className="modal-content-full-width modal-content">
+                      <div className=" modal-header-full-width   modal-header text-center">
+                        <h5 className="modal-title w-100" id="exampleModalPreviewLabel">Contract</h5>
+                        <button type="button" className="close " data-dismiss="modal" aria-label="Close">
+
+                        </button>
+                      </div>
+                      <div className="modal-body">
+                        <div id="iframe_word"></div>
+
+                      </div>
+                      <div className="modal-footer-full-width  modal-footer">
+                        <button type="button" className="btn btn-danger btn-md btn-rounded"
+                          data-dismiss="modal">Close</button>
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
 
               </div>
 
               <div id="access_form">
-                <div className="container">
-                  <div className="image">
-                    <img src='https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/flower.png' />
-                    <h2 id='h2_folderName'>
-                    </h2>
+
+                <div className="dossier_headers">
+                  <div className="container">
+                    <div className="image">
+                      <img src='https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/flower.png' />
+                      <h2 id='h2_folderName'>
+                        Gestion Documentaire
+                      </h2>
+                    </div>
+
                   </div>
+
+
+                  <nav aria-label="breadcrumb" id='nav'>
+                    <ul className="breadcrumb" id="folder_nav">
+                      <li className="breadcrumb-item"><a href="#" title="Mettre à jour le dossier" role="button" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.load_folders(); $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "block"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                      <li className="breadcrumb-item"><a href="#" title="Créer un document" role="button" id='add_document' onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "block"); }}><FontAwesomeIcon icon={faFile} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                      <li className="breadcrumb-item"><a href="#" title="Autorisation sur le dossier" role="button" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.getSiteUsers(); this.getSiteGroups(); $("#table_documents").css("display", "none"); $("#access_rights_form").css("display", "block"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                      <li className="breadcrumb-item"><a href="#" title="Ajouter des sous-dossiers" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); $("#edit_details").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faFolderPlus} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                      <li className="breadcrumb-item" id='bouton_delete'></li>
+
+                      {/* <li className="breadcrumb-item" id='bouton_delete'><a href="#" title="Supprimer" role="button" id='delete_folder'><FontAwesomeIcon icon={faTrashCan} className="fa-icon fa-2x"></FontAwesomeIcon></a></li> */}
+                      <li className="breadcrumb-item"><a href="#" title="Notifier" role="button" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.getSiteUsers(); this.getSiteGroups(); $("#table_documents").css("display", "none"); $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "none"); }} ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                    </ul>
+                  </nav>
 
                 </div>
 
 
-                <nav aria-label="breadcrumb" id='nav'>
-                  <ul className="breadcrumb" id="folder_nav">
-                    <li className="breadcrumb-item"><a href="#" title="Mettre à jour le dossier" role="button" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.load_folders(); $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "block"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                    <li className="breadcrumb-item"><a href="#" title="Créer un document" role="button" id='add_document' onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "block"); }}><FontAwesomeIcon icon={faFile} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                    <li className="breadcrumb-item"><a href="#" title="Autorisation sur le dossier" role="button" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.getSiteUsers(); this.getSiteGroups(); $("#table_documents").css("display", "none"); $("#access_rights_form").css("display", "block"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faLock} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                    <li className="breadcrumb-item"><a href="#" title="Ajouter des sous-dossiers" role="button" onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#subfolders_form").css("display", "block"); $("#edit_details").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faFolderPlus} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                    <li className="breadcrumb-item" id='bouton_delete'></li>
 
-                    {/* <li className="breadcrumb-item" id='bouton_delete'><a href="#" title="Supprimer" role="button" id='delete_folder'><FontAwesomeIcon icon={faTrashCan} className="fa-icon fa-2x"></FontAwesomeIcon></a></li> */}
-                    <li className="breadcrumb-item"><a href="#" title="Notifier" role="button" ><FontAwesomeIcon icon={faBell} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                  </ul>
-                </nav>
 
                 <h4 id='alert_0_doc'>Veuillez sélectionner un sous répertoire</h4>
 
@@ -1038,6 +1291,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 </div>
 
+
+
+
+
                 <div id='table_documents'>
 
                   <div id="spListDocuments">
@@ -1049,7 +1306,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                           <th className="text-left">Nom du document</th>
                           <th className="text-left" >Description</th>
 
-                          <th className="text-left" >Actions</th>
+                          <th className="text-right" >Actions</th>
                         </tr>
                       </thead>
                       <tbody id="tbl_documents_bdy">
@@ -1081,116 +1338,115 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                 </div>
 
-                <div id="doc_details_add">
+                {
+                  <div id="doc_details_add">
 
-                  <div className="row">
-                    {/* <div className="col-6">
-<Label>Title
-    <input type="text" className="form-control" id="input_title_add" />
-</Label>
-</div> */}
-                    <div className="col-6">
-                      <Label>Nom du fichier
-                        <input type="text" id='input_doc_number_add' className='form-control' />
-                      </Label>
-                    </div>
+                    <div className="row">
+
+                      <div className="col-6">
+                        <Label>Nom du fichier
+                          <input type="text" id='input_doc_number_add' className='form-control' required />
+                        </Label>
+                      </div>
 
 
-                    <div className="col-6">
-                      <Label>Fichier
-                        <input type="file" name="file" id="file_ammendment" className="form-control" />
-                      </Label>
+                      <div className="col-6">
+                        <Label>Fichier
+                          <input type="file" name="file" id="file_ammendment" className="form-control" />
+                        </Label>
 
-                      {/* <Form.Group controlId="formFile" className="mb-3">
-            <Form.Label>Fichier</Form.Label>
-            <Form.Control type="file" />
-          </Form.Group> */}
+
+                      </div>
 
                     </div>
 
-                  </div>
-
-                  <div className="row">
-                    <div className="col-3">
-                      <Label>
-                        Revision
-                        <input type="text" id='input_revision_add' className='form-control' />
-                      </Label>
-                    </div>
-                    <div className="col-3">
-                      <Label>
-                        Status
-                        <input type="text" id='input_status_add' className='form-control' />
-                      </Label>
-                    </div>
-                    <div className="col-3">
-                      <Label>
-                        Owner
-                        <input type="text" id='input_owner_add' className='form-control' />
-                      </Label>
-                    </div>
-                    <div className="col-3">
-                      <Label>
-                        Active Date
-                        <input type="text" id='input_activeDate_add' className='form-control' />
-                      </Label>
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <div className="col-6">
-                      <Label>
-                        Filename
-                        <input type="text" id='input_filename_add' className='form-control' />
-                      </Label>
-                    </div>
-                    <div className="col-6">
-                      <Label>
-                        Author
-                        <input type="text" id='input_author_add' className='form-control' />
-                      </Label>
+                    <div className="row">
+                      <div className="col-3">
+                        <Label>
+                          Revision
+                          <input type="text" id='input_revision_add' className='form-control' />
+                        </Label>
+                      </div>
+                      <div className="col-3">
+                        <Label>
+                          Status
+                          <input type="text" id='input_status_add' className='form-control' />
+                        </Label>
+                      </div>
+                      <div className="col-3">
+                        <Label>
+                          Owner
+                          <input type="text" id='input_owner_add' className='form-control' />
+                        </Label>
+                      </div>
+                      <div className="col-3">
+                        <Label>
+                          Active Date
+                          <input type="text" id='input_activeDate_add' className='form-control' />
+                        </Label>
+                      </div>
                     </div>
 
-                  </div>
-
-                  <div className="row">
-                    <div className="col-5">
-                      <Label>
-                        Description
-                        <textarea id='input_description_add' className='form-control' rows={2} />
-                      </Label>
-                    </div>
-                    <div className="col-4">
-                      <Label>
-                        Mots-clés
-                        <textarea id='input_keywords_add' className='form-control' rows={2} />
-                      </Label>
-                    </div>
-                    <div className="col-3">
-                      <Label>
-                        Review Date
-                        <input type="text" id='input_reviewDate_add' className='form-control' />
-                      </Label>
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <div className="col-8">
-
-                    </div>
-                    <div className="col-2" id="add_document_btn">
-
-
+                    <div className="row">
+                      <div className="col-6">
+                        <Label>
+                          Filename
+                          <input type="text" id='input_filename_add' className='form-control' disabled />
+                        </Label>
+                      </div>
+                      <div className="col-6">
+                        <Label>
+                          Author
+                          <input type="text" id='input_author_add' className='form-control' />
+                        </Label>
+                      </div>
 
                     </div>
 
-                    <div className="col-2">
-                      <button type="button" className="btn btn-primary" id='cancel_doc'>Annuler</button>
+                    <div className="row">
+                      <div className="col-5">
+                        <Label>
+                          Description
+                          <textarea id='input_description_add' className='form-control' rows={2} />
+                        </Label>
+                      </div>
+                      <div className="col-4">
+                        <Label>
+                          Mots-clés
+                          <textarea id='input_keywords_add' className='form-control' rows={2} />
+                        </Label>
+                      </div>
+                      <div className="col-3">
+                        <Label>
+                          Review Date
+                          <input type="text" id='input_reviewDate_add' className='form-control' />
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="col-8">
+
+                      </div>
+                      <div className="col-2" id="add_document_btn">
+
+
+
+                      </div>
+
+                      <div className="col-2">
+                        <button type="button" className="btn btn-primary" id='cancel_doc'>Annuler</button>
+                      </div>
+
                     </div>
 
                   </div>
 
-                </div>
+                }
+
+
+
+
 
               </div>
 
@@ -1207,7 +1463,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
   }
-
 
   private async load_folders() {
 
@@ -1310,9 +1565,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private onSelect(items: ITreeItem[]) {
 
+
+  
     items.forEach(async (item) => {
 
       $("#h2_folderName").text(item.label);
+ 
 
     });
 
@@ -1332,15 +1590,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async onTreeItemExpandCollapse(item: ITreeItem, isExpanded: boolean) {
     console.log((isExpanded ? "Item expanded: " : "Item collapsed: ") + item.label);
-    console.log(item.key);
-    console.log(item.key);
 
     if (isExpanded) {
+
+      //display
+
+
+      $("#h2_folderName").text(item.label);
 
 
     }
 
-    $("#text").text(item.label);
+
   }
 
 
@@ -1362,10 +1623,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           {
             $("#access_form").css("display", "block");
             $("#doc_form").css("display", "none");
+            $(".dossier_headers").css("display", "block");
 
             $("#subfolders_form").css("display", "none");
 
             $("#access_rights_form").css("display", "none");
+            $("#notifications_doc_form").css("display", "none");
 
             $("#doc_details_add").css("display", "none");
             $("#edit_details").css("display", "none");
@@ -1479,7 +1742,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
 
-               <a href="#"  title="Voir le document" id="${element.Id}_view_doc" class="btn_view_doc" style="padding-left: inherit;">
+               <a href="#"  title="Voir le document" id="${element.Id}_view_doc"  class="btn_view_doc" style="padding-left: inherit;">
                <svg aria-hidden="true" focusable="false" data-prefix="far" 
                data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
                role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
@@ -1513,16 +1776,21 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   .then(async () => {
 
-                    // var table = $('#tbl_documents').DataTable({
-                    //   responsive: true,
-                    // });
+                    {
+                      // $(".btn_view_doc").attr("oncontextmenu","return false;");
 
-                    // $('#tbl_documents tbody').on('click', '.btn_view_doc', async function () {
-                    //   var data = table.row($(this).parents('tr')).data();
-                    //   window.open(`${urlFile}`, '_blank');
-                    // });
+                      // var table = $('#tbl_documents').DataTable({
+                      //   responsive: true,
+                      // });
+
+                      // $('#tbl_documents tbody').on('click', '.btn_view_doc', async function () {
+                      //   var data = table.row($(this).parents('tr')).data();
+                      //   window.open(`${urlFile}`, '_blank');
+                      // });
 
 
+
+                    }
 
                     //sey nuvo
 
@@ -1536,14 +1804,27 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
 
-                    await btn_view_doc?.addEventListener('click', async () => {
-                      window.open(`${urlFile}`, '_blank');
+                    await btn_view_doc?.addEventListener('click', async (event) => {
+
+
+                      $(".modal").css("display", "block");
+                      window.open(`${urlFile}#toolbar=0`, '_blank');
+                      // window.addEventListener("contextmenu", function (e) {
+                      //   e.preventDefault();
+                      // }, false);
+
                     });
 
 
 
                     //view details_doc
                     await btn_view_doc_details?.addEventListener('click', async () => {
+
+
+                      window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.Id}`, '_blank');
+                      //   window.location.replace(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
+
+                      //    window.history.pushState("data", "Title", `https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
 
                       var urlFile_download = '';
                       var titleFolder = '';
@@ -1566,7 +1847,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                               pdfNameDownload = attachmentItem.FileName;
                               urlFile_download = attachmentItem.ServerRelativeUrl;
                             });
-                        })
+                        });
 
                       console.log(itemDoc);
 
@@ -1593,6 +1874,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       // $("#input_reviewDate").val(item1.);
                       $("#input_keywords").val(itemDoc.keywords);
                       $("#input_description").val(itemDoc.description);
+                      $("#created_by").val(itemDoc.owner);
+
+                      $("#updated_by").val(itemDoc.updateBy);
+                      $("#updated_time").val(itemDoc.updatedDate);
+
+                      //   $("#creation_date").val(itemDoc.Created);
+                      $("#creation_date").val(itemDoc.createdDate);
+
 
 
 
@@ -1667,6 +1956,145 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                       }
 
+                      //azoute permission
+                      {
+                        //add permission user
+
+
+                        var add_user_permission_container: Element = document.getElementById("add_btn_user");
+
+                        let add_btn_user_permission: string = `
+      <button type="button" class="btn btn-primary add_group mb-2" id=${itemDoc.Id}_add_user>Ajouter</button>
+      `;
+
+                        add_user_permission_container.innerHTML = add_btn_user_permission;
+
+                        const btn_add_user = document.getElementById(itemDoc.Id + '_add_user');
+
+                        var peopleID = null;
+
+
+                        await btn_add_user?.addEventListener('click', async () => {
+
+
+
+                          const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
+
+                          const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("Title eq '" + itemDoc.Title + "'").getAll();
+
+
+                          var response_same_doc = allItemsFolder;
+
+                          console.log(response_same_doc);
+
+                          users_Permission = user;
+
+                          console.log("USERS FOR PERMISSION", users_Permission);
+
+
+                          try {
+                            console.log("KEY", item.key);
+
+                            // response_same_doc.forEach(async (x) => {
+
+                            await sp.web.lists.getByTitle("AccessRights").items.add({
+                              Title: itemDoc.Title.toString(),
+                              groupName: $("#users_name").val(),
+                              permission: $("#permissions_user option:selected").val(),
+                              FolderIDId: itemDoc.FolderID.toString(),
+                              PrincipleID: user.Id
+                            })
+                              .then(() => {
+                                // alert("Autorisation ajoutée à ce document avec succès.");
+                              })
+                              .then(() => {
+                                // window.location.reload();
+                              });
+
+                            // });
+
+                            // alert("Autorisation ajoutée à ce document avec succès.");
+                            // window.location.reload();
+                          }
+
+                          catch (e) {
+                            alert("Erreur: " + e.message);
+                          }
+
+
+
+                        });
+
+                      }
+
+                      //permission table 
+                      //load table permission
+
+                      {
+                        var response = null;
+                        let html: string = ``;
+
+                        var permission_container: Element = document.getElementById("tbl_permission");
+                        permission_container.innerHTML = "";
+
+
+                        const allPermissions: any[] = await sp.web.lists.getByTitle('AccessRights').items.select("ID,groupName,permission,FolderIDId").filter("FolderIDId eq '" + itemDoc.Id + "'").getAll();
+
+                        response = allPermissions;
+
+                        console.log(response);
+
+                        if (response.length > 0) {
+                          await response.forEach(element => {
+
+                            html += `
+                               <tr>
+                               <td class="text-left">${element.groupName}</td>
+                               
+                               <td class="text-left"> 
+                               <input type="text" className="form-control" id="permission_value" list='perm' value='${element.permission}'/>
+                               
+                               
+                               <datalist id="perm">
+                               <select class='form-select' name="permissions_render" id="permissions_user_render">
+                               
+                               
+                               <option value="NONE">NONE</option>
+                               <option value="READ">READ</option>
+                               <option value="READ_WRITE">READ_WRITE</option>
+                               <option value="ALL">ALL</option>
+                               </select>
+                               
+                               </datalist>
+                               
+                               </td>
+                               
+                               <td>
+                               <button id="btn${element.ID}_edit" class='buttoncss' type="button"></button>
+                               
+                               
+                               </td>
+                               </tr>
+                               `;
+
+                          });
+
+
+                          permission_container.innerHTML += html;
+
+                          $("#spListPermissions").css("display", "block");
+
+
+                        }
+                        else {
+
+
+
+                        }
+
+
+                      }
+
                       //update doc
                       {
 
@@ -1681,6 +2109,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                         await btn_edit_doc?.addEventListener('click', async () => {
 
+                          let user_current = await sp.web.currentUser();
+
                           let text = $("#input_type_doc").val();
                           const myArray = text.toString().split("_");
                           let parentId = myArray[0];
@@ -1690,16 +2120,32 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                             try {
 
-                              const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc.Id)).update({
+                              const i = await await sp.web.lists.getByTitle('Documents').items.add({
+                                // const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc.Id)).update({
                                 Title: $("#input_number").val(),
                                 description: $("#input_description").val(),
                                 keywords: $("#input_keywords").val(),
                                 doc_number: $("#input_number").val(),
                                 revision: $("#input_revision").val(),
-                                ParentID: parseInt(parentId)
-
-
+                                ParentID: parseInt(parentId),
+                                FolderID: itemDoc.FolderID,
+                                fileName: $("input_filename").val(),
+                                IsFolder: "FALSE",
+                                owner: itemDoc.owner,
+                                updatedBy: user_current.Title,
+                                createdDate: $("#creation_date").val(),
+                                updatedDate: new Date().toLocaleString()
                               })
+                                .then(async (iar) => {
+
+                                  item = iar.data.ID;
+
+                                  const list = sp.web.lists.getByTitle("Documents");
+
+                                  await list.items.getById(iar.data.ID).attachmentFiles.add(filename_add, content_add);
+
+
+                                })
                                 .then(() => {
 
                                   alert("Détails mis à jour avec succès");
@@ -1757,93 +2203,93 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                       //download doc
 
-                      {
-                        var download_doc: Element = document.getElementById("download_doc");
+                      // {
+                      //   var download_doc: Element = document.getElementById("download_doc");
 
 
-                        let nav_html_download_doc: string = '';
+                      //   let nav_html_download_doc: string = '';
 
 
-                        // console.log("ONSELECT", item.label);
+                      //   // console.log("ONSELECT", item.label);
 
-                        nav_html_download_doc = `
-                                        <a href="#" title="Telecharger le document" 
-                                        role="button" id='${itemDoc.Id}_download_doc' >
-                                        <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="download" 
-                                        class="svg-inline--fa fa-download fa-icon fa-2x" role="img" xmlns="http://www.w3.org/2000/svg"
-                                         viewBox="0 0 512 512"><path fill="currentColor" d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zM432 456c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z">
-                                         </path>
-                                         </svg>
-                                        </a>
-                                        
-                                        `;
+                      //   nav_html_download_doc = `
+                      //                   <a href="#" title="Telecharger le document" 
+                      //                   role="button" id='${itemDoc.Id}_download_doc' >
+                      //                   <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="download" 
+                      //                   class="svg-inline--fa fa-download fa-icon fa-2x" role="img" xmlns="http://www.w3.org/2000/svg"
+                      //                    viewBox="0 0 512 512"><path fill="currentColor" d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zM432 456c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z">
+                      //                    </path>
+                      //                    </svg>
+                      //                   </a>
 
-                        download_doc.innerHTML = nav_html_download_doc;
+                      //                   `;
 
-                        const btn_download_doc = document.getElementById(itemDoc.Id + '_download_doc');
+                      //   download_doc.innerHTML = nav_html_download_doc;
 
-                        await btn_download_doc?.addEventListener('click', async () => {
+                      //   const btn_download_doc = document.getElementById(itemDoc.Id + '_download_doc');
 
-                          try {
+                      //   await btn_download_doc?.addEventListener('click', async () => {
 
-                            {
+                      //     try {
 
-
-                              const user = await sp.web.currentUser();
+                      //       {
 
 
-
-                              const dateDownload = Date();
-
-                              const textWatermark = 'Downloaded on ' + dateDownload + ' by ' + user.UserPrincipalName + ' . Unathorized distribution prohibited.';
-
-
-                              //Load PDF
-                              const existingPdfBytes = await fetch(urlFile_download).then(res => res.arrayBuffer());
-                              const pdfDoc = await PDFDocument.load(existingPdfBytes);
-                              console.log('pdfDoc Starting...');
-
-                              const pages = await pdfDoc.getPages();
-
-                              for (const [i, page] of Object.entries(pages)) {
-                                const firstPage = pages[0];
-
-                                const { width, height } = firstPage.getSize();
-
-                                const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-                                const fontSize = 12;
-
-                                page.drawText(textWatermark, {
-                                  x: 35,
-                                  y: 35,
-                                  size: fontSize,
-                                  font: helveticaFont,
-                                  color: rgb(1, 0, 1),
-                                  opacity: 0.4,
-                                  rotate: degrees(55)
-
-                                });
-
-                              }
-
-                              const pdfBytes = await pdfDoc.save();
-
-                              console.log('pdfBytes: ', pdfBytes);
-
-                              download(pdfBytes, [pdfNameDownload], "application/pdf");
-                            }
-
-                          }
-                          catch (e) {
-
-                            alert("Cannot download this file for the following reason: " + e.message);
-                          }
+                      //         const user = await sp.web.currentUser();
 
 
 
-                        });
+                      //         const dateDownload = Date();
 
-                      }
+                      //         const textWatermark = 'Uncontrolled Copy - Downloaded on ' + dateDownload + ' .';
+                      //         //  Uncontrolled Copy - Downloaded on" the you put the date
+
+                      //         //Load PDF
+                      //         const existingPdfBytes = await fetch(urlFile_download).then(res => res.arrayBuffer());
+                      //         const pdfDoc = await PDFDocument.load(existingPdfBytes);
+                      //         console.log('pdfDoc Starting...');
+
+                      //         const pages = await pdfDoc.getPages();
+
+                      //         for (const [i, page] of Object.entries(pages)) {
+                      //           const firstPage = pages[0];
+
+                      //           const { width, height } = firstPage.getSize();
+
+                      //           const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                      //           const fontSize = 16;
+
+                      //           page.drawText(textWatermark, {
+                      //             x: 60,
+                      //             y: 60,
+                      //             size: fontSize,
+                      //             font: helveticaFont,
+                      //             color: rgb(1, 0, 1),
+                      //             opacity: 0.4,
+                      //             rotate: degrees(55)
+
+                      //           });
+
+                      //         }
+
+                      //         const pdfBytes = await pdfDoc.save();
+
+                      //         console.log('pdfBytes: ', pdfBytes);
+
+                      //         download(pdfBytes, [pdfNameDownload], "application/pdf");
+                      //       }
+
+                      //     }
+                      //     catch (e) {
+
+                      //       alert("Cannot download this file for the following reason: " + e.message);
+                      //     }
+
+
+
+                      //   });
+
+                      // }
 
 
                       //so bne lezot versions
@@ -1920,12 +2366,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       $("#doc_form").css("display", "none");
                       $("#access_form").css("display", "block");
                       $("#edit_details").css("display", "none");
+                      $("#access_rights_form").css("display", "none");
+                      $("#notifications_doc_form").css("display", "none");
+                      $(".dossier_headers").css("display", "block");
+
 
                     });
 
                     $("#edit_cancel").click(() => {
 
                       $("#edit_details").css("display", "none");
+
                     });
 
                     //change href value
@@ -1980,17 +2431,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               //   window.open(data[3], '_blank');
               // });
 
-
-
-
-
             }
+
             else {
               $("#alert_0_doc").css("display", "block");
               $("#table_documents").css("display", "none");
             }
-
-
 
           }
 
@@ -1998,6 +2444,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           {
             var fileName = "";
             var content = null;
+
+            var filename_add = "";
+            var content_add = null;
 
             var titleFolder = "";
 
@@ -2062,9 +2511,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               else {
 
               }
-
-
-
 
             });
 
@@ -2142,6 +2588,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             await btn_add_doc?.addEventListener('click', async () => {
 
+              let user_current = await sp.web.currentUser();
+
+              console.log("CURRENT USER", user_current);
+
 
               if ($('#file_ammendment').val() == '') {
 
@@ -2163,8 +2613,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       ParentID: item.key,
                       IsFolder: "FALSE",
                       keywords: $("#input_keywords_add").val(),
-
-
+                      owner: user_current.Title,
+                      createdDate: new Date().toLocaleString()
                     })
                       .then(async (iar) => {
 
@@ -2276,7 +2726,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           }
 
-          //upload file
+          //upload file for new
           {
             $('#file_ammendment').on('change', () => {
               const input = document.getElementById('file_ammendment') as HTMLInputElement | null;
@@ -2292,6 +2742,31 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   fileName = file1.name,
                     content = e.target.result
 
+                  $("#input_filename_add").val(file1.name);
+
+                };
+              })(file);
+
+              reader.readAsArrayBuffer(file);
+            });
+          }
+
+          //upload file for update
+          {
+            $('#file_ammendment_update').on('change', () => {
+              const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
+
+
+              var file = input.files[0];
+              var reader = new FileReader();
+
+              reader.onload = ((file1) => {
+                return (e) => {
+                  console.log(file1.name);
+
+                  filename_add = file1.name,
+                    content_add = e.target.result
+                  $("#input_filename").val(file1.name);
                 };
               })(file);
 
@@ -2303,7 +2778,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           {
             //add permission user
 
-            const all_folders: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("ParentID eq '" + item.key + "'").get();
+            //    const all_folders: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("ParentID eq '" + item.key + "'").get();
 
 
             var add_user_permission_container: Element = document.getElementById("add_btn_user");
@@ -2322,8 +2797,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             await btn_add_user?.addEventListener('click', async () => {
 
               const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
-
-
 
               users_Permission = user;
 
@@ -2381,6 +2854,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             });
           }
+
+
 
           //close doc upload
           {
@@ -2458,17 +2933,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           }
 
-
-
-
-
-
         }
 
         }
+
+        onSelect={async () => {
+
+          this.onSelect(this.state.TreeLinks);
+        }}
+
       >
-
-
 
         {
           < FontAwesomeIcon icon={item.icon} className="fa-icon" ></FontAwesomeIcon >

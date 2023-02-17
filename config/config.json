@@ -17,12 +17,21 @@
           "manifest": "./src/webparts/homepage/HomepageWebPart.manifest.json"
         }
       ]
+    },
+    "doc-details-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/docDetails/DocDetailsWebPart.js",
+          "manifest": "./src/webparts/docDetails/DocDetailsWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {},
   "localizedResources": {
     "MyGedTreeViewWebPartStrings": "lib/webparts/myGedTreeView/loc/{locale}.js",
     "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js",
-    "HomepageWebPartStrings": "lib/webparts/homepage/loc/{locale}.js"
+    "HomepageWebPartStrings": "lib/webparts/homepage/loc/{locale}.js",
+    "DocDetailsWebPartStrings": "lib/webparts/docDetails/loc/{locale}.js"
   }
 }
