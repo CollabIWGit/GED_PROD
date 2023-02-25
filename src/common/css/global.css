@@ -93,12 +93,12 @@ body {
     margin-right: 0;
 }
 
-.link-header a {
+/* .link-header a {
     color: #fff;
     font-weight: 300;
     font-size: .875rem;
     letter-spacing: 1px;
-}
+} */
 
 .link-header .text {
     margin-left: 15px;

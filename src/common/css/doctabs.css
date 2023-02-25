@@ -15,6 +15,12 @@
     display: none;
 }
 
+.spAppAndPropertyPanelContainer .sp-appBar {
+    background: #f3f2f1;
+    display: none;
+    min-width: 47px;
+}
+
 .l_b_beed2cf1 {
     display: none;
 }
@@ -26,6 +32,38 @@
 #spCommandBar {
     display: none;
 }
+
+.breadcrumb>li>a {
+    color: #f3f2f1;
+    text-decoration: none;
+}
+
+.breadcrumb>li>a:hover {
+    color: #f54630;
+    text-decoration: none;
+}
+
+#breadcrumb {
+    padding: 8px 15px;
+    margin-bottom: 20px;
+    list-style: none;
+    background-color: #004a8e;
+    border-radius: 4px;
+    /* color: white; */
+}
+
+#h2_doc_title{
+    padding: inherit;
+    padding-left: 2em;
+}
+
+#view_doc{
+    padding-right: 3em;
+}
+
+
+
+
 
 .hb_af_9f38462c {
     display: none;
@@ -39,6 +77,18 @@
     display: inline-block;
 }
 
-h3{
+h3 {
     font-weight: 600;
+}
+
+.mt_ba_ada2ac09 {
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+    display: none;
+}
+
+.hb_s_9f38462c {
+    position: relative;
+    display: none;
 }
