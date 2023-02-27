@@ -34,15 +34,41 @@ form label {
   display: none;
 }
 
+.simpleFooterContainer-207 {
+  background-color: rgb(3, 120, 124);
+  z-index: 13;
+  min-height: 48px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  height: auto;
+  overflow: hidden;
+  padding: 0px 24px;
+  display: none;
+}
+
+.simpleFooterContainer-220 {
+  background-color: rgb(3, 120, 124);
+  z-index: 13;
+  min-height: 48px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  height: auto;
+  overflow: hidden;
+  padding: 0px 24px;
+  display: none;
+}
+
 #form_metadata {
   margin: 2em;
   height: 100%;
   padding: 2em;
   /* border: groove; */
-  border-radius: 10px;
+  
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
   margin-top: 2em;
-  background-color: #1257962e;
+
 }
 
 button {

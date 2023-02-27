@@ -6,7 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import $ from 'jquery';
 import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
-import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import { BaseClientSideWebPart, WebPartContext } from '@microsoft/sp-webpart-base';
 import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item, ITerm, ISiteGroup, ISiteGroupInfo } from "@pnp/sp/presets/all";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
@@ -17,7 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faFolderOpen, faFileWord, faEdit, faTrashCan, faBell, faEye } from '@fortawesome/free-regular-svg-icons'
 import { faFile, faLock, faFolderPlus, faDownload, faMagnifyingGlass, faDeleteLeft } from '@fortawesome/free-solid-svg-icons'
 import { icon, IconName, IconProp, parse } from '@fortawesome/fontawesome-svg-core';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
   SPHttpClient,
   SPHttpClientResponse
@@ -43,6 +43,7 @@ import { PermissionKind } from "@pnp/sp/security";
 // import Button from 'react-bootstrap/Button';
 // import Modal from 'react-bootstrap/Modal';
 import * as moment from 'moment';
+import useAsyncEffect from 'use-async-effect';
 
 
 
@@ -98,14 +99,17 @@ var department;
 export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, IMyGedTreeViewState, any> {
 
   private graphClient: MSGraphClient;
+  readonly context: WebPartContext;
 
-  constructor(props: IMyGedTreeViewProps, context) {
+  constructor(props: IMyGedTreeViewProps, context: WebPartContext) {
 
     super(props, context);
 
 
     sp.setup({
       spfxContext: this.props.context
+      // spfxContext: this.context
+
       //props.context
     });
 
@@ -181,7 +185,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
     const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
-    const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("IsFolder eq '" + value2 + "'").getAll();
+    // const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("IsFolder eq '" + value2 + "'").getAll();
 
 
     //const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
@@ -195,8 +199,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     await Promise.all(allItemsMain.map(async (v) => {
 
-  
-    // allItemsMain.forEach(v => {
+
+      // allItemsMain.forEach(v => {
 
 
       if (v["ParentID"] == -1) {
@@ -287,7 +291,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
       await Promise.all(allItemsMain.map(async (x) => {
 
-      // allItemsMain.forEach(x => {
+        // allItemsMain.forEach(x => {
 
         if (v === x["FolderID"]) {
 
@@ -689,6 +693,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
+  // componentDidMount(): void {
+
+  //   var x = this.getItemId();
+  //   (async () => {
+  //     await this.getParentID(x)
+  //   })();
+
+  // }
+
+
   private async getParentID(id: any) {
 
     var parentID = null;
@@ -729,53 +743,38 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     console.log("ArrayParent", parentIDArray);
 
 
+
+
   }
+
+
 
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
+    var y = [];
 
     x = this.getItemId();
 
     this.getParentID(x);
 
 
-
-    console.log("TEST PARENT ARRAY", parentIDArray);
-
-    // var x = "";
-
-    // async function asyncFunction() {
-
-    //   // call here
-    //   x = this.getItemId();
-    //   await this.getParentArray(x, parentIDArray);
-
-    //   console.log("Parent Array", parentArray);
-
-    // }
-
-
-
-
-
-
-
-
-
-    // var y = this.getParentArray(x);
-
-
-    // for (var i = 0; i < parentIDArray.length; i++) {
-    //   arrayParent[i] = parentIDArray[i];   
-    // }
-
+    console.log("TEST PARENT ARRAY", y);
 
     console.log("ITEM TO EXPAND", this.getItemId());
 
-    // $("#h2_folderName").text("Gestion Documentaire");
+    // (async () => {
+    //   y = await this.getParentArray(x, y);
+    // })();
+
+
+    // useAsyncEffect(async () => {
+    //   y = await this.getParentArray(x, y);
+    // });
+
+
+
 
     return (
-
 
       // <div className={styles.myGedTreeView}>
 
@@ -790,10 +789,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   <TreeView
 
                     items={this.state.TreeLinks}
+
                     defaultExpanded={true}
-                    //   defaultExpandedKeys={[parentIDArray]}
-                    //  defaultExpandedKeys={[212, 213, 243, 244, 248, 249]}
                     defaultExpandedKeys={parentIDArray}
+                    //  defaultExpandedKeys={[212, 213, 243, 244, 248, 249]}
+                    // defaultExpandedKeys={y}
 
                     // selectionMode={TreeViewSelectionMode.Multiple}
                     showCheckboxes={false}
@@ -804,6 +804,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     onRenderItem={this.renderCustomTreeItem}
                     // defaultSelectedKeys={[parseInt(this.getItemId())]}
                     defaultSelectedKeys={[parseInt(x)]}
+                    // defaultSelectedKeys={y}
+
                     expandToSelected={true}
                     defaultExpandedChildren={false}
 
@@ -1032,10 +1034,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   </div>
 
                 </div>}
-
-
-
-
 
                 {/* <div id="doc_form_access_rights">
 
@@ -1572,12 +1570,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         </div>
       </div>
 
-
-
     );
 
-
   }
+
 
   private async load_folders() {
 
@@ -1719,6 +1715,27 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
+  private async createAudit(docTitle: any, folderID: any, userTitle: any, action: any) {
+
+
+    try {
+      // response_same_doc.forEach(async (x) => {
+
+      await sp.web.lists.getByTitle("Audit").items.add({
+        Title: docTitle.toString(),
+        DateCreated: moment().format("MM/DD/YYYY HH:mm:ss"),
+        Action: action.toString(),
+        FolderID: folderID.toString(),
+        Person: userTitle.toString()
+      });
+    }
+
+    catch (e) {
+      alert("Erreur: " + e.message);
+    }
+
+  }
+
 
   private renderCustomTreeItem(item: ITreeItem): JSX.Element {
 
@@ -1749,12 +1766,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           console.log("DANS NUVO GROUP ARRAY", groupTitle);
 
 
-          if (groupTitle.includes("myGed Visitors")) {
-            
+          // if (groupTitle.includes("myGed Visitors")) {
+            if (groupTitle.includes("Utilisateur MyGed")) {
+
             $("#nav").css("display", "none");
           }
           else {
-            
+
             $("#nav").css("display", "block");
           }
 
@@ -1960,7 +1978,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     await btn_view_doc_details?.addEventListener('click', async () => {
 
 
-                      window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                       window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+
+
+                      //   window.open(`${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+
+
+                      // window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
                       //   window.location.replace(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
 
                       //    window.history.pushState("data", "Title", `https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
@@ -2768,6 +2792,23 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                               FolderID: parseInt(iar.data.ID),
                               filename: fileName
                             });
+
+                            try {
+                              // response_same_doc.forEach(async (x) => {
+                        
+                              await sp.web.lists.getByTitle("Audit").items.add({
+                                Title: iar.data.Title.toString(),
+                                DateCreated: moment().format("MM/DD/YYYY HH:mm:ss"),
+                                Action: "Creation",
+                                FolderID: iar.data.ID.toString(),
+                                Person: user_current.Title.toString()
+                              });
+                            }
+                        
+                            catch (e) {
+                              alert("Erreur: " + e.message);
+                            }
+
                           });
 
                       })
@@ -3079,6 +3120,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           this.onSelect(this.state.TreeLinks);
         }}
+
+
 
       >
 

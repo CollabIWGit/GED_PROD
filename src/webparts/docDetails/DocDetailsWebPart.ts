@@ -22,6 +22,7 @@ import 'datatables.net';
 import { ISiteUserInfo } from '@pnp/sp/site-users/types';
 import 'jstree';
 import { Navigation } from 'spfx-navigation';
+import * as moment from 'moment';
 
 
 
@@ -201,11 +202,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   public render(): void {
 
 
-
-
     //  SPComponentLoader.loadCss('https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css');
     // SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js');
-
     this.domElement.innerHTML = `
 
     <div class="wrapper d-flex align-items-stretch">
@@ -403,7 +401,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
             <div id="versions" class="tab-pane fade">
                 <h3>Toute Versions</h3>
     
-                <div id="splistDocVersions" style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
+                <div id="splistDocVersions"
+                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
                 </div>
     
@@ -497,7 +496,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                     </div>
                 </div>
     
-                <div id="splistDocAccessRights" style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
+                <div id="splistDocAccessRights"
+                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
                 </div>
             </div>
@@ -532,7 +532,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                 <div class="col-lg-3" style="padding-top: 1.7em;">
                                     <div class="form-group">
                                         <button type="button" class="btn btn-primary add_notif_user mb-2"
-                                            id="add_user">Ajouter</button>
+                                            id="add_user_notif">Ajouter</button>
                                     </div>
                                 </div>
                             </div>
@@ -569,12 +569,21 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                     </div>
                 </div>
     
+                <div id="splistDocNotifications"
+                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
+    
+                </div>
+    
     
             </div>
     
             <div id="audit" class="tab-pane fade">
                 <h3>Piste d'audit</h3>
     
+                <div id="splistDocAudit"
+                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
+    
+                </div>
     
     
             </div>
@@ -592,14 +601,18 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     //require('./DocDetailsWebPartJS');
 
 
-
     this.getParentID(this.getDocId());
     this._getDocDetails(parseInt(docId));
+    this.checkPermission();
     this._getAllVersions(title);
     this._getAllAccess(docId);
+    this._getAllAudit(docId);
+    this._getAllNotifications(docId);
     this.getSiteGroups();
     this.getSiteUsers();
     this.fileUpload();
+    this.load_folders();
+    
 
 
     // $('#jstree_demo_div').jstree(
@@ -678,19 +691,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     //update document
     $("#update_details_doc").click((e) => {
       this.updateDocument(docId, title);
-
     });
 
     $("#add_user").click((e) => {
       this.add_permission();
     });
 
-
-
-
-
-
-
+    $("#add_user_notif").click((e) => {
+      this.add_notification();
+    });
 
 
   }
@@ -705,54 +714,68 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     const myArray = text.toString().split("_");
     let parentId = myArray[0];
 
+    if ($('#file_ammendment').val() == '') {
 
-    if (confirm(`Etes-vous sûr de vouloir mettre à jour les détails de ${title} ?`)) {
-
-      try {
-
-        const i = await await sp.web.lists.getByTitle('Documents').items.add({
-          // const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc.Id)).update({
-          Title: $("#input_number").val(),
-          description: $("#input_description").val(),
-          keywords: $("#input_keywords").val(),
-          doc_number: $("#input_number").val(),
-          revision: $("#input_revision").val(),
-          ParentID: parseInt(parentId),
-          FolderID: folderId,
-          filename: $("#input_filename").val(),
-          IsFolder: "FALSE",
-          owner: $("#created_by").val(),
-          updatedBy: user_current.Title,
-          createdDate: $("#creation_date").val(),
-          updatedDate: new Date().toLocaleString()
-        })
-          .then(async (iar) => {
-
-            var item = iar.data.ID;
-
-            const list = sp.web.lists.getByTitle("Documents");
-
-            await list.items.getById(iar.data.ID).attachmentFiles.add(filename_add, content_add);
-
-
-          })
-          .then(() => {
-
-            alert("Détails mis à jour avec succès");
-          })
-          .then(() => {
-            window.location.reload();
-          });
-
-      }
-      catch (err) {
-        alert(err.message);
-      }
-
+      alert("Veuillez télécharger le fichier avant de continuer.");
 
     }
     else {
 
+      if (confirm(`Etes-vous sûr de vouloir mettre à jour les détails de ${title} ?`)) {
+
+        try {
+
+          const i = await await sp.web.lists.getByTitle('Documents').items.add({
+            // const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc.Id)).update({
+            Title: $("#input_number").val(),
+            description: $("#input_description").val(),
+            keywords: $("#input_keywords").val(),
+            doc_number: $("#input_number").val(),
+            revision: $("#input_revision").val(),
+            ParentID: parseInt(parentId),
+            FolderID: folderId,
+            filename: $("#input_filename").val(),
+            IsFolder: "FALSE",
+            owner: $("#created_by").val(),
+            updatedBy: user_current.Title,
+            createdDate: $("#creation_date").val(),
+            updatedDate: new Date().toLocaleString()
+          })
+            .then(async (iar) => {
+
+              if (filename_add == "" || content_add == "") {
+
+              }
+              else {
+                var item = iar.data.ID;
+
+                const list = sp.web.lists.getByTitle("Documents");
+
+                await list.items.getById(iar.data.ID).attachmentFiles.add(filename_add, content_add);
+              }
+
+            })
+            .then(async () => {
+              await this.createAudit($("#input_number").val(), folderId, user_current.Title, "Modification");
+            })
+            .then(() => {
+
+              alert("Détails mis à jour avec succès");
+            })
+            .then(() => {
+              window.location.reload();
+            });
+
+        }
+        catch (err) {
+          alert(err.message);
+        }
+
+
+      }
+      else {
+
+      }
     }
 
 
@@ -760,110 +783,108 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
 
-  }
 
 
-  private fileUpload() {
-    $('#file_ammendment_update').on('change', () => {
-      const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
-
-
-      var file = input.files[0];
-      var reader = new FileReader();
-
-      reader.onload = ((file1) => {
-        return (e) => {
-          console.log(file1.name);
-
-          filename_add = file1.name,
-            content_add = e.target.result
-          $("#input_filename").val(file1.name);
-        };
-      })(file);
-
-      reader.readAsArrayBuffer(file);
-    });
-  }
-
-
-  private createPath(listDoc: any) {
-
-    const listContainerDocPath: Element = this.domElement.querySelector('#doc_path');
-    let html: string = `<ul class="breadcrumb" id="breadcrumb">`;
-
-
-    // for (var i in parentTitle) {
-    //   if (parentTitle[i] !== undefined) {
-    //     html += `<li><a href="#">${parentTitle[i]}</a></li>`;
-    //     console.log("OLLL", parentTitle[i]);
-    //   }
-    // }
-
-    listDoc.forEach((item) => {
-
-      if (item.parentTitle_doc !== undefined) {
-        html += `<li><a href="https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${item.parentId_doc}">${item.parentTitle_doc}</a></li>`;
-      }
-    });
-
-    html += `</ul>`;
-
-    listContainerDocPath.innerHTML += html;
 
   }
 
-  private async _getDocDetails(id: number) {
+  private async checkPermission(){
+    const groupTitle = [];
+    let groups: any = await sp.web.currentUser.groups();
 
-    var urlFile_download = '';
-    var titleFolder = '';
-    var pdfNameDownload = '';
+    await Promise.all(groups.map(async (perm) => {
 
-    const itemDoc: any = await sp.web.lists.getByTitle("Documents").items.getById(id)();
+      groupTitle.push(perm.Title);
 
-    await sp.web.lists.getByTitle("Documents")
-      .items
-      .getById(parseInt(itemDoc.Id))
-      .attachmentFiles
-      .select('FileName', 'ServerRelativeUrl')
-      .get()
-      .then(responseAttachments => {
-        responseAttachments
-          .forEach(attachmentItem => {
+    }));
 
-            pdfNameDownload = attachmentItem.FileName;
-            urlFile_download = attachmentItem.ServerRelativeUrl;
-          });
+    // if (groupTitle.includes("myGed Visitors")) {
+      if (groupTitle.includes("Utilisateur MyGed")) {
+
+      $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "none");
+    }
+    else {
+
+      // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
+    }
+
+
+  }
+
+  private async createAudit(docTitle: any, folderID: any, userTitle: any, action: any) {
+
+
+    try {
+      // response_same_doc.forEach(async (x) => {
+
+      await sp.web.lists.getByTitle("Audit").items.add({
+        Title: docTitle.toString(),
+        DateCreated: moment().format("MM/DD/YYYY HH:mm:ss"),
+        Action: action.toString(),
+        FolderID: folderID.toString(),
+        Person: userTitle.toString()
+      });
+    }
+
+    catch (e) {
+      alert("Erreur: " + e.message);
+    }
+
+  }
+
+  private async _getAllAudit(id: string) {
+
+    var value1 = "FALSE";
+    var itemID = "";
+
+    var doc_detail: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
+
+    await Promise.all(doc_detail.map(async (perm) => {
+
+      itemID = perm.Id;
+
+    }));
+
+    const listContainerDocAudit: Element = this.domElement.querySelector('#splistDocAudit');
+
+    let html: string = `<table id='tbl_doc_audit' class='table table-striped' style="width: 100%;font-size: initial;" >`;
+
+    html += `<thead>
+    <tr>
+    <th class="text-left">Date</th>
+    <th class="text-left">Utilisateur</th>
+    <th class="text-left" >Document</th>
+    <th class="text-left" >Action</th>
+  </tr>
+  </thead>
+  <tbody id="tbl_documents_audit_bdy">`;
+
+    const allAudit: any[] = await sp.web.lists.getByTitle('Audit').items.select("ID, Title, Person, FolderID, Action, DateCreated").filter("FolderID eq '" + parseInt(id) + "'").getAll();
+
+
+    console.log("AAAUUDIIIT", allAudit);
+
+
+
+    await Promise.all(allAudit.map(async (audit) => {
+
+      html += `
+          <tr>
+          <td class="text-left">${audit.DateCreated}</td>
+          <td class="text-left">${audit.Person}</td>
+          <td class="text-left">${audit.Title}</td>
+          <td class="text-left">${audit.Action}</td>
+         `;
+
+    }))
+      .then(() => {
+
+        html += `</tbody>
+          </table>`;
+          listContainerDocAudit.innerHTML += html;
       });
 
-    itemFolderId = itemDoc.FolderID;
-
-    $("#input_type_doc").val(itemDoc.ParentID + "_" + titleFolder);
-    //  $("#input_type_doc").val(itemDoc.ParentID);
-    //input_type_doc
-    $("#input_number").val(itemDoc.Title);
-    $("#input_revision").val(itemDoc.revision);
-    // $("#input_status").val(itemDoc.status);
-    // $("#input_owner").val(itemDoc.owner);
-    // $("#input_activeDate").val(itemDoc.active_date);
-    // $("#input_filename").val(itemDoc.filename);
-    // $("#input_author").val(itemDoc.author);
-    // // $("#input_reviewDate").val(item1.);
-    $("#input_keywords").val(itemDoc.keywords);
-    $("#input_description").val(itemDoc.description);
-    $("#created_by").val(itemDoc.owner);
-
-    $("#updated_by").val(itemDoc.updateBy);
-    $("#updated_time").val(itemDoc.updatedDate);
-
-    // //   $("#creation_date").val(itemDoc.Created);
-    $("#creation_date").val(itemDoc.createdDate);
-    $("#h2_doc_title").text(itemDoc.Title);
-    // $("#open_doc").attr("href", urlFile_download);
-
-    $("#open_doc").click((e) => {
-      window.open(`${urlFile_download}`, '_blank');
-
-    });
+    var table = $("#tbl_doc_audit").DataTable();
 
   }
 
@@ -930,6 +951,265 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
   }
+
+  private async load_folders() {
+
+
+
+    var value1 = "TRUE";
+
+    var drp_folders = document.getElementById("select_folders");
+
+    // const allItems: any = await sp.web.lists.getByTitle('Documents').items.getAll(),
+
+    const all_folders: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
+
+
+    // console.log("ALL FOLDERS", all_folders.length);
+
+    folders = all_folders;
+
+    folders.forEach((result: any) => {
+      // if(result.IsFolder == "TRUE"){
+      // console.log("SELECT_FOLDERS", result.Title);
+      var opt = document.createElement('option');
+      opt.appendChild(document.createTextNode(result.Title));
+      opt.value = result.FolderID + "_" + result.Title;
+      drp_folders.appendChild(opt);
+      // }
+
+    });
+
+  }
+
+  private fileUpload() {
+    $('#file_ammendment_update').on('change', () => {
+      const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
+
+
+      var file = input.files[0];
+      var reader = new FileReader();
+
+      reader.onload = ((file1) => {
+        return (e) => {
+          console.log(file1.name);
+
+          filename_add = file1.name,
+            content_add = e.target.result
+          $("#input_filename").val(file1.name);
+        };
+      })(file);
+
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  private createPath(listDoc: any) {
+
+    const listContainerDocPath: Element = this.domElement.querySelector('#doc_path');
+    let html: string = `<ul class="breadcrumb" id="breadcrumb">`;
+
+
+    // for (var i in parentTitle) {
+    //   if (parentTitle[i] !== undefined) {
+    //     html += `<li><a href="#">${parentTitle[i]}</a></li>`;
+    //     console.log("OLLL", parentTitle[i]);
+    //   }
+    // }
+
+    listDoc.forEach((item) => {
+
+      if (item.parentTitle_doc !== undefined) {
+        html += `<li><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=${item.parentId_doc}">${item.parentTitle_doc}</a></li>`;
+      }
+    });
+
+    html += `</ul>`;
+
+    listContainerDocPath.innerHTML += html;
+
+  }
+
+  private async _getDocDetails(id: number) {
+
+    var urlFile_download = '';
+    var titleFolder = '';
+    var pdfNameDownload = '';
+    var ifFolder = "FALSE";
+    var ifFolderYES = "TRUE";
+    var docID = '';
+    var parentID = '';
+    var revision = '';
+    var description = '';
+    var revisionDate = '';
+    var keywords = '';
+    var owner = '';
+    var updatedBy = '';
+    var updatedDate = '';
+    var createdDate = '';
+    var folderTitle = '';
+
+
+
+    // const itemDoc: any = await sp.web.lists.getByTitle("Documents").items.getById(id)();
+
+    const itemDoc: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate")
+      .filter("FolderID eq '" + id + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
+
+    await Promise.all(itemDoc.map(async (doc) => {
+
+
+      docID = doc.Id;
+      itemFolderId = doc.FolderID;
+      titleFolder = doc.Title;
+      parentID = doc.ParentID;
+      revision = doc.revision;
+      description = doc.description;
+      revisionDate = doc.revisionDate;
+      keywords = doc.keywords;
+      owner = doc.owner;
+      updatedDate = doc.updatedDate;
+      updatedBy = doc.updatedBy;
+      createdDate = doc.createdDate;
+
+    }));
+
+
+    const itemFolder: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title")
+      .filter("FolderID eq '" + parseInt(parentID) + "' and IsFolder eq '" + ifFolderYES + "'")
+      .get();
+
+    await Promise.all(itemFolder.map(async (folder) => {
+
+      folderTitle = folder.Title;
+
+    }));
+
+
+    // const itemFolder: any = await sp.web.lists.getByTitle("Documents").items.getById(parseInt(parentID))();
+
+
+    await sp.web.lists.getByTitle("Documents")
+      .items
+      .getById(parseInt(docID))
+      .attachmentFiles
+      .select('FileName', 'ServerRelativeUrl')
+      .get()
+      .then(responseAttachments => {
+        responseAttachments
+          .forEach(attachmentItem => {
+
+            pdfNameDownload = attachmentItem.FileName;
+            urlFile_download = attachmentItem.ServerRelativeUrl;
+          });
+      });
+
+
+
+    $("#input_type_doc").val(parentID + "_" + folderTitle);
+    //  $("#input_type_doc").val(itemDoc.ParentID);
+    //input_type_doc
+    $("#input_number").val(titleFolder);
+    $("#input_revision").val(revision);
+    // $("#input_status").val(itemDoc.status);
+    // $("#input_owner").val(itemDoc.owner);
+    // $("#input_activeDate").val(itemDoc.active_date);
+    // $("#input_filename").val(itemDoc.filename);
+    // $("#input_author").val(itemDoc.author);
+    // // $("#input_reviewDate").val(item1.);
+    $("#input_keywords").val(keywords);
+    $("#input_description").val(description);
+    $("#created_by").val(owner);
+
+    $("#updated_by").val(updatedBy);
+    $("#updated_time").val(updatedDate);
+
+    // //   $("#creation_date").val(itemDoc.Created);
+    $("#creation_date").val(createdDate);
+    $("#h2_doc_title").text(titleFolder);
+    // $("#open_doc").attr("href", urlFile_download);
+
+    $("#open_doc").click((e) => {
+      window.open(`${urlFile_download}`, '_blank');
+
+    });
+
+  }
+
+  private async add_notification() {
+
+    //add permission user
+
+
+    var ifFolder = "FALSE";
+    var x = this.getDocId();
+    var doc_title = "";
+    var docID = "";
+    var revisionDate = "";
+    var description = "";
+    var link = "";
+
+
+    const user: any = await sp.web.siteUsers.getByEmail($("#users_name_notif").val().toString())();
+
+
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate")
+      .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
+
+
+
+    await Promise.all(all_documents.map(async (doc) => {
+
+      doc_title = doc.Title;
+      docID = doc.Id;
+      revisionDate = doc.revisionDate;
+      description = doc.description;
+      link = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=OWNERTEST&documentId=${doc.FolderID}`;
+
+    }));
+
+
+    console.log("USERS FOR PERMISSION", users_Permission);
+    console.log("LIIINK", link);
+
+
+    try {
+
+
+      await sp.web.lists.getByTitle("Notifications").items.add({
+        Title: doc_title.toString(),
+        group_person: $("#users_name_notif").val(),
+        IsFolder: "FALSE",
+        revisionDate: revisionDate,
+        toNotify: "YES",
+        description: description,
+        FolderID: x.toString(),
+        webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`
+      })
+        .then(() => {
+          alert("Notification ajoutée à ce document avec succès.");
+        })
+        .then(() => {
+          window.location.reload();
+        });
+
+
+    }
+
+    catch (e) {
+      alert("Erreur: " + e.message);
+    }
+
+
+
+
+  }
+
 
   private async _getAllVersions(title: string) {
 
@@ -1144,6 +1424,87 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
 
+
+  }
+
+  private async _getAllNotifications(id: string) {
+
+    var value1 = "FALSE";
+    var itemID = "";
+    var folderID = "";
+
+    var doc_detail: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
+
+    await Promise.all(doc_detail.map(async (perm) => {
+
+      itemID = perm.Id;
+      folderID = perm.FolderID;
+
+    }));
+
+    const listContainerDocNotif: Element = this.domElement.querySelector('#splistDocNotifications');
+
+    let html: string = `<table id='tbl_doc_notif' class='table table-striped' style="width: 100%;font-size: initial;" >`;
+
+    html += `<thead>
+    <tr>
+      <th class="text-left">ID</th>
+      <th class="text-left">Nom</th>
+
+      <th class="text-left" >Actions</th>
+    </tr>
+  </thead>
+  <tbody id="tbl_documents_notif_bdy">`;
+
+    const allNotif: any[] = await sp.web.lists.getByTitle('Notifications').items.select("ID, Title, group_person, revisionDate, toNotify, webLink, description, FolderID").filter("FolderID eq '" + folderID.toString() + "'").getAll();
+
+    await Promise.all(allNotif.map(async (notif) => {
+
+      html += `
+          <tr>
+          <td class="text-left">${notif.Id}</td>
+
+
+          <td class="text-left">${notif.group_person}</td>
+          
+          <td class="text-left">
+
+         <a href="#"  title="delete_notif" id="${notif.Id}_view_doc_notif" class="btn_delete_notif" style="padding-left: inherit;">
+         <i class="fa-solid fa-trash" style="font-size: x-large;"></i>
+
+     
+         </a>
+
+          </td>
+        
+         `;
+
+    }))
+      .then(() => {
+
+        html += `</tbody>
+          </table>`;
+        listContainerDocNotif.innerHTML += html;
+      });
+
+    var table = $("#tbl_doc_notif").DataTable(
+
+      {
+        columnDefs: [
+          {
+            targets: [0],
+            visible: false,
+          }]
+
+      }
+    );
+
+
+    $('#tbl_doc_notif tbody').on('click', '.btn_delete_notif', async (event) => {
+      var data = table.row($(event.currentTarget).parents('tr')).data();
+      await this._delete(data[0], "Notifications", "Notification");
+      window.location.reload();
+    });
 
   }
 

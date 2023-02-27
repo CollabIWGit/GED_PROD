@@ -52,6 +52,12 @@
     /* color: white; */
 }
 
+.r_b_beed2cf1, .s_b_beed2cf1 {
+    position: relative;
+    z-index: 7;
+    display: none;
+}
+
 #h2_doc_title{
     padding: inherit;
     padding-left: 2em;
@@ -61,7 +67,10 @@
     padding-right: 3em;
 }
 
-
+.hb_u_9f38462c {
+    position: relative;
+    display: none;
+}
 
 
 

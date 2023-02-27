@@ -28236,6 +28236,11 @@
             "resolved": "https://registry.npmjs.org/use/-/use-3.1.1.tgz",
             "integrity": "sha512-cwESVXlO3url9YWlFW/TA9cshCEhtu7IKJ/p5soJ/gGpj7vbvFrAY/eIioQ6Dw23KjZhYgiIo8HOs1nQ2vr/oQ=="
         },
+        "use-async-effect": {
+            "version": "2.2.7",
+            "resolved": "https://registry.npmjs.org/use-async-effect/-/use-async-effect-2.2.7.tgz",
+            "integrity": "sha512-Vq94tKPyo/9Nok4LOapV0GoGgZPhbeDW/bP6bulLPV4+lIoftaBRBBbGjTbM+j5W1Bm2EkUHJgapeu5YnQvKEA=="
+        },
         "util": {
             "version": "0.11.1",
             "resolved": "https://registry.npmjs.org/util/-/util-0.11.1.tgz",
