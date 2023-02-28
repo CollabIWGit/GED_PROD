@@ -8,6 +8,7 @@ import { MSGraphClient, MSGraphClientFactory } from '@microsoft/sp-http';
 export interface IMyGedTreeViewState {
   //TreeLinks: ITreeItem[];
   TreeLinks: any[];
+  parentIDArray: any[];
 
   // TreeLinks: any;
   // data: any | null; //ine zouter

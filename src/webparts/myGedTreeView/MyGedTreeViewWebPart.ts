@@ -31,6 +31,10 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
     return super.onInit();
   }
 
+  public componentWillMount(){
+    console.log("Will mount from parent")
+  }
+
   public render(): void {
 
 
@@ -49,6 +53,9 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
     ReactDom.render(element, this.domElement);
 
   }
+
+
+
 
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {

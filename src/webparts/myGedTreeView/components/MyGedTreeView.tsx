@@ -58,7 +58,7 @@ import useAsyncEffect from 'use-async-effect';
 
 // var parentIDArray = new Array();
 
-var parentIDArray = [];
+// var parentIDArray = [];
 
 var parentArray = [];
 
@@ -128,6 +128,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     // const sp = spfi().using(SPFx(this.props.context));
     this.state = {
       TreeLinks: [],
+      parentIDArray: [],
     };
 
 
@@ -138,7 +139,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     // this._getLinks3(sp);  //sa pu tester doc library
 
     // this._getLinks(sp);
-    this.render();
+    // this.render();
 
     this.loadDocsFromFolders(x);
 
@@ -693,24 +694,42 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
-  // componentDidMount(): void {
+  public async componentDidMount() {
+    var x = this.getItemId();
 
-  //   var x = this.getItemId();
-  //   (async () => {
-  //     await this.getParentID(x)
-  //   })();
+    const parentIDs = await this.getParentID(x);
+    this.setState({parentIDArray:parentIDs});
 
-  // }
+    console.log("INSIDE THE DID MOUNT", parentIDs, this.state.parentIDArray)
+
+    // this.render();
+
+  }
+
+
+  public async componentWillMount() {
+    var x = this.getItemId();
+
+    const parentIDs = await this.getParentID(x);
+    this.setState({parentIDArray:parentIDs});
+
+    console.log("INSIDE THE WILL MOUNT", parentIDs, this.state.parentIDArray)
+
+    // this.render();
+
+  }
 
 
   private async getParentID(id: any) {
 
     var parentID = null;
 
-    //var parentIDArray = [] ;
+    var parentIDArray = [] ;
 
     await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "'").get().then((results) => {
       parentID = results[0].ParentID;
+
+      // this.setState({ parentIDArray: [...this.state.parentIDArray, parentID] });
       parentIDArray.push(parentID);
 
       console.log("Parent 1", parentID);
@@ -721,6 +740,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     while (parentID != 1) {
       await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parentID + "'").get().then((results) => {
         parentID = results[0].ParentID;
+        // this.setState({ parentIDArray: [parentID, ...this.state.parentIDArray] });
         parentIDArray.unshift(parentID);
 
         console.log("Parent 2", parentID);
@@ -728,25 +748,29 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     }
 
 
+    // this.setState({ parentIDArray: [...this.state.parentIDArray, parseInt(this.getItemId())] });
     parentIDArray.push(parseInt(this.getItemId()));
 
 
+    // if (this.state.parentIDArray.length > 1) {
 
-    if (parentIDArray.length > 1) {
+      if (parentIDArray.length > 1) {
+      // const temp = this.state.parentIDArray;
+
+      // console.log("TEMP", temp);
+
+      // temp.shift();
+      // this.setState({ parentIDArray: [...temp] });
+
       parentIDArray.shift();
     }
-
-
-
 
     // parentIDArray.sort(function (a, b) { return a - b });
     console.log("ArrayParent", parentIDArray);
 
-
-
+    return parentIDArray;
 
   }
-
 
 
   public render(): React.ReactElement<IMyGedTreeViewProps> {
@@ -755,7 +779,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     x = this.getItemId();
 
-    this.getParentID(x);
+    // this.getParentID(x);
 
 
     console.log("TEST PARENT ARRAY", y);
@@ -771,8 +795,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     //   y = await this.getParentArray(x, y);
     // });
 
+    // var x = this.getItemId();
+    // (async () => {
+    //   await this.getParentID(x);
+    //   this.render();
 
-
+    // })();
+    console.log("BEFORE RENDER", this.state.parentIDArray);
 
     return (
 
@@ -791,8 +820,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     items={this.state.TreeLinks}
 
                     defaultExpanded={true}
-                    defaultExpandedKeys={parentIDArray}
-                    //  defaultExpandedKeys={[212, 213, 243, 244, 248, 249]}
+                    
+                    // defaultExpandedKeys={[212, 213, 243, 244, 248, 249]}
                     // defaultExpandedKeys={y}
 
                     // selectionMode={TreeViewSelectionMode.Multiple}
@@ -803,7 +832,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     onExpandCollapse={this.onTreeItemExpandCollapse}
                     onRenderItem={this.renderCustomTreeItem}
                     // defaultSelectedKeys={[parseInt(this.getItemId())]}
-                    defaultSelectedKeys={[parseInt(x)]}
+                     defaultSelectedKeys={[this.state.parentIDArray[0], parseInt(x)]}
+
+                     defaultExpandedKeys={this.state.parentIDArray}
+                    // defaultSelectedKeys={this.state.parentIDArray}
                     // defaultSelectedKeys={y}
 
                     expandToSelected={true}
@@ -1702,15 +1734,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   private async onTreeItemExpandCollapse(item: ITreeItem, isExpanded: boolean) {
     console.log((isExpanded ? "Item expanded: " : "Item collapsed: ") + item.label);
 
-    if (isExpanded) {
 
-      //display
-
-
-      $("#h2_folderName").text(item.label);
-
-
-    }
+    // (isExpanded? + item.)
 
 
   }
@@ -1767,7 +1792,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
           // if (groupTitle.includes("myGed Visitors")) {
-            if (groupTitle.includes("Utilisateur MyGed")) {
+          if (groupTitle.includes("Utilisateur MyGed")) {
 
             $("#nav").css("display", "none");
           }
@@ -1978,13 +2003,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     await btn_view_doc_details?.addEventListener('click', async () => {
 
 
-                       window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                      //    window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
 
 
                       //   window.open(`${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
 
 
-                      // window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                      window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
                       //   window.location.replace(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
 
                       //    window.history.pushState("data", "Title", `https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
@@ -2795,7 +2820,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                             try {
                               // response_same_doc.forEach(async (x) => {
-                        
+
                               await sp.web.lists.getByTitle("Audit").items.add({
                                 Title: iar.data.Title.toString(),
                                 DateCreated: moment().format("MM/DD/YYYY HH:mm:ss"),
@@ -2804,7 +2829,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                                 Person: user_current.Title.toString()
                               });
                             }
-                        
+
                             catch (e) {
                               alert("Erreur: " + e.message);
                             }
