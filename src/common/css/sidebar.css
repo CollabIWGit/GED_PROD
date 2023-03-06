@@ -47,6 +47,8 @@ form label {
   display: none;
 }
 
+
+
 .simpleFooterContainer-220 {
   background-color: rgb(3, 120, 124);
   z-index: 13;
@@ -79,3 +81,29 @@ button {
   border-bottom: 1px solid #ddd;
   font-size: x-large;
 }
+
+#tree {
+  height: 100%;
+}
+
+.my-treeview {
+  height: 100%;
+  overflow-y: auto;
+  white-space: nowrap;
+}
+
+#desc_doc{
+  
+}
+
+@media (min-width: 576px) {
+  .my-treeview {
+    display: inline-block;
+    vertical-align: top;
+    width: calc(100% - 75px); /* adjust as needed */
+  }
+}
+
+
+
+

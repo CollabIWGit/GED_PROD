@@ -43,6 +43,10 @@
     text-decoration: none;
 }
 
+.webPartContainer{
+    display: none;
+}
+
 #breadcrumb {
     padding: 8px 15px;
     margin-bottom: 20px;

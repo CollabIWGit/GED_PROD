@@ -122,11 +122,13 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var parentID = null;
     var folderID = null;
     var parent_title = "";
+    var value2 = "FALSE";
+    var value1 = "TRUE";
 
 
     //var parentIDArray = [] ;
 
-    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "'").get().then((results) => {
+    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
 
       // if (results[0].ParentID != undefined || results[0].ParentID != null) {
       parentID = results[0].ParentID;
@@ -153,7 +155,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     while (parentID != 1) {
 
-      await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID, Title").filter("FolderID eq '" + parentID + "'").get().then((results) => {
+      await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID, Title").filter("FolderID eq '" + parentID + "' and IsFolder eq '" + value1 + "'").get().then((results) => {
 
         // if (results[0].ParentID != undefined || results[0].ParentID != null) {
         parentID = results[0].ParentID;
@@ -220,6 +222,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                     <h2>
                         <a href="#" target="_blank" id="open_doc" title="View document"> <i class="fa-regular fa-eye"
                                 title="voir"></i></a>
+
+                                <a href="#" target="_blank" id="delete_doc" title="View document"> <i class="fa-solid fa-trash" title="Supprimer le document" style="
+                                padding-left: 0.5em;"></i></a>
+                                
                     </h2>
                 </div>
             </div>
@@ -612,7 +618,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     this.getSiteUsers();
     this.fileUpload();
     this.load_folders();
-    
+
 
 
     // $('#jstree_demo_div').jstree(
@@ -702,6 +708,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
 
+
+
   }
 
   private async updateDocument(folderId: string, title: string) {
@@ -788,7 +796,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async checkPermission(){
+  private async deleteDocument(){
+
+  }
+
+  private async checkPermission() {
     const groupTitle = [];
     let groups: any = await sp.web.currentUser.groups();
 
@@ -799,9 +811,12 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }));
 
     // if (groupTitle.includes("myGed Visitors")) {
-      if (groupTitle.includes("Utilisateur MyGed")) {
+    if (groupTitle.includes("Utilisateur MyGed")) {
 
-      $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "none");
+      $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc").css("display", "none");
+
+      $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
+
     }
     else {
 
@@ -881,7 +896,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
         html += `</tbody>
           </table>`;
-          listContainerDocAudit.innerHTML += html;
+        listContainerDocAudit.innerHTML += html;
       });
 
     var table = $("#tbl_doc_audit").DataTable();
@@ -1136,6 +1151,33 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       window.open(`${urlFile_download}`, '_blank');
 
     });
+
+    $("#delete_doc").click(async (e) => {
+
+
+        if (confirm(`Êtes-vous sûr de vouloir supprimer ${titleFolder} ?`)) {
+
+          try {
+            var res = await sp.web.lists.getByTitle('Documents').items.getById(parseInt(docID)).delete()
+              .then(() => {
+                alert("Document supprimé avec succès.");
+              })
+              .then(() => {
+                window.location.reload();
+              });
+          }
+          catch (err) {
+            alert(err.message);
+          }
+
+
+        }
+        else {
+
+        }
+
+      });
+
 
   }
 

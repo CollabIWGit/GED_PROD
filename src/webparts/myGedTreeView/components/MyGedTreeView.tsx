@@ -3,7 +3,7 @@ import { MSGraphClient } from '@microsoft/sp-http';
 import { IMyGedTreeViewProps, IMyGedTreeViewState } from './IMyGedTreeView';
 import { TreeView, ITreeItem, TreeViewSelectionMode, TreeItemActionsDisplayMode } from "@pnp/spfx-controls-react/lib/TreeView";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import $ from 'jquery';
+import $, { event } from 'jquery';
 import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import { BaseClientSideWebPart, WebPartContext } from '@microsoft/sp-webpart-base';
@@ -72,7 +72,7 @@ var permission_items = [];
 var users_Permission = [];
 var roleDefID = [];
 
-var remainingArr: any = [];
+// var remainingArr: any = [];
 var myVar;
 var x;
 
@@ -134,14 +134,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var x = this.getItemId();
 
-    this._getLinks2(sp);
+    //
+    // this._getLinks2(sp);
 
     // this._getLinks3(sp);  //sa pu tester doc library
 
     // this._getLinks(sp);
     // this.render();
 
-    this.loadDocsFromFolders(x);
 
   }
 
@@ -166,6 +166,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async _getLinks2(sp) {
 
+    var remainingArr: any = [];
     // var treearr: ITreeItem[] = [];
     var treearr: any[] = [];
 
@@ -184,26 +185,41 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     var counter = 0;
     var counterSUB = 0;
 
-
-    const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
-    // const allItemsFile: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("IsFolder eq '" + value2 + "'").getAll();
+    let testAllItems: any[] = [];
 
 
-    //const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => { return a.Title - b.Title });
-    // const allItemsMain_sorted: any[] = allItemsMain.sort();
+    // .orderBy("Title", true)
+
+    //   const allItemsMain: any[] = await sp.web.lists.getByTitle("Documents").items.getAll();
+
+    //   const _allItemsClick = async () => {
+    //     let filItems = await sp.web.lists.getByTitle("Documents").items.getAll();
+    //     console.log("Get All Items: ", filItems);
+    // }
+
+    // testAllItems = allItemsMain;
+
+    const allItemsMain: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("ID,ParentID,FolderID,Title,IsFolder,description")
+      // .orderBy("Title", true) // true = ascending order, false = descending order
+      .top(5000)
+      .filter("IsFolder eq '" + value1 + "'")
+      .getAll();
+
+    console.log("ARRRANGED ARRAY SIZE: " + allItemsMain.length);
+    console.log("ARRRANGED ARRAY SIZE: " + allItemsMain);
 
 
-    console.log("ARRRANGED ARRAY: " + allItemsMain.length);
-
-    // const allItemsMain_sorted: any[] = allItemsMain.sort((a, b) => a.FolderID - b.FolderID);
     var x = 0;
 
     await Promise.all(allItemsMain.map(async (v) => {
 
 
-      // allItemsMain.forEach(v => {
+      // testAllItems.forEach(v => {
 
+      console.log("LOG TEST", v["IsFolder"]);
 
+      // if(v["IsFolder"] == "TRUE"){
       if (v["ParentID"] == -1) {
 
         // console.log("We have the main folder here.");
@@ -260,12 +276,22 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         //  var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; }).sort((a, b) => {return a.label - b.label} );
 
         // var treecol: Array<any> = treearr.filter((value) => { return value.key === v["ParentID"]; });
-        var treecol: Array<any> = treearr.filter((value) => { return value.key === tree.parentID; });
 
-        treecol.forEach(() => {
+        //cki bon la
+        //var treecol: Array<any> = treearr.filter((value) => { return value.key === tree.parentID; });
 
-          // console.log("TREEEEEEEECCCCOOOOL", treecol[0].label);
+        var treecol: Array<any> = treearr.filter((value) => {
+          return value.key === tree.parentID;
+        }).sort((a, b) => {
+          if (a.label < b.label) {
+            return -1;
+          }
+          if (a.label > b.label) {
+            return 1;
+          }
+          return 0;
         });
+
 
         //  if (treecol.length != 0) {
         if (treecol.length != 0) {
@@ -281,6 +307,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         treearr.push(tree);
       }
 
+      // }
+
+
+      // });
+
     }));
 
 
@@ -290,122 +321,102 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     keysMissing.forEach(async (v) => {
 
+      // await Promise.all(allItemsMain.map(async (x) => {
+
+      //   // allItemsMain.forEach(x => {
+
+      //   if (v === x["FolderID"]) {
+
+      //     var str = x["Title"];
+
+      //     const tree: ITreeItem = {
+      //       // v.id ==> v.FolderID
+      //       id: v["ID"],
+      //       key: v["FolderID"],
+      //       // key: v["Title"],
+      //       // label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
+      //       label: str,
+      //       data: 1,
+      //       icon: faFolderOpen,
+      //       children: [].sort((x, y) => x.label.localeCompare(y.label)),
+      //       revision: "",
+      //       file: "No",
+      //       description: v["description"],
+      //       parentID: v["ParentID"]
+
+      //     };
+
+      //     var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key === x["ParentID"]; });
+
+      //     if (treecol.length != 0) {
+      //       keysPresent.push(tree.key);
+      //       treecol[0].children.push(tree);
+      //     }
+
+      //     treearr.push(tree);
+
+      //   }
+      // }));
+
       await Promise.all(allItemsMain.map(async (x) => {
-
-        // allItemsMain.forEach(x => {
-
         if (v === x["FolderID"]) {
-
           var str = x["Title"];
-
           const tree: ITreeItem = {
-            // v.id ==> v.FolderID
             id: v["ID"],
             key: v["FolderID"],
-            // key: v["Title"],
-            // label: str.normalize('NFD').replace(/\p{Diacritic}/gu, ""),
             label: str,
             data: 1,
             icon: faFolderOpen,
-            children: [],
             revision: "",
             file: "No",
             description: v["description"],
             parentID: v["ParentID"]
-
           };
-
           var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.key === x["ParentID"]; });
-
           if (treecol.length != 0) {
             keysPresent.push(tree.key);
+            if (!treecol[0].children) {
+              treecol[0].children = [];
+            }
             treecol[0].children.push(tree);
+            treecol[0].children.sort((a, b) => a.label.substr(0, 2).localeCompare(b.label.substr(0, 2)));
           }
-
           treearr.push(tree);
-
         }
       }));
 
     });
 
+    const sortedTreeArr = treearr.map((tree) => {
+      if (tree.children) {
+        tree.children.sort((a, b) => a.label.substr(0, 3).localeCompare(b.label.substr(0, 3)));
+      }
+      return tree;
+    }).sort((a, b) => a.label.localeCompare(b.label));
 
-    // console.log("KEYS MISSING LENGTH", keysMissing.length);
-    // console.log("KEYS MISSING", keysMissing);
-    // console.log("KEYS PRESENT LENGTH", keysPresent.length);
-    // console.log("KEYS MISSING LENGTH", 763 - keysPresent.length);
-    // console.log("COUNTER", counter);
-    // console.log("COUNTERSUB", counterSUB);
-    // console.log("TREE ARRAY LENGTH", treearr.length);
+    //  remainingArr = treearr.filter(data => data.key == 1);
 
-    // allItemsFile.forEach((v) => {
-    //   // console.log("We have a file here.");
-
-
-    //   //v["ServerRedirectedEmbedUrl"] ==> v["FileUrl"]
-    //   const iconName: IconProp = faFile;
-
-    //   const tree: ITreeItem = {
-    //     // v.id ==> v.FolderID
-    //     id: v["ID"],
-    //     //    key: v["FolderID"],
-    //     key: v["FolderID"],
-    //     label: v["Title"] + "-" + v["revision"],
-    //     icon: faFile,
-    //     data: v["FileUrl"],
-    //     revision: v['revision'],
-    //     file: "Yes",
-    //     description: v["description"],
-    //     parentID: v["ParentID"]
-
-    //   };
-
-
-    //   // ParentID ==> FolderID
-
-    //   var treecol: Array<ITreeItem> = treearr.filter((value) => { return value.file === "No" && value.key == v["ParentID"]; });
-
-    //   if (treecol.length != 0) {
-    //     treecol[0].children.push(tree);
-    //   }
-
-    // });
-
-    // var remainingArr = treearr.filter(data => data.data === 0);
-
-    //mn tir var ldns
-    remainingArr = treearr.filter(data => data.key == 1);
-
-
-
-    //   var finalArr = remainingArr.sort((a, b) =>{
-    //     return a.label - b.label;
-    // });
+    remainingArr = sortedTreeArr.filter(data => data.key == 1);
 
 
     console.log("REMAINING ARRAY ", remainingArr);
     console.log("REMAINING ARRAY LENGTH", remainingArr.length);
 
-    //  Array.prototype.push.apply(allItemsFile, allItemsMain);
-    // const mergedArray = [ ...allItemsFile, ...allItemsMain ];
-
     const unique = [];
 
-    // mergedArray.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
+    // remainingArr.sort((a, b) => a.label.localeCompare(b.label));
 
-    // all.map(x => unique.filter(a => a.key == x.key).length > 0 ? null : unique.push(x));
 
-    // console.log(unique);
 
-    // tree = remainingArr;
-
-    // this.setState({ TreeLinks: remainingArr });
-    this.setState({ TreeLinks: remainingArr });
+    //  this.setState({ TreeLinks: remainingArr });
     console.log("FOLDERS", allItemsMain.length);
-    // console.log("FILES", allItemsFile.length);
-    // console.log("MERGED", mergedArray.length);
+
+    return remainingArr;
+
 
   }
+
+
 
   //testing doc library
   private async _getLinks3(sp) {
@@ -694,37 +705,80 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
-  public async componentDidMount() {
+  componentWillMount() {
+
+
     var x = this.getItemId();
 
-    const parentIDs = await this.getParentID(x);
-    this.setState({parentIDArray:parentIDs});
+    (async () => {
 
-    console.log("INSIDE THE DID MOUNT", parentIDs, this.state.parentIDArray)
+      if (x == null || x == undefined || x == "") {
+
+        const allItems = await this._getLinks2(sp);
+
+
+        this.setState({ TreeLinks: allItems });
+
+        const temp = this.state.TreeLinks;
+
+
+        console.log("COUNT MAIN", allItems, temp);
+        //  this._getLinks2(sp);
+
+      }
+
+      else {
+
+        await this.getParentID(x);
+        const parentIDs = await this.getParentID(x);
+        const allItems = await this._getLinks2(sp);
+
+        this.setState({ parentIDArray: parentIDs });
+        this.setState({ TreeLinks: allItems });
+
+       // await this.loadDocs();
+
+
+        //  this._getLinks2(sp);
+
+
+      }
+
+
+    })();
+
+
+
+
+
 
     // this.render();
 
   }
 
 
-  public async componentWillMount() {
-    var x = this.getItemId();
+  // public async componentWillMount() {
+  //   var x = this.getItemId();
 
-    const parentIDs = await this.getParentID(x);
-    this.setState({parentIDArray:parentIDs});
+  //   const parentIDs = await this.getParentID(x);
+  //   this.setState({parentIDArray:parentIDs});
 
-    console.log("INSIDE THE WILL MOUNT", parentIDs, this.state.parentIDArray)
+  //   // this._getLinks2(sp);
 
-    // this.render();
+  // //  this.load_folders(x);
 
-  }
+  //   console.log("INSIDE THE WILL MOUNT", parentIDs, this.state.parentIDArray)
+
+  //   // this.render();
+
+  // }
 
 
   private async getParentID(id: any) {
 
     var parentID = null;
 
-    var parentIDArray = [] ;
+    var parentIDArray = [];
 
     await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "'").get().then((results) => {
       parentID = results[0].ParentID;
@@ -754,7 +808,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     // if (this.state.parentIDArray.length > 1) {
 
-      if (parentIDArray.length > 1) {
+    if (parentIDArray.length > 1) {
       // const temp = this.state.parentIDArray;
 
       // console.log("TEMP", temp);
@@ -798,9 +852,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     // var x = this.getItemId();
     // (async () => {
     //   await this.getParentID(x);
-    //   this.render();
+    //   // this.render();
 
     // })();
+
+
     console.log("BEFORE RENDER", this.state.parentIDArray);
 
     return (
@@ -817,10 +873,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   <TreeView
 
+
+
                     items={this.state.TreeLinks}
 
                     defaultExpanded={true}
-                    
+
                     // defaultExpandedKeys={[212, 213, 243, 244, 248, 249]}
                     // defaultExpandedKeys={y}
 
@@ -832,14 +890,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     onExpandCollapse={this.onTreeItemExpandCollapse}
                     onRenderItem={this.renderCustomTreeItem}
                     // defaultSelectedKeys={[parseInt(this.getItemId())]}
-                     defaultSelectedKeys={[this.state.parentIDArray[0], parseInt(x)]}
+                    defaultSelectedKeys={[parseInt(x)]}
 
-                     defaultExpandedKeys={this.state.parentIDArray}
+                    defaultExpandedKeys={this.state.parentIDArray}
                     // defaultSelectedKeys={this.state.parentIDArray}
                     // defaultSelectedKeys={y}
 
                     expandToSelected={true}
                     defaultExpandedChildren={false}
+
+                    className="my-treeview"
+
 
                   />
 
@@ -1449,7 +1510,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                         <tr>
                           <th className="text-left">ID</th>
                           <th className="text-left">Nom du document</th>
-                          <th className="text-left" >Description</th>
+                          <th className="text-left" id='desc_doc'>Description</th>
 
                           <th className="text-right" >Actions</th>
                         </tr>
@@ -1606,7 +1667,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
-
   private async load_folders() {
 
 
@@ -1761,6 +1821,202 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
+  private async loadDocs() {
+
+    var x = this.getItemId();
+    var response_doc = null;
+    var response_distinc = [];
+    var html_document: string = ``;
+    var value1 = "FALSE";
+    var value2 = "TRUE";
+    var pdfName = '';
+
+    const groupTitle = [];
+    let groups: any = await sp.web.currentUser.groups();
+
+    usersGroups = groups;
+
+    console.log("USERS GROUPS", usersGroups);
+
+    usersGroups.forEach((item) => {
+
+      groupTitle.push(item.Title);
+    });
+
+
+    console.log("DANS NUVO GROUP ARRAY", groupTitle);
+
+
+    // if (groupTitle.includes("myGed Visitors")) {
+    if (groupTitle.includes("Utilisateur MyGed")) {
+
+      $("#nav").css("display", "none");
+    }
+    else {
+
+      $("#nav").css("display", "block");
+    }
+
+    var document_container: Element = document.getElementById("tbl_documents_bdy");
+    document_container.innerHTML = "";
+
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description")
+      .top(5000)
+      .filter("ParentID eq '" + parseInt(x) + "' and IsFolder eq '" + value1 + "'")
+      .getAll();
+
+    const dossier: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description")
+      .top(5000)
+      .filter("FolderID eq '" + parseInt(x) + "' and IsFolder eq '" + value2 + "'")
+      .getAll();
+
+    await Promise.all(dossier.map(async (v) => {
+
+      $("#h2_folderName").text(v["Title"]);
+    }));
+
+
+    response_doc = all_documents;
+
+    var result = response_doc.filter((obj, pos, arr) => {
+      return arr.map(mapObj =>
+        mapObj.Title).lastIndexOf(obj.Title) == pos;
+    });
+
+
+
+    //display
+    {
+      $("#access_form").css("display", "block");
+      $("#doc_form").css("display", "none");
+      $(".dossier_headers").css("display", "block");
+
+      $("#subfolders_form").css("display", "none");
+
+      $("#access_rights_form").css("display", "none");
+      $("#notifications_doc_form").css("display", "none");
+
+      $("#doc_details_add").css("display", "none");
+      $("#edit_details").css("display", "none");
+      // $("#table_documents").css("display", "block");
+
+    }
+
+
+    if (result.length > 0) {
+
+
+      html_document = ``;
+      $("#alert_0_doc").css("display", "none");
+      $("#table_documents").css("display", "block");
+
+      // $("#table_documents").css("display", "block");
+
+
+      await result.forEach(async (element) => {
+
+
+
+        var urlFile = '';
+        html_document += `
+                <tr>
+                <td class="text-left">${element.Id}</td>
+
+                <td class="text-left">${element.Title}</td>
+
+                <td class="text-left"> 
+                ${element.description}          
+                </td>
+
+                
+                <td>
+                <a href="#" title="Mettre à jour le document" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details">
+                <svg aria-hidden="true" focusable="false" data-prefix="far" 
+                data-icon="pen-to-square" class="svg-inline--fa fa-pen-to-square fa-icon fa-2x" 
+                role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path fill="currentColor" d="M373.1 24.97C401.2-3.147 446.8-3.147 474.9 24.97L487 37.09C515.1 65.21 515.1 110.8 487 138.9L289.8 336.2C281.1 344.8 270.4 351.1 258.6 354.5L158.6 383.1C150.2 385.5 141.2 383.1 135 376.1C128.9 370.8 126.5 361.8 128.9 353.4L157.5 253.4C160.9 241.6 167.2 230.9 175.8 222.2L373.1 24.97zM440.1 58.91C431.6 49.54 416.4 49.54 407 58.91L377.9 88L424 134.1L453.1 104.1C462.5 95.6 462.5 80.4 453.1 71.03L440.1 58.91zM203.7 266.6L186.9 325.1L245.4 308.3C249.4 307.2 252.9 305.1 255.8 302.2L390.1 168L344 121.9L209.8 256.2C206.9 259.1 204.8 262.6 203.7 266.6zM200 64C213.3 64 224 74.75 224 88C224 101.3 213.3 112 200 112H88C65.91 112 48 129.9 48 152V424C48 446.1 65.91 464 88 464H360C382.1 464 400 446.1 400 424V312C400 298.7 410.7 288 424 288C437.3 288 448 298.7 448 312V424C448 472.6 408.6 512 360 512H88C39.4 512 0 472.6 0 424V152C0 103.4 39.4 64 88 64H200z"></path></svg></a>
+
+
+
+               <a href="#"  title="Voir le document" id="${element.Id}_view_doc"  class="btn_view_doc" style="padding-left: inherit;">
+               <svg aria-hidden="true" focusable="false" data-prefix="far" 
+               data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
+               role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+               <path fill="currentColor" d="M160 256C160 185.3 217.3 128 288 128C358.7 128 416 185.3 416 256C416 326.7 358.7 384 288 384C217.3 384 160 326.7 160 256zM288 336C332.2 336 368 300.2 368 256C368 211.8 332.2 176 288 176C287.3 176 286.7 176 285.1 176C287.3 181.1 288 186.5 288 192C288 227.3 259.3 256 224 256C218.5 256 213.1 255.3 208 253.1C208 254.7 208 255.3 208 255.1C208 300.2 243.8 336 288 336L288 336zM95.42 112.6C142.5 68.84 207.2 32 288 32C368.8 32 433.5 68.84 480.6 112.6C527.4 156 558.7 207.1 573.5 243.7C576.8 251.6 576.8 260.4 573.5 268.3C558.7 304 527.4 355.1 480.6 399.4C433.5 443.2 368.8 480 288 480C207.2 480 142.5 443.2 95.42 399.4C48.62 355.1 17.34 304 2.461 268.3C-.8205 260.4-.8205 251.6 2.461 243.7C17.34 207.1 48.62 156 95.42 112.6V112.6zM288 80C222.8 80 169.2 109.6 128.1 147.7C89.6 183.5 63.02 225.1 49.44 256C63.02 286 89.6 328.5 128.1 364.3C169.2 402.4 222.8 432 288 432C353.2 432 406.8 402.4 447.9 364.3C486.4 328.5 512.1 286 526.6 256C512.1 225.1 486.4 183.5 447.9 147.7C406.8 109.6 353.2 80 288 80V80z">
+               </path></svg>
+
+               </a>
+
+                </td>
+              
+               `;
+
+
+        await sp.web.lists.getByTitle("Documents")
+          .items
+          .getById(parseInt(element.Id))
+          .attachmentFiles
+          .select('FileName', 'ServerRelativeUrl')
+          .get()
+          .then(responseAttachments => {
+            responseAttachments
+              .forEach(attachmentItem => {
+                pdfName = attachmentItem.FileName;
+                urlFile = attachmentItem.ServerRelativeUrl;
+              });
+
+          })
+
+
+          .then(async () => {
+
+            {
+
+
+            }
+
+
+            {
+
+            }
+
+
+            const btn_view_doc = document.getElementById(element.Id + '_view_doc');
+            const btn_view_doc_details = document.getElementById(element.Id + '_view_doc_details');
+
+
+            await btn_view_doc?.addEventListener('click', async (event) => {
+
+
+              $(".modal").css("display", "block");
+              window.open(`${urlFile}#toolbar=0`, '_blank');
+
+            });
+
+            await btn_view_doc_details?.addEventListener('click', async () => {
+
+              window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+
+            });
+
+          });
+
+        console.log("URL FILE", urlFile);
+
+
+      });
+
+      document_container.innerHTML += html_document;
+
+    }
+
+    else {
+      $("#alert_0_doc").css("display", "block");
+      $("#table_documents").css("display", "none");
+    }
+  }
 
   private renderCustomTreeItem(item: ITreeItem): JSX.Element {
 
@@ -1831,8 +2087,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             var response_distinc = [];
             var html_document: string = ``;
             var value1 = "FALSE";
+            var value2 = "TRUE";
 
             var pdfName = '';
+
+            console.log("ITEM KEY", item.key);
 
 
             var document_container: Element = document.getElementById("tbl_documents_bdy");
@@ -1841,13 +2100,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             //  await sp.web.lists.getByTitle('Documents').items
 
             const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-              .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
-              .filter("ParentID eq '" + item.key + "' and IsFolder eq '" + value1 + "'")
-              .get();
+              .select("ID,ParentID,FolderID,Title,revision,IsFolder,description")
+              .top(5000)
+              .filter("ParentID eq '" + parseInt(item.key) + "' and IsFolder eq '" + value1 + "'")
+              .getAll();
+
+
+            console.log("CLICK LENGTH", all_documents.length);
+            console.log("CLICK LENGTH", all_documents);
+
 
             response_doc = all_documents;
 
-            //  var result = response_doc.filter((value, index, array) => array.lastIndexOf(value) === index);
 
             var result = response_doc.filter((obj, pos, arr) => {
               return arr.map(mapObj =>
@@ -2003,13 +2267,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     await btn_view_doc_details?.addEventListener('click', async () => {
 
 
-                      //    window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                      window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
 
 
                       //   window.open(`${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
 
 
-                      window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                      //    window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
                       //   window.location.replace(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
 
                       //    window.history.pushState("data", "Title", `https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Home.aspx?folder=${element.FolderID}`);
@@ -3141,10 +3405,26 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         }
 
-        onSelect={async () => {
 
-          this.onSelect(this.state.TreeLinks);
-        }}
+
+      // onClick={async(event: React.MouseEvent<HTMLInputElement>) => {
+
+      //   let value1 = "FALSE";
+      //   let value2 = null;
+      //   const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      //   .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+      //   .top(5000)
+      //   //  .filter("ParentID eq '" + item.key + "' and IsFolder eq '" + value1 + "' ")
+      //   .filter("IsFolder eq '" + value1 + "' and ParentID eq '" + item.key + "' and revision ne '" + value2 + "'")
+
+      //   // .filter("ParentID eq '" + item.key + "'")
+      //   // .filter(" IsFolder eq '" + value1 + "'")
+      //   .getAll();
+
+      //   console.log("ITEMS LOADED", all_documents);
+      //   console.log("ITEMS LOADED LENGTH", all_documents.length);
+
+      // }}
 
 
 
@@ -3164,158 +3444,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
-  private async loadDocsFromFolders(id: any) {
-
-    //render table
-    {
-
-      var response_doc = null;
-      var response_distinc = [];
-      var html_document: string = ``;
-      var value1 = "FALSE";
-
-      var pdfName = '';
-
-
-      var document_container: Element = document.getElementById("tbl_documents_bdy");
-      document_container.innerHTML = "";
-
-
-      const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-        .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
-        .filter("ParentID eq '" + x + "' and IsFolder eq '" + value1 + "'")
-        .get();
-
-      response_doc = all_documents;
-
-
-      var result = response_doc.filter((obj, pos, arr) => {
-        return arr.map(mapObj =>
-          mapObj.Title).lastIndexOf(obj.Title) == pos;
-      });
-
-      console.log("ALL", response_doc);
-
-      console.log("RESULT DISTINCT", result);
-      console.log("RESULT DISTINCT ARRAY LOT LA", response_distinc);
-
-
-      if (result.length > 0) {
-
-
-        html_document = ``;
-        $("#alert_0_doc").css("display", "none");
-        $("#table_documents").css("display", "block");
-
-
-
-        await result.forEach(async (element) => {
-
-
-
-          var urlFile = '';
-          html_document += `
-                    <tr>
-                    <td class="text-left">${element.Id}</td>
-    
-                    <td class="text-left">${element.Title}</td>
-    
-                    <td class="text-left"> 
-                    ${element.description}          
-                    </td>
-    
-                    
-                    <td>
-                    <a href="#" title="Mettre à jour le document" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details">
-                    <svg aria-hidden="true" focusable="false" data-prefix="far" 
-                    data-icon="pen-to-square" class="svg-inline--fa fa-pen-to-square fa-icon fa-2x" 
-                    role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                    <path fill="currentColor" d="M373.1 24.97C401.2-3.147 446.8-3.147 474.9 24.97L487 37.09C515.1 65.21 515.1 110.8 487 138.9L289.8 336.2C281.1 344.8 270.4 351.1 258.6 354.5L158.6 383.1C150.2 385.5 141.2 383.1 135 376.1C128.9 370.8 126.5 361.8 128.9 353.4L157.5 253.4C160.9 241.6 167.2 230.9 175.8 222.2L373.1 24.97zM440.1 58.91C431.6 49.54 416.4 49.54 407 58.91L377.9 88L424 134.1L453.1 104.1C462.5 95.6 462.5 80.4 453.1 71.03L440.1 58.91zM203.7 266.6L186.9 325.1L245.4 308.3C249.4 307.2 252.9 305.1 255.8 302.2L390.1 168L344 121.9L209.8 256.2C206.9 259.1 204.8 262.6 203.7 266.6zM200 64C213.3 64 224 74.75 224 88C224 101.3 213.3 112 200 112H88C65.91 112 48 129.9 48 152V424C48 446.1 65.91 464 88 464H360C382.1 464 400 446.1 400 424V312C400 298.7 410.7 288 424 288C437.3 288 448 298.7 448 312V424C448 472.6 408.6 512 360 512H88C39.4 512 0 472.6 0 424V152C0 103.4 39.4 64 88 64H200z"></path></svg></a>
-    
-    
-    
-                   <a href="#"  title="Voir le document" id="${element.Id}_view_doc"  class="btn_view_doc" style="padding-left: inherit;">
-                   <svg aria-hidden="true" focusable="false" data-prefix="far" 
-                   data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
-                   role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                   <path fill="currentColor" d="M160 256C160 185.3 217.3 128 288 128C358.7 128 416 185.3 416 256C416 326.7 358.7 384 288 384C217.3 384 160 326.7 160 256zM288 336C332.2 336 368 300.2 368 256C368 211.8 332.2 176 288 176C287.3 176 286.7 176 285.1 176C287.3 181.1 288 186.5 288 192C288 227.3 259.3 256 224 256C218.5 256 213.1 255.3 208 253.1C208 254.7 208 255.3 208 255.1C208 300.2 243.8 336 288 336L288 336zM95.42 112.6C142.5 68.84 207.2 32 288 32C368.8 32 433.5 68.84 480.6 112.6C527.4 156 558.7 207.1 573.5 243.7C576.8 251.6 576.8 260.4 573.5 268.3C558.7 304 527.4 355.1 480.6 399.4C433.5 443.2 368.8 480 288 480C207.2 480 142.5 443.2 95.42 399.4C48.62 355.1 17.34 304 2.461 268.3C-.8205 260.4-.8205 251.6 2.461 243.7C17.34 207.1 48.62 156 95.42 112.6V112.6zM288 80C222.8 80 169.2 109.6 128.1 147.7C89.6 183.5 63.02 225.1 49.44 256C63.02 286 89.6 328.5 128.1 364.3C169.2 402.4 222.8 432 288 432C353.2 432 406.8 402.4 447.9 364.3C486.4 328.5 512.1 286 526.6 256C512.1 225.1 486.4 183.5 447.9 147.7C406.8 109.6 353.2 80 288 80V80z">
-                   </path></svg>
-    
-                   </a>
-    
-                    </td>
-                  
-                   `;
-
-
-          await sp.web.lists.getByTitle("Documents")
-            .items
-            .getById(parseInt(element.Id))
-            .attachmentFiles
-            .select('FileName', 'ServerRelativeUrl')
-            .get()
-            .then(responseAttachments => {
-              responseAttachments
-                .forEach(attachmentItem => {
-                  pdfName = attachmentItem.FileName;
-                  urlFile = attachmentItem.ServerRelativeUrl;
-                });
-
-
-
-            })
-
-
-            .then(async () => {
-
-
-
-              const btn_view_doc = document.getElementById(element.Id + '_view_doc');
-              const btn_view_doc_details = document.getElementById(element.Id + '_view_doc_details');
-
-
-
-              await btn_view_doc?.addEventListener('click', async (event) => {
-
-
-                $(".modal").css("display", "block");
-                window.open(`${urlFile}#toolbar=0`, '_blank');
-
-              });
-
-
-
-              //view details_doc
-              await btn_view_doc_details?.addEventListener('click', async () => {
-
-
-                window.open(`https://frcidevtest.sharepoint.com/sites/myGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.Id}`, '_blank');
-
-              });
-
-
-            });
-
-          console.log("URL FILE", urlFile);
-
-
-
-
-        });
-
-
-        document_container.innerHTML += html_document;
-      }
-
-      else {
-        $("#alert_0_doc").css("display", "block");
-        $("#table_documents").css("display", "none");
-      }
-
-    }
-
-
-  }
 
 
 }
