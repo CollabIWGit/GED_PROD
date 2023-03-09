@@ -732,29 +732,27 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         await this.getParentID(x);
         const parentIDs = await this.getParentID(x);
         const allItems = await this._getLinks2(sp);
-
         this.setState({ parentIDArray: parentIDs });
         this.setState({ TreeLinks: allItems });
-
        // await this.loadDocs();
-
-
         //  this._getLinks2(sp);
 
-
       }
+
+
+      // $('#tbl_documents').DataTable({
+      //   responsive: true,
+      // });
 
 
     })();
 
 
 
-
-
-
     // this.render();
 
   }
+
 
 
   // public async componentWillMount() {
@@ -777,10 +775,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   private async getParentID(id: any) {
 
     var parentID = null;
+    var value1 = "FALSE";
+    var value2 = "TRUE";
 
     var parentIDArray = [];
 
-    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "'").get().then((results) => {
+    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
       parentID = results[0].ParentID;
 
       // this.setState({ parentIDArray: [...this.state.parentIDArray, parentID] });
@@ -792,7 +792,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
     while (parentID != 1) {
-      await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parentID + "'").get().then((results) => {
+      await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID, Title").filter("FolderID eq '" + parentID + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
         parentID = results[0].ParentID;
         // this.setState({ parentIDArray: [parentID, ...this.state.parentIDArray] });
         parentIDArray.unshift(parentID);
@@ -825,7 +825,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     return parentIDArray;
 
   }
-
 
   public render(): React.ReactElement<IMyGedTreeViewProps> {
 
@@ -2225,16 +2224,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     {
                       // $(".btn_view_doc").attr("oncontextmenu","return false;");
 
-                      // var table = $('#tbl_documents').DataTable({
-                      //   responsive: true,
-                      // });
+                 
 
                       // $('#tbl_documents tbody').on('click', '.btn_view_doc', async function () {
                       //   var data = table.row($(this).parents('tr')).data();
                       //   window.open(`${urlFile}`, '_blank');
                       // });
-
-
 
                     }
 

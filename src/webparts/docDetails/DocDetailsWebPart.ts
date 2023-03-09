@@ -32,7 +32,7 @@ SPComponentLoader.loadCss('https://cdn.datatables.net/1.10.25/css/jquery.dataTab
 
 SPComponentLoader.loadCss('https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css');
 
-SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js');
+// SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js');
 
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js");
 SPComponentLoader.loadScript('https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js');
@@ -688,7 +688,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     $("#myTab a").click((e) => {
       e.preventDefault();
-      (<any>$(this)).tab("show");
+    //  (<any>$(this)).tab("show");
+    $(this).tab("show");
+
 
       table.columns.adjust().draw();
 
