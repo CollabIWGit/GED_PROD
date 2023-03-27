@@ -33,20 +33,11 @@ SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.2/TweenMax.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/CSSRulePlugin.min.js");
-SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/ScrollTrigger.min.js");
+// SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/ScrollTrigger.min.js");
 SPComponentLoader.loadCss('https://unpkg.com/swiper@7/swiper-bundle.min.css');
 
 
 
-// require('./../../../lib/common/css/bootstrap/mi');
-// require('./../../../common/css/basic.css');
-require('./../../../src/common/css/media.css');
-require('./../../../src/common/css/basic.css');
-require('./../../../src/common/css/global.css');
-require('./../../../src/common/css/common.css');
-// require('./../../../src/common/css/qlf5ifj.css');
-require('./../../../src/common/js/custom.js');
-require('./../../../src/common/js/animation.js');
 
 
 
@@ -188,7 +179,17 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 </main>
 
 `;
-
+        // require('./../../../lib/common/css/bootstrap/mi');
+        // require('./../../../common/css/basic.css');
+        require('./../../../src/common/css/media.css');
+        require('./../../../src/common/css/basic.css');
+        require('./../../../src/common/css/global.css');
+        require('./../../../src/common/css/common.css');
+        // require('./../../../src/common/css/qlf5ifj.css');
+        require('./../../../src/common/js/custom.js');
+        setTimeout(() => {
+            require('./../../../src/common/js/animation.js');
+        }, 2000)
 
 
         this._renderNavImage();
@@ -202,7 +203,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
     private async _getNavImage(): Promise<any> {
         //  const response = await this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + "/_api/web/lists/GetByTitle('PageDaccueilPhoto')/Items", SPHttpClient.configurations.v1);
         const response: any[] = (await sp.web.lists.getByTitle("PageDaccueilPhoto").items.orderBy("Order", false).get());
-        console.log("order", response.sort);
+        // console.log("order", response.sort);
         return response;
         // return await response.json();
     }
@@ -223,7 +224,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 let html = ` <div class="swiper-slide">
                     <div>
                         <img src="https://ncaircalin.sharepoint.com/${imageJson}"
-                            class="img-responsive" alt="" />
+                            class="img-responsive2" alt="" />
                     </div>
                 </div>`;
                 swiper_html += html;
@@ -311,12 +312,14 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                                         </div>`;
                     }
                     else {
-                        html4 += `<a href="${item.url}" class="w100 flex-basic flex-justify-center flex-align-center">
+                        if ((item.linksType == "PNT")) {
+                            html4 += `<a href="${item.url}" class="w100 id="PNT" flex-basic flex-justify-center flex-align-center">
                                         <div class="info-emploi-text w85">
                                             <div class="info-emploi-title">
                                                 > ${item.Title}
                                             </div>
                                         </div>`;
+                        }
                     }
                 });
 
@@ -344,9 +347,36 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
     }
 
+
+    // private async checkPermission() {
+    //     const groupTitle = [];
+    //     let groups: any = await sp.web.currentUser.groups();
+
+    //     await Promise.all(groups.map(async (perm) => {
+
+    //         groupTitle.push(perm.Title);
+
+    //     }));
+
+    //     // if (groupTitle.includes("myGed Visitors")) {
+    //     if (groupTitle.includes("myGED Visitors")) {
+
+    //         $("#PNT").css("display", "none");
+
+    //         $("#PNT ").prop('disabled', true);
+
+    //     }
+    //     else {
+
+    //         // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
+    //     }
+
+
+    // }
+
     private async _renderCatBtn() {
         let web = Web(this.context.pageContext.web.absoluteUrl);
-        const items = await web.lists.getByTitle("HomepageCatergoryLinks").items.get();
+        const items = await web.lists.getByTitle("HomepageCategoryLinks").items.get();
         let htmlcatBtn = '';
         const catBtn: Element = this.domElement.querySelector('#catBtn');
         items.forEach((element) => {
@@ -356,55 +386,55 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 bgImage: element.bgImage
             };
             const imageJson2 = ((JSON.parse(element.bgImage)).serverRelativeUrl);
-            htmlcatBtn +=`
+            htmlcatBtn += `
             <div class="cta-mg-repeated">
                 <a href="${element.url}" style="background-image: url('https://ncaircalin.sharepoint.com/${imageJson2}')">
                     ${element.Title}
                 </a>
             </div>`;
-            console.log("url",element.url);
+            console.log("url", element.url);
         });
         catBtn.innerHTML += htmlcatBtn;
     }
 
     protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
-            if(!currentTheme) {
-                return;
-            }
+        if (!currentTheme) {
+            return;
+        }
 
         this._isDarkTheme = !!currentTheme.isInverted;
-            const {
-                semanticColors
-            } = currentTheme;
-            this.domElement.style.setProperty('--bodyText', semanticColors.bodyText);
-            this.domElement.style.setProperty('--link', semanticColors.link);
-            this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered);
+        const {
+            semanticColors
+        } = currentTheme;
+        this.domElement.style.setProperty('--bodyText', semanticColors.bodyText);
+        this.domElement.style.setProperty('--link', semanticColors.link);
+        this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered);
 
-        }
+    }
 
-    protected get dataVersion(): Version {
-            return Version.parse('1.0');
-        }
+    // protected get dataVersion(): Version {
+    //         return Version.parse('1.0');
+    //     }
 
     protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
-            return {
-                pages: [
-                    {
-                        header: {
-                            description: strings.PropertyPaneDescription
-                        },
-                        groups: [
-                            {
-                                groupName: strings.BasicGroupName,
-                                groupFields: [
-                                    PropertyPaneTextField('description', {
-                                        label: strings.DescriptionFieldLabel
-                                    })
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            };
-        }
+        return {
+            pages: [
+                {
+                    header: {
+                        description: strings.PropertyPaneDescription
+                    },
+                    groups: [
+                        {
+                            groupName: strings.BasicGroupName,
+                            groupFields: [
+                                PropertyPaneTextField('description', {
+                                    label: strings.DescriptionFieldLabel
+                                })
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+    }
 }
