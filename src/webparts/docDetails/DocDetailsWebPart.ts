@@ -4,7 +4,8 @@ import {
   PropertyPaneTextField
 } from '@microsoft/sp-property-pane';
 
-import $ from 'jquery';
+import * as $ from 'jquery';
+import 'jquery-ui';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { escape } from '@microsoft/sp-lodash-subset';
@@ -23,24 +24,31 @@ import { ISiteUserInfo } from '@pnp/sp/site-users/types';
 import 'jstree';
 import { Navigation } from 'spfx-navigation';
 import * as moment from 'moment';
+import 'downloadjs';
+import { degrees, PDFDocument, radians, rgb, rotateDegrees, rotateRadians, StandardFonts, } from 'pdf-lib/cjs/api';
+import download from 'downloadjs';
+import { saveAs } from 'file-saver';
+import { SiteGroups } from '@pnp/sp/site-groups';
+//import * as pdfjsLib from 'pdfjs-dist';
 
 
 
-require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
+
+
 
 SPComponentLoader.loadCss('https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css');
 
-SPComponentLoader.loadCss('https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css');
+// SPComponentLoader.loadScript("https://code.jquery.com/ui/1.12.1/jquery-ui.js");
+// SPComponentLoader.loadCss("https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css");
 
-// SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js');
 
-SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js");
-SPComponentLoader.loadScript('https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js');
+SPComponentLoader.loadScript('');
+SPComponentLoader.loadScript('');
+SPComponentLoader.loadScript('');
 
-// SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js');
 
-require('./../../common/css/doctabs.css');
-require('./../../common/css/minBootstrap.css');
+
+
 
 //require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
 // require('./../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
@@ -66,6 +74,9 @@ export interface IDocDetailsWebPartProps {
 
 
 
+
+
+
 export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetailsWebPartProps> {
 
   private graphClient: MSGraphClient;
@@ -74,7 +85,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
 
+
   protected onInit(): Promise<void> {
+    SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js');
+
     return new Promise<void>((resolve: () => void, reject: (error: any) => void): void => {
       // this.user = this.context.pageContext.user;
       sp.setup({
@@ -89,6 +103,16 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         }, err => reject(err));
     });
   }
+
+  // private async checkIndividualPermission(id: any) {
+  //   const response = await sp.web.lists
+  //     .getByTitle("Documents")
+  //     .items.getById(parseInt(id))
+  //     .roleAssignments();
+
+  //   console.log("PERMISSION RESPONSE", response);
+
+  // }
 
   private getDocTitle() {
     var queryParms = new URLSearchParams(document.location.search.substring(1));
@@ -112,9 +136,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     if (myParm) {
       return myParm.trim();
     }
-  }
-
-  private async _renderList() {
   }
 
   private async getParentID(id: any) {
@@ -200,184 +221,390 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
+  public async getAllUsersInGroup(groupName: any): Promise<string[]> {
+    try {
+      const group = await sp.web.siteGroups.getByName(groupName);
+      const users = await group.users();
+      const emailAddresses = users.map(user => user.Email);
+      console.log(`Users in group '${groupName}': ${emailAddresses}`);
+      return emailAddresses;
+    } catch (error) {
+      console.error(`Error getting users in group '${groupName}': ${error}`);
+      return [];
+    }
+  }
 
-  public render(): void {
+  private async downloadDoc(fileUrl: string, fileName: any, folderID: any, filigraneText: any) {
+
+    try {
+      // Add message to the DOM to notify the user that the file is being downloaded
+      const message = document.createElement('div');
+      message.textContent = 'Downloading file...';
+      message.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #f54630;
+        color: white;
+        text-align: center;
+        font-size: 24px;
+        padding: 10px 0;
+      `;
+      document.body.appendChild(message);
+
+      const user = await sp.web.currentUser();
+
+      const dateDownload = Date();
+
+      // const textWatermark = 'UNCONTROLLED COPY - Downloaded on ' + dateDownload + ' .';
+      const textWatermark = filigraneText + dateDownload + ' .';
 
 
-    //  SPComponentLoader.loadCss('https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css');
-    // SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js');
+      const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      console.log('pdfDoc Starting...');
+
+      const pages = await pdfDoc.getPages();
+
+      for (const [i, page] of Object.entries(pages)) {
+        const firstPage = pages[0];
+
+        const { width, height } = firstPage.getSize();
+
+        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const fontSize = 16;
+
+        page.drawText(textWatermark, {
+          x: 60,
+          y: 60,
+          size: fontSize,
+          font: helveticaFont,
+          color: rgb(1, 0, 1),
+          opacity: 0.4,
+          rotate: degrees(55)
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+
+      console.log('pdfBytes: ', pdfBytes);
+
+      // Remove the message from the DOM
+      document.body.removeChild(message);
+
+      download(pdfBytes, fileName, "application/pdf");
+
+      await this.createAudit($("#input_number").val(), folderID, user.Title, "Telechargement");
+
+    } catch (e) {
+      alert("Cannot download this file for the following reason: " + e);
+
+      // Remove the message from the DOM in case of an error
+      const message = document.querySelector('div');
+      if (message) {
+        document.body.removeChild(message);
+      }
+
+      window.location.reload();
+    }
+  }
+
+  private async openPDFInBrowser(url: any, filigraneText: string) {
+
+    var pdfBytes = await this.generatePdfBytes(url, filigraneText);
+
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url_1 = URL.createObjectURL(blob);
+    const win = window.open(url_1, '_blank');
+    //win.focus();
+  }
+
+  private async openPDFInGoogleViewer(pdfUrl: string): Promise<void> {
+    try {
+      // Fetch the PDF file using a proxy server
+      const proxyUrl = 'https://example.com/proxy?url=';
+      const response = await fetch(proxyUrl + encodeURIComponent(pdfUrl));
+      const blob = await response.blob();
+
+      // Convert the PDF file to a data URL
+      const dataUrl = URL.createObjectURL(blob);
+
+      // Open the PDF file in the Google PDF viewer
+      const viewerUrl = `https://docs.google.com/viewerng/viewer?url=${encodeURIComponent(dataUrl)}`;
+      window.open(viewerUrl);
+    } catch (error) {
+      console.error('Failed to open PDF file:', error);
+    }
+  }
+
+  private async generatePdfBytes(fileUrl: string, filigraneText: string): Promise<Uint8Array> {
+    try {
+      const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+      const pages = await pdfDoc.getPages();
+
+      const dateDownload = Date();
+
+      for (const [i, page] of Object.entries(pages)) {
+        const firstPage = pages[0];
+        const { width, height } = firstPage.getSize();
+        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const fontSize = 16;
+
+        page.drawText(filigraneText + dateDownload, {
+          x: 60,
+          y: 60,
+          size: fontSize,
+          font: helveticaFont,
+          color: rgb(1, 0, 1),
+          opacity: 0.4,
+          rotate: degrees(55)
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+
+      return pdfBytes;
+    } catch (e) {
+      console.error('Failed to generate PDF bytes:', e);
+      throw e;
+    }
+  }
+
+  private async downloadPdf(fileName: any, folderID: any, fileUrl: any, filigraneText: string, userTitle: any) {
+
+
+    try {
+      var pdfInBytes = await this.generatePdfBytes(fileUrl, filigraneText);
+
+      const message = document.createElement('div');
+      message.textContent = 'Downloading file...';
+      message.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #f54630;
+        color: white;
+        text-align: center;
+        font-size: 24px;
+        padding: 10px 0;
+      `;
+      document.body.appendChild(message);
+
+      download(pdfInBytes, fileName, "application/pdf");
+      await this.createAudit($("#input_number").val(), folderID, userTitle, "Telechargement");
+    }
+    catch (e) {
+      alert("Cannot download this file for the following reason: " + e);
+
+      // Remove the message from the DOM in case of an error
+      const message = document.querySelector('div');
+      if (message) {
+        document.body.removeChild(message);
+      }
+
+      window.location.reload();
+    }
+
+
+
+  }
+
+  public async render(): Promise<void> {
+
     this.domElement.innerHTML = `
+
 
     <div class="wrapper d-flex align-items-stretch">
     
-        <div id="jstree_demo_div"></div>
+    <div id="loader" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; backdrop-filter: blur(5px);">
+    <img src="https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/loader.gif" alt="Loading..." />
+  </div>
+  
     
-        <div class="jumbotron">
-            <div class="row">
-                <div class="col-md-7 top-buffer">
-                    <h2 id="h2_doc_title">
-                    </h2>
-                </div>
-                <div class="text-right inline" id="view_doc">
-                    <h2>
-                        <a href="#" target="_blank" id="open_doc" title="View document"> <i class="fa-regular fa-eye"
-                                title="voir"></i></a>
-
-                                <a href="#" target="_blank" id="delete_doc" title="View document"> <i class="fa-solid fa-trash" title="Supprimer le document" style="
+        <div id="contentDetails">
+    
+            <div class="jumbotron">
+                <div class="row">
+                    <div class="col-md-7 top-buffer">
+                        <h2 id="h2_doc_title">
+                        </h2>
+                    </div>
+                    <div class="text-right inline" id="view_doc">
+                        <h2>
+                            <a href="#" role="button" id="open_doc" title="View document"> <i class="fa-regular fa-eye"
+                                    title="voir"></i></a>
+    
+                            <a href="#" id="delete_doc" role="button" title="delete document"> <i class="fa-solid fa-trash"
+                                    title="Supprimer le document" style="
                                 padding-left: 0.5em;"></i></a>
-                                
-                    </h2>
+    
+                            <a href="#" id="download_doc" role="button" title="Telecharger le document"> <i
+                                    class="fa-solid fa-download" title="Telecharger le document" style="
+                                padding-left: 0.5em;"></i></a>
+
+
+                                <label class="switch" id="switch_fav">
+  <input type="checkbox" id="bookmark-switch">
+  <span class="slider round"></span>
+</label>
+    
+    
+    
+    
+                        </h2>
+                    </div>
                 </div>
             </div>
-        </div>
     
-        <div id="doc_path">
+            <div id="doc_path">
     
-        </div>
+            </div>
     
-        <ul class="nav nav-tabs" id="myTab">
-            <li class="active"><a data-toggle="tab" href="#informations">Informations</a></li>
-            <li><a data-toggle="tab" href="#versions">Toute Versions</a></li>
-            <li><a data-toggle="tab" href="#access">Droits d'accès</a></li>
-            <li><a data-toggle="tab" href="#notifications">Notifications</a></li>
-            <li><a data-toggle="tab" href="#audit">Piste d'audit</a></li>
-        </ul>
+            <ul class="nav nav-tabs" id="myTab">
+                <li class="active"><a data-toggle="tab" href="#informations">Informations</a></li>
+                <li><a data-toggle="tab" href="#versions">Toute Versions</a></li>
+                <li><a data-toggle="tab" href="#access">Droits d'accès</a></li>
+                <li><a data-toggle="tab" href="#notifications">Notifications</a></li>
+                <li><a data-toggle="tab" href="#audit">Piste d'audit</a></li>
+            </ul>
     
-        <div class="tab-content">
+            <div class="tab-content">
     
-            <div id="informations" class="tab-pane fade in active">
-                <h3>Informations</h3>
-    
+                <div id="informations" class="tab-pane fade in active">
+                    <h3>Informations</h3>
     
     
     
     
-                <div class="row" style="
+    
+                    <div class="row" style="
       box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%);
       margin: 2em;
       padding: 2em;">
-                    <div class="col-lg-12">
+                        <div class="col-lg-12">
     
     
-                        <div class="w3-container" id="form">
+                            <div class="w3-container" id="form">
     
-                            <legend>Détails</legend>
+                                <legend>Détails</legend>
     
-                            <div class="row">
-                                <div class="col-lg-6">
+                                <div class="row">
+                                    <div class="col-lg-6">
     
-                                    <div class="form-group">
-                                        <label for="input_number">Nom du fichier</label>
-                                        <input type="text" id='input_number' class='form-control' disabled>
+                                        <div class="form-group">
+                                            <label for="input_number">Nom du document</label>
+                                            <input type="text" id='input_number' class='form-control' disabled>
+                                        </div>
+    
                                     </div>
     
-                                </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_type_doc">Dossier</label>
+                                            <input type="text" class="form-control" id="input_type_doc" list='folders'
+                                                disabled />
     
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_type_doc">Dossier</label>
-                                        <input type="text" class="form-control" id="input_type_doc" list='folders'
-                                            disabled />
-    
-                                        <datalist id="folders">
-                                            <select id="select_folders"></select>
-                                        </datalist>
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Description</label>
-                                        <textarea id='input_description' class='form-control' rows="2"></textarea>
-                                    </div>
-    
-                                </div>
-    
-                                <div class="col-lg-6">
-    
-                                    <div class="form-group">
-                                        <label for="input_number">Mots-clés</label>
-                                        <textarea id='input_keywords' class='form-control' rows="2"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Owner</label>
-                                        <input type="text" id='created_by' class='form-control' disabled>
+                                            <datalist id="folders">
+                                                <select id="select_folders"></select>
+                                            </datalist>
+                                        </div>
                                     </div>
                                 </div>
     
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Date de création</label>
-                                        <input type="text" id='creation_date' class='form-control' disabled>
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <legend>Détails de dernière mise à jour</legend>
-    
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Revision</label>
-                                        <input type="text" id='input_revision' class='form-control'>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Description</label>
+                                            <textarea id='input_description' class='form-control' rows="2"></textarea>
+                                        </div>
     
                                     </div>
-                                </div>
     
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Date</label>
-                                        <input id="input_reviewDate" name="myBrowser" class='form-control' type="text"
-                                            readonly>
+                                    <div class="col-lg-6">
     
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Fichier</label>
-                                        <input type="file" name="file" id="file_ammendment_update" class="form-control">
-    
+                                        <div class="form-group">
+                                            <label for="input_number">Mots-clés</label>
+                                            <textarea id='input_keywords' class='form-control' rows="2"></textarea>
+                                        </div>
                                     </div>
                                 </div>
     
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Nom du fichier local</label>
-                                        <input type="text" id='input_filename' class='form-control' disabled />
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Owner</label>
+                                            <input type="text" id='created_by' class='form-control' disabled>
+                                        </div>
+                                    </div>
     
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Date de création</label>
+                                            <input type="text" id='creation_date' class='form-control' disabled>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
     
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Updated by :</label>
-                                        <input type="text" id='updated_by' class='form-control' disabled>
+                                <legend>Détails de dernière mise à jour</legend>
     
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Revision</label>
+                                            <input type="text" id='input_revision' class='form-control'>
+    
+                                        </div>
+                                    </div>
+    
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Date</label>
+                                            <input id="input_reviewDate" name="myBrowser" class='form-control' type="text"
+                                                readonly>
+    
+                                        </div>
                                     </div>
                                 </div>
     
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="input_number">Date</label>
-                                        <input type="text" id='updated_time' class='form-control' disabled>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Fichier</label>
+                                            <input type="file" name="file" id="file_ammendment_update" class="form-control">
     
+                                        </div>
+                                    </div>
+    
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Nom du fichier local</label>
+                                            <input type="text" id='input_filename' class='form-control' disabled />
+    
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
     
-                            <div class="line line-dashed" style="
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Updated by :</label>
+                                            <input type="text" id='updated_by' class='form-control' disabled>
+    
+                                        </div>
+                                    </div>
+    
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="input_number">Date</label>
+                                            <input type="text" id='updated_time' class='form-control' disabled>
+    
+                                        </div>
+                                    </div>
+                                </div>
+    
+                                <div class="line line-dashed" style="
       height: 2px;
       margin: 10px 0;
       font-size: 0;
@@ -386,349 +613,371 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       border-width: 0;
       border-top: 1px solid #c9cbcc;"></div>
     
-                            <div class="row">
-                                <div class="col-lg-8">
+                                <div class="row">
+                                    <div class="col-lg-8">
     
-                                </div>
+                                    </div>
     
-                                <div class="col-lg-4 offset-8">
-                                    <button type="button" class="btn btn-primary update_details_doc"
-                                        id='update_details_doc'>Sauvegarder</button>
-                                    <button type="button" class="btn btn-primary" id='edit_cancel_doc'>Cancel</button>
+                                    <div class="col-lg-4 offset-8">
+                                        <button type="button" class="btn btn-primary update_details_doc"
+                                            id='update_details_doc'>Sauvegarder</button>
+                                        <button type="button" class="btn btn-primary" id='edit_cancel_doc'>Cancel</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
     
-    
-            </div>
-    
-            <div id="versions" class="tab-pane fade">
-                <h3>Toute Versions</h3>
-    
-                <div id="splistDocVersions"
-                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
                 </div>
     
-            </div>
+                <div id="versions" class="tab-pane fade">
+                    <h3>Toute Versions</h3>
     
-            <div id="access" class="tab-pane fade">
-                <h3>Droits d'accès</h3>
+                    <div id="splistDocVersions"
+                        style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
-                <div class="row" style="
+                    </div>
+    
+                </div>
+    
+                <div id="access" class="tab-pane fade">
+                    <h3>Droits d'accès</h3>
+    
+                    <div class="row" style="
       box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%);
       margin: 2em;
       padding: 2em;">
-                    <div class="col-lg-12">
+                        <div class="col-lg-12">
     
-                        <div class="w3-container" id="form_access_doc">
+                            <div class="w3-container" id="form_access_doc">
     
-                            <div class="row">
-                                <div class="col-lg-6">
+                                <div class="row">
+                                    <div class="col-lg-6">
     
-                                    <div class="form-group">
-                                        <label for="user_access_doc">Ajouter un droit d'accès utilisateur</label>
-                                        <input type="text" class="form-control" id="users_name" list='users' />
+                                        <div class="form-group">
+                                            <label for="user_access_doc">Ajouter un droit d'accès utilisateur</label>
+                                            <input type="text" class="form-control" id="users_name" list='users' />
     
-                                        <datalist id="users">
-                                            <select id="select_users"></select>
-                                        </datalist>
+                                            <datalist id="users">
+                                                <select id="select_users"></select>
+                                            </datalist>
+                                        </div>
+    
                                     </div>
     
-                                </div>
+                                    <div class="col-lg-4">
+                                        <div class="form-group">
+                                            <label for="permissions_user">Type</label>
+                                            <select class='form-control' name="permissions" id="permissions_user">
+                                                <option value="NONE">NONE</option>
+                                                <option value="READ">READ</option>
+                                                <option value="READ_WRITE">READ_WRITE</option>
+                                                <option value="ALL">ALL</option>
+                                            </select>
+                                        </div>
+                                    </div>
     
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label for="permissions_user">Type</label>
-                                        <select class='form-control' name="permissions" id="permissions_user">
-                                            <option value="NONE">NONE</option>
-                                            <option value="READ">READ</option>
-                                            <option value="READ_WRITE">READ_WRITE</option>
-                                            <option value="ALL">ALL</option>
-                                        </select>
+                                    <div class="col-lg-2" style="padding-top: 1.7em;">
+                                        <div class="form-group">
+                                            <button type="button" class="btn btn-primary add_user mb-2"
+                                                id="add_user">Ajouter</button>
+                                        </div>
                                     </div>
                                 </div>
     
-                                <div class="col-lg-2" style="padding-top: 1.7em;">
-                                    <div class="form-group">
-                                        <button type="button" class="btn btn-primary add_user mb-2"
-                                            id="add_user">Ajouter</button>
+    
+                                <div class="row">
+                                    <div class="col-lg-6">
+    
+                                        <div class="form-group">
+                                            <label for="user_access_doc">Ajouter un droit d'accès de groupe</label>
+                                            <input type="text" class="form-control" id="group_name" list='group' />
+    
+                                            <datalist id="group">
+                                                <select id="select_groups"></select>
+                                            </datalist>
+                                        </div>
+    
+                                    </div>
+    
+                                    <div class="col-lg-4">
+                                        <div class="form-group">
+                                            <label for="permissions_group">Type</label>
+                                            <select class='form-control' name="permissions_group" id="permissions_group">
+                                                <option value="NONE">NONE</option>
+                                                <option value="READ">READ</option>
+                                                <option value="READ_WRITE">READ_WRITE</option>
+                                                <option value="ALL">ALL</option>
+                                            </select>
+                                        </div>
+                                    </div>
+    
+                                    <div class="col-lg-2" style="padding-top: 1.7em;">
+                                        <div class="form-group">
+                                            <button type="button" class="btn btn-primary add_group mb-2"
+                                                id="add_group">Ajouter</button>
+                                        </div>
                                     </div>
                                 </div>
+    
                             </div>
     
     
-                            <div class="row">
-                                <div class="col-lg-6">
     
-                                    <div class="form-group">
-                                        <label for="user_access_doc">Ajouter un droit d'accès de groupe</label>
-                                        <input type="text" class="form-control" id="group_name" list='groups' />
-    
-                                        <datalist id="group">
-                                            <select id="select_group"></select>
-                                        </datalist>
-                                    </div>
-    
-                                </div>
-    
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label for="permissions_group">Type</label>
-                                        <select class='form-control' name="permissions" id="permissions_group">
-                                            <option value="NONE">NONE</option>
-                                            <option value="READ">READ</option>
-                                            <option value="READ_WRITE">READ_WRITE</option>
-                                            <option value="ALL">ALL</option>
-                                        </select>
-                                    </div>
-                                </div>
-    
-                                <div class="col-lg-2" style="padding-top: 1.7em;">
-                                    <div class="form-group">
-                                        <button type="button" class="btn btn-primary add_group mb-2"
-                                            id="add_group">Ajouter</button>
-                                    </div>
-                                </div>
-                            </div>
     
                         </div>
+                    </div>
     
-    
-    
+                    <div id="splistDocAccessRights"
+                        style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
                     </div>
                 </div>
     
-                <div id="splistDocAccessRights"
-                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
+                <div id="notifications" class="tab-pane fade">
+                    <h3>Notifications</h3>
     
-                </div>
-            </div>
-    
-            <div id="notifications" class="tab-pane fade">
-                <h3>Notifications</h3>
-    
-                <div class="row" style="
+                    <div class="row" style="
         box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%);
         margin: 2em;
         padding: 2em;">
-                    <div class="col-lg-12">
+                        <div class="col-lg-12">
     
-                        <div class="w3-container" id="form_notif_doc">
+                            <div class="w3-container" id="form_notif_doc">
     
-                            <div class="row">
-                                <div class="col-lg-6">
+                                <div class="row">
+                                    <div class="col-lg-6">
     
-                                    <div class="form-group">
-                                        <label for="users_name_notif">Ajouter une notification utilisateur :</label>
-                                        <input type="text" class="form-control" id="users_name_notif" list='users' />
+                                        <div class="form-group">
+                                            <label for="users_name_notif">Ajouter une notification utilisateur :</label>
+                                            <input type="text" class="form-control" id="users_name_notif" list='users' />
     
-                                        <datalist id="users">
-                                            <select id="select_users"></select>
-                                        </datalist>
+                                            <datalist id="users">
+                                                <select id="select_users"></select>
+                                            </datalist>
+                                        </div>
+    
                                     </div>
     
+    
+    
+                                    <div class="col-lg-3" style="padding-top: 1.7em;">
+                                        <div class="form-group">
+                                            <button type="button" class="btn btn-primary add_notif_user mb-2"
+                                                id="add_user_notif">Ajouter</button>
+                                        </div>
+                                    </div>
                                 </div>
     
     
+                                <div class="row">
+                                    <div class="col-lg-6">
     
-                                <div class="col-lg-3" style="padding-top: 1.7em;">
-                                    <div class="form-group">
-                                        <button type="button" class="btn btn-primary add_notif_user mb-2"
-                                            id="add_user_notif">Ajouter</button>
+                                        <div class="form-group">
+                                            <label for="group_name_notif">Ajouter une notification de groupe :</label>
+                                            <input type="text" class="form-control" id="group_name_notif" list='group' />
+    
+                                            <datalist id="group">
+                                                <select id="select_group"></select>
+                                            </datalist>
+                                        </div>
+    
+                                    </div>
+    
+    
+                                    <div class="col-lg-3" style="padding-top: 1.7em;">
+                                        <div class="form-group">
+                                            <button type="button" class="btn btn-primary add_notif_group mb-2"
+                                                id="add_group">Ajouter</button>
+                                        </div>
                                     </div>
                                 </div>
+    
                             </div>
     
     
-                            <div class="row">
-                                <div class="col-lg-6">
     
-                                    <div class="form-group">
-                                        <label for="group_name_notif">Ajouter une notification de groupe :</label>
-                                        <input type="text" class="form-control" id="group_name_notif" list='groups' />
-    
-                                        <datalist id="group">
-                                            <select id="select_group"></select>
-                                        </datalist>
-                                    </div>
-    
-                                </div>
-    
-    
-                                <div class="col-lg-3" style="padding-top: 1.7em;">
-                                    <div class="form-group">
-                                        <button type="button" class="btn btn-primary add_notif_group mb-2"
-                                            id="add_group">Ajouter</button>
-                                    </div>
-                                </div>
-                            </div>
     
                         </div>
+                    </div>
     
-    
-    
+                    <div id="splistDocNotifications"
+                        style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
                     </div>
-                </div>
     
-                <div id="splistDocNotifications"
-                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
                 </div>
     
+                <div id="audit" class="tab-pane fade">
+                    <h3>Piste d'audit</h3>
     
-            </div>
+                    <div id="splistDocAudit"
+                        style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
-            <div id="audit" class="tab-pane fade">
-                <h3>Piste d'audit</h3>
+                    </div>
     
-                <div id="splistDocAudit"
-                    style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
                 </div>
-    
     
             </div>
     
         </div>
     
     </div>
-    </div>
-    </div>
+    
+    
+    
+
     `;
+
+    require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
+    require('./../../common/jqueryui/jquery-ui.js');
+    require('./../../common/css/doctabs.css');
+    require('./../../common/css/minBootstrap.css');
+
+    SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js');
+    SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
+    SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
+
+
 
     var title = this.getDocTitle();
     var docId = this.getDocId();
 
     //require('./DocDetailsWebPartJS');
 
+    const loader = document.getElementById('loader');
 
     this.getParentID(this.getDocId());
-    this._getDocDetails(parseInt(docId));
-    this.checkPermission();
-    this._getAllVersions(title);
-    this._getAllAccess(docId);
-    this._getAllAudit(docId);
-    this._getAllNotifications(docId);
-    this.getSiteGroups();
-    this.getSiteUsers();
-    this.fileUpload();
-    this.load_folders();
 
+    try {
 
+      await this._getDocDetails(parseInt(docId)),
+        // await this.checkPermission(),
+        await this._getAllVersions(title),
+        await this._getAllAccess(docId),
+        await this._getAllAudit(docId),
+        await this._getAllNotifications(docId),
+        await this.getSiteGroups(),
+        await this.getSiteUsers(),
+        await this.load_folders(),
+        this.fileUpload();
 
-    // $('#jstree_demo_div').jstree(
-    //   {
-    //     "core": {
-    //       "animation": 0,
-    //       "check_callback": true,
-    //       "themes": { "stripes": true },
-    //       'data': {
-    //         'url': function (node) {
-    //           // Set the SharePoint site URL and list name
-    //           var siteUrl = "https://frcidevtest.sharepoint.com/sites/myGed";
-    //           var listName = "Documents";
+      $("#loader").css("display", "none");
 
-    //           // Set the REST API URL based on the node ID
-    //           var apiUrl = siteUrl + "/_api/web/lists/getbytitle('" + listName + "')/items";
-    //           if (node.id !== '') {
-    //             apiUrl += "?$filter=ParentID eq " + node.id; // replace ParentID with your own column name
-    //           }
+    } catch (error) {
+      // $("#loader").html(`Error: ${error.message}`);
+      $("#loader").css("display", "none");
 
-    //           console.log("RESPONSE", apiUrl);
-
-    //           return apiUrl;
-    //         },
-    //         'headers': {
-    //           'Accept': 'application/json;odata=verbose'
-    //         },
-    //         'data': function (node) {
-    //           // Set any additional request parameters here
-    //           return {};
-    //         },
-    //         'dataType': "json",
-    //         'contentType': "application/json; charset=utf-8",
-    //         'method': "GET",
-    //         'processData': false,
-    //         'success': function (data) {
-    //           // Map the SharePoint list data to the expected jstree format
-    //           var treeData = $.map(data.d.results, function (item) {
-    //             return {
-    //               'id': item.FolderID,
-    //               'parent': item.ParentID, // replace ParentID with your own column name
-    //               'text': item.Title // replace Title with your own column name
-    //             };
-    //           });
-    //           console.log("TREE DATA", treeData);
-    //           return treeData;
-    //         }
-    //       }
-    //     },
-    //     "types": {
-    //       // Define your node types here
-    //     },
-    //     "plugins": [
-    //       "contextmenu", "dnd", "search",
-    //       "state", "types", "wholerow"
-    //     ]
-    //   }
-
-
-
-    // );
-
-
-
-
-    // this.createPath();
-
-    $("#myTab a").click((e) => {
-      e.preventDefault();
-    //  (<any>$(this)).tab("show");
-    $(this).tab("show");
-
-
-      table.columns.adjust().draw();
-
-    });
-
+      console.log(error.message);
+    }
     //update document
-    $("#update_details_doc").click((e) => {
-      this.updateDocument(docId, title);
+
+
+    //add_permission user
+    $("#add_user").click(async (e) => {
+      await this.add_permission($("#users_name").val().toString());
     });
 
-    $("#add_user").click((e) => {
-      this.add_permission();
+    //add_permission_group
+    $("#add_group").click(async (e) => {
+
+      const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name").val());
+      console.log("TESTER GROUP USERS", stringGroupUsers);
+      await this.add_permission_group(stringGroupUsers);
     });
+
 
     $("#add_user_notif").click((e) => {
       this.add_notification();
     });
 
 
+    // var isBookmark = localStorage.getItem('bookmark') === 'true';
+    // if (isBookmark) {
+    //   $('#bookmark-switch').prop('checked', true);
+
+    // }
+
+    // Toggle the switch
+
+  }
+
+  private async addBookmark(docID: any, title: any) {
+    // Get the current page URL and title
+    var url = window.location.href;
+    //  var title = document.title;
+    let user_current = await sp.web.currentUser();
 
 
+    // Add the item to the Favourites list
+    await sp.web.lists.getByTitle("Marque_Pages").items.add({
+      Title: title,
+      url: url,
+      user: user_current.Title,
+      FolderID: docID
+    });
+
+    console.log('Item added to Favourites list.');
+  }
+
+
+
+  private async removeBookmark(docID: any) {
+    // Get the current page URL
+    var url = window.location.href;
+
+    // Find the item to delete from the Favourites list
+    var items = await sp.web.lists.getByTitle("Marque_Pages").items
+      .select("ID")
+      .filter(`FolderID eq '${Number(docID)}'`)
+      .get();
+
+    if (items.length === 0) {
+      console.log('Item not found in Favourites list.');
+      return;
+    }
+
+    // Delete the item from the Favourites list
+    await sp.web.lists.getByTitle("Marque_Pages").items.getById(items[0].ID).delete();
+
+    console.log('Item removed from Favourites list.');
   }
 
   private async updateDocument(folderId: string, title: string) {
 
-
-
     let user_current = await sp.web.currentUser();
 
     let text = $("#input_type_doc").val();
-    const myArray = text.toString().split("_");
-    let parentId = myArray[0];
+    const value1 = "TRUE";
+    var folder = '';
+
+
+    const all_folders = await sp.web.lists.getByTitle('Documents').items
+      .select("ID,ParentID,FolderID,Title,IsFolder,description")
+      .top(5000)
+      .filter("Title eq '" + text + "' and IsFolder eq '" + value1 + "' ")
+      .get();
+
+    await Promise.all(all_folders.map(async (doc) => {
+
+      folder = doc.FolderID;
+
+    }));
+
+
+
+    // const myArray = text.toString().split("_");
+    // let parentId = myArray[0];
 
     if ($('#file_ammendment').val() == '') {
 
       alert("Veuillez télécharger le fichier avant de continuer.");
 
     }
+
     else {
 
       if (confirm(`Etes-vous sûr de vouloir mettre à jour les détails de ${title} ?`)) {
@@ -742,7 +991,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
             keywords: $("#input_keywords").val(),
             doc_number: $("#input_number").val(),
             revision: $("#input_revision").val(),
-            ParentID: parseInt(parentId),
+            ParentID: parseInt(folder),
             FolderID: folderId,
             filename: $("#input_filename").val(),
             IsFolder: "FALSE",
@@ -756,6 +1005,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
               if (filename_add == "" || content_add == "") {
 
               }
+
               else {
                 var item = iar.data.ID;
 
@@ -798,13 +1048,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async deleteDocument(){
-
-  }
-
   private async checkPermission() {
     const groupTitle = [];
     let groups: any = await sp.web.currentUser.groups();
+
+    console.log("PERMISSION", groups);
 
     await Promise.all(groups.map(async (perm) => {
 
@@ -815,12 +1063,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     // if (groupTitle.includes("myGed Visitors")) {
     if (groupTitle.includes("Utilisateur MyGed")) {
 
-      $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc").css("display", "none");
+      $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc, #download_doc").css("display", "none");
 
       $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
 
     }
-    else {
+    else if (groupTitle.includes("Administrateur")) {
+
+      $("#input_number, #input_type_doc").prop('disabled', false);
+
 
       // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
     }
@@ -905,7 +1156,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async add_permission() {
+  private async add_permission(user_group: any) {
 
     //add permission user
 
@@ -916,7 +1167,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var docID = "";
 
 
-    const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
+    const user: any = await sp.web.siteUsers.getByEmail(user_group)();
+
 
 
     const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
@@ -945,7 +1197,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         permission: $("#permissions_user option:selected").val(),
         FolderIDId: docID.toString(),
         PrincipleID: user.Id,
-        LoginName: user.Title
+        LoginName: user.Title,
+        groupTitle: $("#group_name").val()
       })
         .then(() => {
           alert("Autorisation ajoutée à ce document avec succès.");
@@ -969,56 +1222,76 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
+  private async add_permission_group(group_name: string[]) {
+
+    //add permission user
+
+    var ifFolder = "FALSE";
+    var x = this.getDocId();
+    var doc_title = "";
+    var docID = "";
+
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+      .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
+
+    await Promise.all(all_documents.map(async (doc) => {
+      doc_title = doc.Title;
+      docID = doc.Id;
+    }));
+
+    console.log("USERS FOR PERMISSION", group_name);
+
+    try {
+      await Promise.all(group_name.map(async (email) => {
+        const user: any = await sp.web.siteUsers.getByEmail(email)();
+        await sp.web.lists.getByTitle("AccessRights").items.add({
+          Title: doc_title.toString(),
+          groupName: email,
+          permission: $("#permissions_group option:selected").val(),
+          FolderIDId: docID.toString(),
+          PrincipleID: user.Id,
+          LoginName: user.Title,
+          groupTitle: $("#group_name").val()
+        });
+      }));
+
+      alert("Authorization added successfully.");
+      window.location.reload();
+    }
+    catch (e) {
+      alert("Error: " + e.message);
+    }
+  }
+
   private async load_folders() {
+    const value1 = "TRUE";
+    const drp_folders = document.getElementById("select_folders");
 
+    if (!drp_folders) {
+      console.error("Dropdown element not found");
+      return;
+    }
 
-
-    var value1 = "TRUE";
-
-    var drp_folders = document.getElementById("select_folders");
-
-    // const allItems: any = await sp.web.lists.getByTitle('Documents').items.getAll(),
-
-    const all_folders: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
-
-
-    // console.log("ALL FOLDERS", all_folders.length);
+    const all_folders = await sp.web.lists.getByTitle('Documents').items
+      .select("ID,ParentID,FolderID,Title,IsFolder,description")
+      .top(5000)
+      .filter("IsFolder eq '" + value1 + "'")
+      .get();
 
     folders = all_folders;
 
     folders.forEach((result: any) => {
-      // if(result.IsFolder == "TRUE"){
-      // console.log("SELECT_FOLDERS", result.Title);
-      var opt = document.createElement('option');
+      const opt = document.createElement('option');
       opt.appendChild(document.createTextNode(result.Title));
-      opt.value = result.FolderID + "_" + result.Title;
+      opt.value = result.Title;
       drp_folders.appendChild(opt);
-      // }
-
     });
-
   }
 
   private fileUpload() {
-    $('#file_ammendment_update').on('change', () => {
-      const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
 
-
-      var file = input.files[0];
-      var reader = new FileReader();
-
-      reader.onload = ((file1) => {
-        return (e) => {
-          console.log(file1.name);
-
-          filename_add = file1.name,
-            content_add = e.target.result
-          $("#input_filename").val(file1.name);
-        };
-      })(file);
-
-      reader.readAsArrayBuffer(file);
-    });
   }
 
   private createPath(listDoc: any) {
@@ -1049,69 +1322,57 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   private async _getDocDetails(id: number) {
 
+    // var externalUrl = '';
+    // var url = '';
     var urlFile_download = '';
-    var titleFolder = '';
     var pdfNameDownload = '';
-    var ifFolder = "FALSE";
-    var ifFolderYES = "TRUE";
-    var docID = '';
-    var parentID = '';
-    var revision = '';
-    var description = '';
-    var revisionDate = '';
-    var keywords = '';
-    var owner = '';
-    var updatedBy = '';
-    var updatedDate = '';
-    var createdDate = '';
-    var folderTitle = '';
+
+    await this.checkPermission();
+
+    $('#file_ammendment_update').on('change', () => {
+      const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
 
 
+      var file = input.files[0];
+      var reader = new FileReader();
 
-    // const itemDoc: any = await sp.web.lists.getByTitle("Documents").items.getById(id)();
+      reader.onload = ((file1) => {
+        return (e) => {
+          console.log(file1.name);
 
+          filename_add = file1.name,
+            content_add = e.target.result
+          $("#input_filename").val(file1.name);
+        };
+      })(file);
+
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Get the document details
     const itemDoc: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate")
-      .filter("FolderID eq '" + id + "' and IsFolder eq '" + ifFolder + "'")
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate, attachmentUrl")
+      .filter("FolderID eq '" + id + "' and IsFolder eq 'FALSE'")
       .get();
 
-    await Promise.all(itemDoc.map(async (doc) => {
-
-
-      docID = doc.Id;
-      itemFolderId = doc.FolderID;
-      titleFolder = doc.Title;
-      parentID = doc.ParentID;
-      revision = doc.revision;
-      description = doc.description;
-      revisionDate = doc.revisionDate;
-      keywords = doc.keywords;
-      owner = doc.owner;
-      updatedDate = doc.updatedDate;
-      updatedBy = doc.updatedBy;
-      createdDate = doc.createdDate;
-
-    }));
-
-
+    // Get the folder details
     const itemFolder: any[] = await sp.web.lists.getByTitle('Documents').items
       .select("Id,ParentID,FolderID,Title")
-      .filter("FolderID eq '" + parseInt(parentID) + "' and IsFolder eq '" + ifFolderYES + "'")
+      .filter("FolderID eq '" + parseInt(itemDoc[0].ParentID) + "' and IsFolder eq 'TRUE'")
       .get();
 
-    await Promise.all(itemFolder.map(async (folder) => {
-
-      folderTitle = folder.Title;
-
-    }));
-
-
-    // const itemFolder: any = await sp.web.lists.getByTitle("Documents").items.getById(parseInt(parentID))();
+    // Get the attachment details
+    // const attachmentFiles: any[] = await sp.web.lists.getByTitle("Documents")
+    //   .items
+    //   .getById(parseInt(itemDoc[0].Id))
+    //   .attachmentFiles
+    //   .select('FileName', 'ServerRelativeUrl')
+    //   .get();
 
 
     await sp.web.lists.getByTitle("Documents")
       .items
-      .getById(parseInt(docID))
+      .getById(parseInt(itemDoc[0].Id))
       .attachmentFiles
       .select('FileName', 'ServerRelativeUrl')
       .get()
@@ -1124,62 +1385,153 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           });
       });
 
+    // Set the document details in the UI
+    $("#input_type_doc").val(itemFolder[0].Title);
+    $("#input_number").val(itemDoc[0].Title);
+    $("#input_revision").val(itemDoc[0].revision);
+    $("#input_keywords").val(itemDoc[0].keywords);
+    $("#input_description").val(itemDoc[0].description);
+    $("#created_by").val(itemDoc[0].owner);
+    $("#updated_by").val(itemDoc[0].updatedBy);
+    $("#updated_time").val(itemDoc[0].updatedDate);
+    $("#creation_date").val(itemDoc[0].createdDate);
+    $("#h2_doc_title").text(itemDoc[0].Title);
 
+    // Set the URL for downloading the attachment
+    let url = '';
+    let externalUrl = itemDoc[0].attachmentUrl;
 
-    $("#input_type_doc").val(parentID + "_" + folderTitle);
-    //  $("#input_type_doc").val(itemDoc.ParentID);
-    //input_type_doc
-    $("#input_number").val(titleFolder);
-    $("#input_revision").val(revision);
-    // $("#input_status").val(itemDoc.status);
-    // $("#input_owner").val(itemDoc.owner);
-    // $("#input_activeDate").val(itemDoc.active_date);
-    // $("#input_filename").val(itemDoc.filename);
-    // $("#input_author").val(itemDoc.author);
-    // // $("#input_reviewDate").val(item1.);
-    $("#input_keywords").val(keywords);
-    $("#input_description").val(description);
-    $("#created_by").val(owner);
+    if (externalUrl == undefined || externalUrl == null || externalUrl == "") {
+      url = urlFile_download;
+    } else {
+      url = externalUrl;
+    }
 
-    $("#updated_by").val(updatedBy);
-    $("#updated_time").val(updatedDate);
+    // Open the attachment in a new tab
+    let user_current = await sp.web.currentUser();
+    $("#open_doc").click(async (e) => {
+      await this.createAudit(itemDoc[0].Title, itemDoc[0].FolderID, user_current.Title, "Consultation");
+      window.open(`${url}`, '_blank');
+    });
 
-    // //   $("#creation_date").val(itemDoc.Created);
-    $("#creation_date").val(createdDate);
-    $("#h2_doc_title").text(titleFolder);
-    // $("#open_doc").attr("href", urlFile_download);
+    // Delete the document
+    $("#delete_doc").click(async (e) => {
+      if (confirm(`Are you sure you want to delete ${itemDoc[0].Title}?`)) {
+        try {
+          await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc[0].Id)).recycle();
+          alert("Document deleted successfully.");
+          window.location.reload();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    });
 
-    $("#open_doc").click((e) => {
-      window.open(`${urlFile_download}`, '_blank');
+    // Download the attachment
+    $("#download_doc").click(async (e) => {
+      const user = await sp.web.currentUser();
+      await this.downloadDoc(url, pdfNameDownload, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
+    });
+
+    $("#update_details_doc").click(async (e) => {
+      if (($("#input_type_doc").val() === itemFolder[0].Title ||
+        $("#input_number").val() === itemDoc[0].Title ||
+        $("#input_keywords").val() === itemDoc[0].keywords ||
+        $("#input_description").val() === itemDoc[0].description) && $("#input_revision").val() !== itemDoc[0].revision && $("#file_ammendment_update").val() !== '') {
+        // The fields are unchanged, so update the document metadata
+        await this.updateDocument(itemDoc[0].Id, itemFolder[0].Title);
+      } else {
+        // The fields are changed, so get the folder details and update the document metadata
+        const folder = await this.getFolder();
+        await this.updateDocMetadata(itemDoc[0].Id, folder.ID, itemDoc[0].FolderID, user_current.Title);
+      }
 
     });
 
-    $("#delete_doc").click(async (e) => {
 
+    const bookmarkSwitch = document.getElementById("bookmark-switch") as HTMLInputElement;
+    bookmarkSwitch.addEventListener("change", async () => {
+      await this.handleBookmarkSwitchChange.call(this, bookmarkSwitch.checked, itemDoc[0].FolderID, itemDoc[0].Title);
+    });
 
-        if (confirm(`Êtes-vous sûr de vouloir supprimer ${titleFolder} ?`)) {
+    const user = await sp.web.currentUser();
 
-          try {
-            var res = await sp.web.lists.getByTitle('Documents').items.getById(parseInt(docID)).delete()
-              .then(() => {
-                alert("Document supprimé avec succès.");
-              })
-              .then(() => {
-                window.location.reload();
-              });
-          }
-          catch (err) {
-            alert(err.message);
-          }
+    var items = await sp.web.lists.getByTitle("Marque_Pages").items
+    .select("ID")
+    .filter(`FolderID eq '${itemDoc[0].FolderID}' and user eq '${user.Title}'`)
+    .get();
 
+  if (items.length === 0) {
+    console.log('Item not found in Favourites list.');
+    return this.setBookmarkSwitchState(false);
+  }
 
-        }
-        else {
+  else{
+    return this.setBookmarkSwitchState(true);
 
-        }
+  }
 
-      });
+  }
 
+  private async setBookmarkSwitchState(isChecked: boolean) {
+    const bookmarkSwitch = document.getElementById("bookmark-switch") as HTMLInputElement;
+    bookmarkSwitch.checked = isChecked;
+  }
+
+  private async handleBookmarkSwitchChange(isChecked: boolean, doc_id: any, title: any) {
+    try {
+      if (isChecked) {
+        await this.addBookmark(Number(doc_id), title);
+        alert("You have set this document as favorite.");
+      } else {
+        await this.removeBookmark(doc_id);
+        alert("You have removed this document from favorites.");
+      }
+    } catch (error) {
+      console.error("Failed to update bookmark:", error);
+    }
+  }
+
+  private async getFolder() {
+    let folder = { ID: '', Title: '' };
+    const items = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title")
+      .filter(`Title eq '${$("#input_type_doc").val().toString()}' and IsFolder eq 'TRUE'`)
+      .get();
+    if (items.length > 0) {
+      folder.ID = items[0].Id;
+      folder.Title = items[0].Title;
+    }
+    return folder;
+  }
+
+  private async updateDocMetadata(id: any, folder: any, folderID: any, userTitle: any) {
+
+    try {
+      const list = sp.web.lists.getByTitle("Documents");
+
+      const i = await list.items.getById(id).update({
+        Title: $("#input_number").val(),
+        description: $("#input_description").val(),
+        keywords: $("#input_keywords").val(),
+        doc_number: $("#input_number").val(),
+        ParentID: Number(folder),
+
+      }).then(async () => {
+        await this.createAudit($("#input_number").val(), folderID, userTitle, "Modification");
+      })
+        .then(() => {
+
+          alert("Détails mis à jour avec succès");
+        })
+        .then(() => {
+          window.location.reload();
+        });
+    }
+
+    catch (err) {
+      alert(err.message);
+    }
 
   }
 
@@ -1254,7 +1606,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-
   private async _getAllVersions(title: string) {
 
     {
@@ -1272,7 +1623,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         <th class="text-left" >Url</th>
         <th class="text-left" >Revision</th>
         <th class="text-left" >Description</th>
-        <th class="text-left" >Actions</th>
+        <th class="text-left" >Pdf Name</th>
+        <th class="text-left" >Folder ID</th>
+        <th class="text-center" >Actions</th>
       </tr>
     </thead>
     <tbody id="tbl_documents_versions_bdy">`;
@@ -1284,23 +1637,37 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
       const all_documents_versions: any[] = await sp.web.lists.getByTitle('Documents').items
-        .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+        .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, attachmentUrl")
         .filter("Title eq '" + title + "' and IsFolder eq '" + value1 + "'")
         .get();
 
 
       response_doc_versions = all_documents_versions;
 
-      if (response_doc_versions.length > 0) {
+      // First, sort the array by revision in descending order
+      all_documents_versions.sort((a, b) => b.revision - a.revision);
+
+      // Then, find the highest revision
+      const highestRevision = all_documents_versions[0].revision;
+
+      // Finally, filter the array and remove the items with the highest revision
+      const filtered_documents_versions_1 = all_documents_versions.filter((document) => document.revision < highestRevision);
+
+      const filtered_documents_versions_2 = filtered_documents_versions_1.filter((document) => document.revision !== null);
+
+
+      if (filtered_documents_versions_2.length > 0) {
         $("#table_version_doc").css("display", "block");
 
         //  await Promise.all(contract.map(async (result) => {
         // await response_doc_versions.forEach(async (element_version) => {
 
-        await Promise.all(all_documents_versions.map(async (element_version) => {
+        await Promise.all(filtered_documents_versions_2.map(async (element_version) => {
 
           var pdfName = '';
           var urlFile = '';
+          var url = '';
+          var attachmentUrl = element_version.attachmentUrl;
 
 
           await sp.web.lists.getByTitle("Documents")
@@ -1318,6 +1685,14 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
             });
 
+          if (attachmentUrl == undefined || attachmentUrl == null || attachmentUrl == "") {
+            url = urlFile;
+          }
+          else {
+            url = attachmentUrl;
+
+          }
+
 
           html += `
           <tr>
@@ -1326,25 +1701,40 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           <td class="text-left">${element_version.Title}</td>
 
           <td class="text-left"> 
-          ${urlFile}          
+         ${url}          
           </td>
 
           <td class="text-left"> 
           ${element_version.revision}          
           </td>
 
+ 
           <td class="text-left"> 
           ${element_version.description}          
           </td>
+
+          <td class="text-left"> 
+          ${pdfName}          
+          </td>
+
+          <td class="text-left"> 
+          ${element_version.FolderID}          
+          </td>
           
-          <td class="text-left">
+          <td class="text-center">
 
          <a href="#"  title="Voir le document" id="${element_version.Id}_view_doc_version" class="btn_view_doc" style="padding-left: inherit;">
          <i class="fa-sharp fa-solid fa-eye" style="font-size: x-large;"></i>
          </a>
 
+         <a href="#" title="Telecharger le document" title="delete_perm" id="${element_version.Id}_download_doc" class="btn_download_doc" style="padding-left: 1em;">
+         <i class="fa-solid fa-download" style="font-size: x-large;"></i>
+
+     
+         </a>
+
           </td>
-        
+
          `;
 
 
@@ -1357,28 +1747,47 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           });
 
 
-        table = $("#tbl_doc_versions").DataTable(
 
+
+        table = $('#tbl_doc_versions').DataTable({
+          columnDefs: [{
+            target: 0,
+            visible: false,
+            searchable: false
+          },
           {
-
-            order: [3, 'desc'],
-            columnDefs: [
-              {
-                targets: [0, 2],
-                visible: false,
-              }]
-
+            target: 2,
+            visible: false,
+            searchable: false
           }
-        );
+            ,
+          {
+            target: 5,
+            visible: false,
+            searchable: false
+          }
+            ,
+          {
+            target: 6,
+            visible: false,
+            searchable: false
+          }
+          ]
+        });
+
 
 
 
         $('#tbl_doc_versions tbody').on('click', '.btn_view_doc', (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
-          Navigation.navigate(data[2], true);
-          //this.redirectToPage();
+          window.open(`${data[2]}`, '_blank');
         });
 
+
+        $('#tbl_doc_versions tbody').on('click', '.btn_download_doc', async (event) => {
+          var data = table.row($(event.currentTarget).parents('tr')).data();
+          await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
+        });
 
       }
 
@@ -1415,11 +1824,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   </thead>
   <tbody id="tbl_documents_access_bdy">`;
 
-    const allPermissions: any[] = await sp.web.lists.getByTitle('AccessRights').items.select("ID,groupName,permission,FolderIDId, LoginName").filter("FolderIDId eq '" + parseInt(itemID) + "'").getAll();
+    const allPermissions: any[] = await sp.web.lists.getByTitle('AccessRights').items.select("ID,groupName,permission,FolderIDId,LoginName, groupTitle, Created").filter("FolderIDId eq '" + Number(itemID) + "'").getAll();
+
+    const permissionsByGroup = allPermissions.reduce((groups, permission) => {
+      const groupName = permission.groupTitle;
+      if (!groups[groupName] || permission.Created > groups[groupName].Created) {
+        groups[groupName] = permission;
+      }
+      return groups;
+    }, {});
+
+    const mostRecentPermissions: any = Object.values(permissionsByGroup);
 
 
-
-    await Promise.all(allPermissions.map(async (perm) => {
+    await Promise.all(mostRecentPermissions.map(async (perm) => {
 
       html += `
           <tr>
@@ -1437,7 +1855,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
          </a>
 
           </td>
-        
+
          `;
 
 
@@ -1456,6 +1874,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           {
             targets: [0],
             visible: false,
+            target: 0
           }]
 
       }
@@ -1538,6 +1957,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           {
             targets: [0],
             visible: false,
+            target: 0
           }]
 
       }
@@ -1569,32 +1989,30 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   }
 
   public async getSiteUsers() {
-
     var drp_users = document.getElementById("select_users");
-    drp_users.innerHTML = "";
+    // var drp_users2 = document.getElementById("select_users2");
 
+
+    if (drp_users == null) {
+      console.error("select_users element not found");
+      return;
+    }
+
+    // drp_users.innerHTML = "";
+    // drp_users2.innerHTML = "";
 
     const users1: any = await sp.web.siteUsers();
 
     users = users1;
-    //console.log('SITEUSERSSSS ++++>', users1);
 
     users.forEach((result: ISiteUserInfo) => {
-
       if (result.UserPrincipalName != null) {
-
-        console.log("USER", result.Id, result.Email);
-        // if(result.IsFolder == "TRUE"){
-        // console.log("SELECT_FOLDERS", result.Title);
         var opt = document.createElement('option');
         opt.appendChild(document.createTextNode(result.UserPrincipalName));
         opt.value = result.UserPrincipalName;
         drp_users.appendChild(opt);
-        // }
       }
-
     });
-
   }
 
   public async getSiteGroups() {
@@ -1672,7 +2090,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       ]
     };
   }
-
 
 }
 

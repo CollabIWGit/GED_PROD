@@ -83,8 +83,6 @@
     clear: both;
     *zoom: 1;
     zoom: 1;
-    background-color: rgba(18, 87, 150, .18);
-    border-radius: 10px;
     padding: 1.5em;
 }
 
@@ -96,7 +94,6 @@
 #spListDocuments {
     box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%);
     margin: 2em;
-    border-radius: 10px;
 }
 
 

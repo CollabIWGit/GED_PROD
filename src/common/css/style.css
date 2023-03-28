@@ -8294,7 +8294,7 @@ h1, h2, h3, h4, h5,
       border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
       #sidebar ul li a:hover {
         color: #fff;
-        background-color: #cc3a48;
+        background-color: blue;
         /* border-bottom: 1px solid #2f89fc; } */
       }
     #sidebar ul li.active > a {

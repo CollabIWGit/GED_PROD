@@ -9,6 +9,8 @@ export interface IMyGedTreeViewState {
   //TreeLinks: ITreeItem[];
   TreeLinks: any[];
   parentIDArray: any[];
+  isLoaded: any;
+  selectedKey: any;
 
   // TreeLinks: any;
   // data: any | null; //ine zouter

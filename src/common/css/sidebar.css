@@ -92,8 +92,13 @@ button {
   white-space: nowrap;
 }
 
+#nom_doc{
+  width: 10em;
+}
+
+
 #desc_doc{
-  
+  width: 16em;
 }
 
 @media (min-width: 576px) {
