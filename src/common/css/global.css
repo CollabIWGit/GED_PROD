@@ -916,7 +916,7 @@ body {
 .cta-mg-repeated a {
     color: #fff;
     font-weight: 600;
-    font-size: 1.125rem;
+    font-size: 14px !important;
     text-transform: uppercase;
     display: table;
     background-repeat: no-repeat;
@@ -961,7 +961,7 @@ body {
 .inner-mg-text {
     background: #FFF;
     border-radius: 15px;
-    bottom: 7.5rem;
+    bottom: 9.5rem;
 }
 
 .mg-text-bloc{
@@ -994,9 +994,10 @@ body {
 }
 
 .mg-cta-repeated .info-emploi-title {
-    font-size: .875rem;
+    font-size: 14px !important;
     transition: all .5s ease-in-out;
     margin: 3% 0;
+    color: #000;
 }
 
 .mg-cta-repeated a:hover .info-emploi-title {

@@ -33,7 +33,7 @@ SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.2/TweenMax.min.js");
 SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/CSSRulePlugin.min.js");
-// SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/ScrollTrigger.min.js");
+SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/ScrollTrigger.min.js");
 SPComponentLoader.loadCss('https://unpkg.com/swiper@7/swiper-bundle.min.css');
 
 
@@ -255,7 +255,6 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 disableOnInteraction: false,
                 pauseOnMouseEnter: true,
             }
-
         });
     }
 
@@ -376,7 +375,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
 
     private async _renderCatBtn() {
         let web = Web(this.context.pageContext.web.absoluteUrl);
-        const items = await web.lists.getByTitle("HomepageCategoryLinks").items.get();
+        const items = await web.lists.getByTitle("HomepageCatergoryLinks").items.get();
         let htmlcatBtn = '';
         const catBtn: Element = this.domElement.querySelector('#catBtn');
         items.forEach((element) => {
@@ -386,12 +385,22 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 bgImage: element.bgImage
             };
             const imageJson2 = ((JSON.parse(element.bgImage)).serverRelativeUrl);
-            htmlcatBtn += `
-            <div class="cta-mg-repeated">
-                <a href="${element.url}" style="background-image: url('https://ncaircalin.sharepoint.com/${imageJson2}')">
-                    ${element.Title}
-                </a>
-            </div>`;
+            if(imageJson2 != null){
+                htmlcatBtn += `
+                <div class="cta-mg-repeated">
+                    <a href="${element.url}" style="background-image: url('https://ncaircalin.sharepoint.com/${imageJson2}')">
+                        ${element.Title}
+                    </a>
+                </div>`;
+            }
+            else if (imageJson2 == null){
+                htmlcatBtn += `
+                <div class="cta-mg-repeated">
+                    <a href="${element.url}" style="background-image: url('${require<string>('./../../common/images/bg-cta4.png')}')">
+                        ${element.Title}
+                    </a>
+                </div>`;
+            }
             console.log("url", element.url);
         });
         catBtn.innerHTML += htmlcatBtn;
