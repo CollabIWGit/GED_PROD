@@ -222,9 +222,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 const imageJson = ((JSON.parse(item.Image)).serverRelativeUrl);
                 // console.log("JSONIMAGE", imageJson);
                 let html = ` <div class="swiper-slide">
-                    <div>
-                        <img src="https://ncaircalin.sharepoint.com/${imageJson}"
-                            class="img-responsive2" alt="" />
+                    <div style="background-image: url('https://ncaircalin.sharepoint.com/${imageJson}'); background-position: ${item.PositionVerticale}% ${item.PositionHorizontale}%" class="banner">
                     </div>
                 </div>`;
                 swiper_html += html;
