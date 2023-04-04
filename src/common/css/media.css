@@ -24,7 +24,20 @@
 
 }
 
-@media screen and (max-width: 1023px) {
+@media screen and (max-width: 1024px) {
+    .img-responsive2 {
+        width: 100% !important;
+        max-width: 100%;
+        height: 27rem !important;
+        border: 0;
+        -ms-interpolation-mode: bicubic;
+        vertical-align: bottom;
+    }
+
+    .banner-section {
+        height: 29rem !important;
+    }
+
     .inner-top-header {
         max-width: 90%;
     }
