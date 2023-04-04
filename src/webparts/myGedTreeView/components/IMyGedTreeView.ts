@@ -2,6 +2,7 @@
 import { WebPartContext } from "@microsoft/sp-webpart-base";
 import { ITreeItem } from "@pnp/spfx-controls-react/lib/TreeView";
 import { MSGraphClient, MSGraphClientFactory } from '@microsoft/sp-http';
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 
 
@@ -11,9 +12,9 @@ export interface IMyGedTreeViewState {
   parentIDArray: any[];
   isLoaded: any;
   selectedKey: any;
+  isToggledOn: boolean;
+  isToggleOnDept: boolean;
 
-  // TreeLinks: any;
-  // data: any | null; //ine zouter
 }
 
 export interface IMyGedTreeViewProps {

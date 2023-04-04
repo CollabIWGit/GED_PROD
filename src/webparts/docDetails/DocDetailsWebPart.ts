@@ -12,7 +12,7 @@ import { escape } from '@microsoft/sp-lodash-subset';
 
 import styles from './DocDetailsWebPart.module.scss';
 import * as strings from 'DocDetailsWebPartStrings';
-import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item, ITerm, ISiteGroup, ISiteGroupInfo } from "@pnp/sp/presets/all";
+import { sp, List, IItemAddResult, UserCustomActionScope, Items, IItem, ISiteGroup, ISiteGroupInfo, Web, RoleDefinition, IRoleDefinition, ISiteUser } from "@pnp/sp/presets/all";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
@@ -29,8 +29,10 @@ import { degrees, PDFDocument, radians, rgb, rotateDegrees, rotateRadians, Stand
 import download from 'downloadjs';
 import { saveAs } from 'file-saver';
 import { SiteGroups } from '@pnp/sp/site-groups';
-//import * as pdfjsLib from 'pdfjs-dist';
-
+import * as pdfjsLib from 'pdfjs-dist';
+import Viewer from 'viewerjs';
+import { PermissionKind } from "@pnp/sp/security";
+import 'viewerjs/dist/viewer.css';
 
 
 
@@ -72,8 +74,9 @@ export interface IDocDetailsWebPartProps {
   description: string;
 }
 
-
-
+declare global {
+  interface Window { Viewer: any; }
+}
 
 
 
@@ -82,8 +85,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   private graphClient: MSGraphClient;
   private _isDarkTheme: boolean = false;
   private _environmentMessage: string = '';
-
-
 
 
   protected onInit(): Promise<void> {
@@ -104,15 +105,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
   }
 
-  // private async checkIndividualPermission(id: any) {
-  //   const response = await sp.web.lists
-  //     .getByTitle("Documents")
-  //     .items.getById(parseInt(id))
-  //     .roleAssignments();
-
-  //   console.log("PERMISSION RESPONSE", response);
-
-  // }
 
   private getDocTitle() {
     var queryParms = new URLSearchParams(document.location.search.substring(1));
@@ -125,14 +117,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   private getDocId() {
     var queryParms = new URLSearchParams(document.location.search.substring(1));
     var myParm = queryParms.get("documentId");
-    if (myParm) {
-      return myParm.trim();
-    }
-  }
-
-  private getIfFolder() {
-    var queryParms = new URLSearchParams(document.location.search.substring(1));
-    var myParm = queryParms.get("folder");
     if (myParm) {
       return myParm.trim();
     }
@@ -309,32 +293,59 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async openPDFInBrowser(url: any, filigraneText: string) {
+  private async openPDFInIframe(url: string, filigraneText: string) {
+    const pdfBytes = await this.generatePdfBytes(url, filigraneText);
+    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
 
-    var pdfBytes = await this.generatePdfBytes(url, filigraneText);
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    `;
 
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    const url_1 = URL.createObjectURL(blob);
-    const win = window.open(url_1, '_blank');
-    //win.focus();
-  }
+    const iframe = document.createElement('iframe');
+    iframe.src = pdfUrl;
+    iframe.style.cssText = `
+      border: none;
+      width: 100%;
+      height: 100%;
+      max-width: 1000px;
+      max-height: 90vh;
+    `;
+    // iframe.setAttribute('sandbox', 'allow-same-origin allow-popups allow-scripts');
 
-  private async openPDFInGoogleViewer(pdfUrl: string): Promise<void> {
-    try {
-      // Fetch the PDF file using a proxy server
-      const proxyUrl = 'https://example.com/proxy?url=';
-      const response = await fetch(proxyUrl + encodeURIComponent(pdfUrl));
-      const blob = await response.blob();
+    iframe.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
 
-      // Convert the PDF file to a data URL
-      const dataUrl = URL.createObjectURL(blob);
+    const closeButton = document.createElement('button');
+    closeButton.innerText = 'Close';
+    closeButton.style.cssText = `
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: #fff;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    `;
 
-      // Open the PDF file in the Google PDF viewer
-      const viewerUrl = `https://docs.google.com/viewerng/viewer?url=${encodeURIComponent(dataUrl)}`;
-      window.open(viewerUrl);
-    } catch (error) {
-      console.error('Failed to open PDF file:', error);
-    }
+    closeButton.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+    });
+
+    overlay.appendChild(iframe);
+    overlay.appendChild(closeButton);
+    document.body.appendChild(overlay);
   }
 
   private async generatePdfBytes(fileUrl: string, filigraneText: string): Promise<Uint8Array> {
@@ -372,44 +383,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async downloadPdf(fileName: any, folderID: any, fileUrl: any, filigraneText: string, userTitle: any) {
-
-
-    try {
-      var pdfInBytes = await this.generatePdfBytes(fileUrl, filigraneText);
-
-      const message = document.createElement('div');
-      message.textContent = 'Downloading file...';
-      message.style.cssText = `
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: #f54630;
-        color: white;
-        text-align: center;
-        font-size: 24px;
-        padding: 10px 0;
-      `;
-      document.body.appendChild(message);
-
-      download(pdfInBytes, fileName, "application/pdf");
-      await this.createAudit($("#input_number").val(), folderID, userTitle, "Telechargement");
-    }
-    catch (e) {
-      alert("Cannot download this file for the following reason: " + e);
-
-      // Remove the message from the DOM in case of an error
-      const message = document.querySelector('div');
-      if (message) {
-        document.body.removeChild(message);
-      }
-
-      window.location.reload();
-    }
-
-
-
-  }
 
   public async render(): Promise<void> {
 
@@ -421,6 +394,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     <div id="loader" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; backdrop-filter: blur(5px);">
     <img src="https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/loader.gif" alt="Loading..." />
   </div>
+
+
   
     
         <div id="contentDetails">
@@ -446,12 +421,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
                                 <label class="switch" id="switch_fav">
-  <input type="checkbox" id="bookmark-switch">
-  <span class="slider round"></span>
-</label>
-    
-    
-    
+                                <input type="checkbox" id="bookmark-switch" style="display: none;">
+                                <i class="fa-regular fa-star star-icon" style="padding-left: 0.5em;"></i>
+                              </label>
+  
     
                         </h2>
                     </div>
@@ -789,7 +762,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                     <div class="col-lg-3" style="padding-top: 1.7em;">
                                         <div class="form-group">
                                             <button type="button" class="btn btn-primary add_notif_group mb-2"
-                                                id="add_group">Ajouter</button>
+                                                id="add_group_notif">Ajouter</button>
                                         </div>
                                     </div>
                                 </div>
@@ -827,10 +800,24 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
     </div>
     
-    
-    
 
     `;
+
+    const starIcon = document.querySelector(".star-icon") as HTMLElement;
+
+    starIcon.addEventListener("click", function () {
+      if (this.classList.contains("fa-solid")) {
+        this.classList.remove("fa-solid");
+        this.classList.add("fa-regular");
+        console.log("Star is grey");
+      } else {
+        this.classList.remove("fa-regular");
+        this.classList.add("fa-solid");
+        console.log("Star is gold");
+      }
+    });
+
+
 
     require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
     require('./../../common/jqueryui/jquery-ui.js');
@@ -889,6 +876,14 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       await this.add_permission_group(stringGroupUsers);
     });
 
+    //add group notif
+    $("#add_group_notif").click(async (e) => {
+
+      const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name_notif").val());
+      console.log("TESTER GROUP USERS", stringGroupUsers);
+      await this.add_notification_group(stringGroupUsers);
+    });
+
 
     $("#add_user_notif").click((e) => {
       this.add_notification();
@@ -904,6 +899,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     // Toggle the switch
 
   }
+
+
 
   private async addBookmark(docID: any, title: any) {
     // Get the current page URL and title
@@ -922,8 +919,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     console.log('Item added to Favourites list.');
   }
-
-
 
   private async removeBookmark(docID: any) {
     // Get the current page URL
@@ -944,6 +939,57 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     await sp.web.lists.getByTitle("Marque_Pages").items.getById(items[0].ID).delete();
 
     console.log('Item removed from Favourites list.');
+  }
+
+  // private async checkUserPermissions( listTitle: string, itemId: number, userId: number): Promise<PermissionKind[]> {
+  //   try {
+  //     // Get the item with ID 'itemId' from the list with title 'listTitle' using PnP JS library.
+  //     const item: any = await sp.web.lists.getByTitle(listTitle).items.getById(itemId).get();
+
+  //     // Get the site user with ID 'userId' using PnP JS library.
+  //     const user: any = await sp.web.siteUsers.getById(userId).get();
+
+  //     // Get the user's effective permissions on the item using PnP JS library.
+  //     const userPermissions: PermissionKind[] = await item.getEffectiveBasePermissions(user.LoginName);
+
+  //     return userPermissions;
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw error;
+  //   }
+  // }
+
+  public async checkIfUserIsMemberOfGroup(graphClient: MSGraphClient, groupName: string): Promise<boolean> {
+    if (!graphClient) {
+      return false;
+    }
+
+    try {
+      // Get the user's groups
+      const groups = await graphClient.api('/me/memberOf')
+        .version('v1.0')
+        .get();
+
+      // Check if the user is a member of the desired group
+      const group = groups.value.find((g: any) => g.displayName === groupName);
+      return Boolean(group);
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
+  private async getAllGroups(graphClient: MSGraphClient): Promise<any[]> {
+    try {
+      const groups = await graphClient.api('/groups')
+        .version('v1.0')
+        .get();
+
+      return groups.value;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
   }
 
   private async updateDocument(folderId: string, title: string) {
@@ -967,8 +1013,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     }));
 
-
-
     // const myArray = text.toString().split("_");
     // let parentId = myArray[0];
 
@@ -983,47 +1027,56 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       if (confirm(`Etes-vous sûr de vouloir mettre à jour les détails de ${title} ?`)) {
 
         try {
-
-          const i = await await sp.web.lists.getByTitle('Documents').items.add({
-            // const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc.Id)).update({
+          const i = await sp.web.lists.getByTitle('Documents').items.add({
             Title: $("#input_number").val(),
             description: $("#input_description").val(),
             keywords: $("#input_keywords").val(),
             doc_number: $("#input_number").val(),
             revision: $("#input_revision").val(),
             ParentID: parseInt(folder),
-            FolderID: folderId,
-            filename: $("#input_filename").val(),
             IsFolder: "FALSE",
             owner: $("#created_by").val(),
             updatedBy: user_current.Title,
             createdDate: $("#creation_date").val(),
             updatedDate: new Date().toLocaleString()
+
           })
             .then(async (iar) => {
 
-              if (filename_add == "" || content_add == "") {
+              const list = sp.web.lists.getByTitle("Documents");
 
-              }
+              let folderId_link = iar.data.ID;
+              let title = iar.data.Title;
 
-              else {
-                var item = iar.data.ID;
+              await list.items.getById(iar.data.ID).attachmentFiles.add(filename_add, content_add);
 
-                const list = sp.web.lists.getByTitle("Documents");
-
-                await list.items.getById(iar.data.ID).attachmentFiles.add(filename_add, content_add);
-              }
+              return { list, title, folderId_link };
 
             })
-            .then(async () => {
+            .then(async ({ list, title, folderId_link }) => {
+
+              await list.items.getById(folderId_link).update({
+                FolderID: parseInt(folderId_link),
+                filename: filename_add
+              });
+
+              return { title, folderId_link };
+
+            })
+            .then(async ({ title, folderId_link }) => {
               await this.createAudit($("#input_number").val(), folderId, user_current.Title, "Modification");
+              return { title, folderId_link }
             })
-            .then(() => {
+            .then(({ title, folderId_link }) => {
+              // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
 
               alert("Détails mis à jour avec succès");
+              return { title, folderId_link };
             })
-            .then(() => {
-              window.location.reload();
+            .then(({ title, folderId_link }) => {
+              //    location.reload(true)
+              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
+
             });
 
         }
@@ -1037,14 +1090,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       }
     }
-
-
-
-
-
-
-
-
 
   }
 
@@ -1068,11 +1113,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
 
     }
+    else if (groupTitle.includes("Référent (Read & Write)")) {
+
+      $("#access").css('display', "none");
+      // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
+    }
+
     else if (groupTitle.includes("Administrateur")) {
 
       $("#input_number, #input_type_doc").prop('disabled', false);
-
-
       // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
     }
 
@@ -1218,8 +1267,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
 
 
+  }
 
+  private async getUserPermissionLevelOnSharePointListItem(listName: string, itemId: number, userEmail: string): Promise<string> {
+    try {
+      const item = await sp.web.lists.getByTitle(listName).items.getById(itemId).get();
+      const userPermission = await item.roleAssignments.get().filter(`Member/Email eq '${userEmail}'`).get();
 
+      if (userPermission && userPermission.length > 0) {
+        const permissionLevel = userPermission[0].roleDefinitionBindings[0].Name;
+        return permissionLevel;
+      }
+    } catch (error) {
+      console.error(error);
+    }
+
+    return 'No Access';
   }
 
   private async add_permission_group(group_name: string[]) {
@@ -1258,6 +1321,60 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       }));
 
       alert("Authorization added successfully.");
+      window.location.reload();
+    }
+    catch (e) {
+      alert("Error: " + e.message);
+    }
+  }
+
+  private async add_notification_group(group_name: string[]) {
+
+    //add permission group
+
+    var ifFolder = "FALSE";
+    var x = this.getDocId();
+    var doc_title = "";
+    var docID = "";
+    var revisionDate = "";
+    var description = "";
+    var revision = "";
+
+
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+      .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
+
+    await Promise.all(all_documents.map(async (doc) => {
+      doc_title = doc.Title;
+      docID = doc.Id;
+      revisionDate = doc.revisionDate;
+      description = doc.description;
+      revision = doc.revision;
+
+    }));
+
+    console.log("USERS FOR PERMISSION", group_name);
+
+    try {
+      await Promise.all(group_name.map(async (email) => {
+        const user: any = await sp.web.siteUsers.getByEmail(email)();
+        await sp.web.lists.getByTitle("Notifications").items.add({
+          Title: doc_title.toString(),
+          group_person: email,
+          IsFolder: "FALSE",
+          revisionDate: revisionDate,
+          toNotify: "YES",
+          description: description,
+          FolderID: x.toString(),
+          webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
+          LoginName: user.Title,
+          revision: revision
+        })
+      }));
+
+      alert("Notification ajoutée à ce document avec succès.");
       window.location.reload();
     }
     catch (e) {
@@ -1320,6 +1437,113 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
+  // private async showPDF(url: any, filigraneText: any) {
+  //   const pdfBytes = await this.generatePdfBytes(url, filigraneText);
+  //   const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+
+  //   // Create a container element to hold the viewer
+  //   const container = document.createElement('div');
+  //   container.setAttribute('style', 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background-color:#fff;');
+  //   document.body.appendChild(container);
+
+  //   // Create an iframe element to display the PDF file
+  //   const iframe = document.createElement('iframe');
+  //   iframe.setAttribute('src', 'viewer.html');
+  //   iframe.setAttribute('style', 'width:100%;height:100%;border:none;');
+  //   iframe.setAttribute('scrolling', 'no');
+  //   iframe.setAttribute('allowfullscreen', 'true');
+
+  //   // Add the iframe to the container element
+  //   container.appendChild(iframe);
+
+  //   // Wait for the iframe to load
+  //   iframe.addEventListener('load', () => {
+  //     // Get a reference to the iframe's content window
+  //     const iframeWindow = iframe.contentWindow as Window;
+
+  //     // Load Viewer.js in the iframe
+  //     const script = iframeWindow.document.createElement('script');
+  //     script.setAttribute('src', 'viewer.js');
+  //     script.addEventListener('load', () => {
+  //       // Initialize viewer.js with the PDF file
+  //       const viewer = new iframeWindow.Viewer({
+  //         inline: true,
+  //         button: false,
+  //         toolbar: false,
+  //         navbar: false,
+  //         fullscreen: true,
+  //         url: pdfUrl
+  //       });
+  //       viewer.show();
+  //     });
+
+  //     // Add the Viewer.js script to the iframe's document
+  //     iframeWindow.document.body.appendChild(script);
+  //   });
+  // }
+
+  private async showPDF(url: string, filigraneText: string) {
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = require('../../../node_modules/pdfjs-dist/build/pdf.worker.js');
+
+
+    // Load the PDF document
+    const pdf = await pdfjsLib.getDocument(url).promise;
+
+    // Get the total number of pages in the PDF document
+    const numPages = pdf.numPages;
+
+    // Create a container element to hold the viewer and close button
+    const container = document.createElement('div');
+    container.setAttribute('style', 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background-color:#fff;');
+    document.body.appendChild(container);
+
+    // Create a close button element
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = 'Close';
+    closeButton.addEventListener('click', () => {
+      document.body.removeChild(container);
+    });
+    container.appendChild(closeButton);
+
+    // Create a div element to hold the pages of the PDF document
+    const pagesContainer = document.createElement('div');
+    pagesContainer.setAttribute('style', 'width:100%;height:calc(100% - 30px);overflow:auto;');
+    container.appendChild(pagesContainer);
+
+    // Loop through each page of the PDF document and add it to the pages container
+    for (let i = 1; i <= numPages; i++) {
+      // Load the page
+      const page = await pdf.getPage(i);
+
+      // Get the page viewport
+      const viewport = page.getViewport({ scale: 1 });
+
+      // Create a canvas element to display the page
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('style', 'display:block;margin:10px auto;border:1px solid #ccc;');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      // Add the canvas element to the pages container
+      pagesContainer.appendChild(canvas);
+
+      // Render the page on the canvas
+      await page.render({
+        canvasContext: canvas.getContext('2d'),
+        viewport
+      }).promise;
+
+      // Add the filigrane text to the canvas
+      const context = canvas.getContext('2d');
+      context.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.font = '24px Arial';
+      context.fillStyle = 'red';
+      context.fillText(filigraneText, 20, 40);
+    }
+  }
+
   private async _getDocDetails(id: number) {
 
     // var externalUrl = '';
@@ -1328,6 +1552,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var pdfNameDownload = '';
 
     await this.checkPermission();
+    var x = await this.getAllGroups(this.graphClient);
+
+    console.log("ALL AD GROUPS", x);
+
 
     $('#file_ammendment_update').on('change', () => {
       const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
@@ -1351,7 +1579,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     // Get the document details
     const itemDoc: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate, attachmentUrl")
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate, attachmentUrl, IsFiligrane, IsDownloadable")
       .filter("FolderID eq '" + id + "' and IsFolder eq 'FALSE'")
       .get();
 
@@ -1361,13 +1589,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       .filter("FolderID eq '" + parseInt(itemDoc[0].ParentID) + "' and IsFolder eq 'TRUE'")
       .get();
 
-    // Get the attachment details
-    // const attachmentFiles: any[] = await sp.web.lists.getByTitle("Documents")
-    //   .items
-    //   .getById(parseInt(itemDoc[0].Id))
-    //   .attachmentFiles
-    //   .select('FileName', 'ServerRelativeUrl')
-    //   .get();
 
 
     await sp.web.lists.getByTitle("Documents")
@@ -1384,6 +1605,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
             urlFile_download = attachmentItem.ServerRelativeUrl;
           });
       });
+
+
 
     // Set the document details in the UI
     $("#input_type_doc").val(itemFolder[0].Title);
@@ -1407,12 +1630,39 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       url = externalUrl;
     }
 
+    if (itemDoc[0].IsDownloadable == "NO") {
+      $("#download_doc").css("display", "none");
+    }
+
+    var xx = await this.getPermissionLevel(this.graphClient, "TestMyGed", "Documents", itemDoc[0].Id);
+    console.log("GRAPH PERMISSION", xx);
+
     // Open the attachment in a new tab
+
     let user_current = await sp.web.currentUser();
     $("#open_doc").click(async (e) => {
+
+      if (itemDoc[0].IsFiligrane === "NO") {
+        window.open(`${url}`, '_blank');
+      }
+
+      else {
+
+        // else if (itemDoc[0].IsFiligrane === "YES") {
+
+        await this.openPDFInIframe(url, 'UNCONTROLLED COPY - Downloaded on: ');
+
+        //  await this.showPDF(url, 'UNCONTROLLED COPY - Downloaded on: ');
+      }
+
       await this.createAudit(itemDoc[0].Title, itemDoc[0].FolderID, user_current.Title, "Consultation");
-      window.open(`${url}`, '_blank');
     });
+
+
+    //check user permission
+    var userPermission = this.getUserPermissionLevelOnSharePointListItem("Documents", itemDoc[0].Id, user_current.Email);
+    console.log("User Permission", userPermission);
+
 
     // Delete the document
     $("#delete_doc").click(async (e) => {
@@ -1433,17 +1683,23 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       await this.downloadDoc(url, pdfNameDownload, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
     });
 
+
     $("#update_details_doc").click(async (e) => {
+      const fileInput = document.getElementById("file_ammendment_update") as HTMLInputElement;
+
       if (($("#input_type_doc").val() === itemFolder[0].Title ||
         $("#input_number").val() === itemDoc[0].Title ||
         $("#input_keywords").val() === itemDoc[0].keywords ||
-        $("#input_description").val() === itemDoc[0].description) && $("#input_revision").val() !== itemDoc[0].revision && $("#file_ammendment_update").val() !== '') {
+        $("#input_description").val() === itemDoc[0].description) && $("#input_revision").val() !== itemDoc[0].revision && fileInput.value) {
         // The fields are unchanged, so update the document metadata
-        await this.updateDocument(itemDoc[0].Id, itemFolder[0].Title);
+        await this.updateDocument(itemDoc[0].Id, itemDoc[0].Title);
+
+        alert("You have created a new version of : " + itemDoc[0].Title);
       } else {
         // The fields are changed, so get the folder details and update the document metadata
         const folder = await this.getFolder();
         await this.updateDocMetadata(itemDoc[0].Id, folder.ID, itemDoc[0].FolderID, user_current.Title);
+        alert("You have modified some metadata of : " + itemDoc[0].Title);
       }
 
     });
@@ -1454,28 +1710,83 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       await this.handleBookmarkSwitchChange.call(this, bookmarkSwitch.checked, itemDoc[0].FolderID, itemDoc[0].Title);
     });
 
-    const user = await sp.web.currentUser();
+    const user: ISiteUserInfo = await sp.web.currentUser();
+
+    // await this.checkUserPermissions( "Documents", itemDoc[0].ID , user.Id);
+
 
     var items = await sp.web.lists.getByTitle("Marque_Pages").items
-    .select("ID")
-    .filter(`FolderID eq '${itemDoc[0].FolderID}' and user eq '${user.Title}'`)
-    .get();
+      .select("ID")
+      .filter(`FolderID eq '${itemDoc[0].FolderID}' and user eq '${user.Title}'`)
+      .get();
 
-  if (items.length === 0) {
-    console.log('Item not found in Favourites list.');
-    return this.setBookmarkSwitchState(false);
+    if (items.length === 0) {
+      console.log('Item not found in Favourites list.');
+      return this.setBookmarkSwitchState(false);
+    }
+
+    else {
+      return this.setBookmarkSwitchState(true);
+
+    }
+
   }
 
-  else{
-    return this.setBookmarkSwitchState(true);
-
+  public async getPermissionLevel(graphClient: MSGraphClient, siteName: string, listName: string, itemId: string): Promise<string> {
+    try {
+      // Get site ID
+      const siteResponse = await graphClient.api(`/sites/${siteName}`).get();
+      const siteId = siteResponse.id;
+  
+      // Get list ID
+      const listResponse = await graphClient.api(`/sites/${siteId}/lists?$filter=displayName eq '${listName}'`).get();
+      const listId = listResponse.value[0].id;
+  
+      // Get item permissions
+      const response = await graphClient.api(`/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem/permissions`).get();
+      const permissions = response.value;
+  
+      // Get current user
+      const currentUser = await graphClient.api('/me').get();
+      const currentUserObjectId = currentUser.id;
+  
+      // Get permission level for current user
+      const permissionLevel = permissions.find(p => p.grantedToIdentities.some(identity => identity.user && identity.user.id === currentUserObjectId));
+  
+      if (permissionLevel) {
+        switch (permissionLevel.role) {
+          case 'write':
+            return 'Contribute';
+          case 'read':
+            return 'Read';
+          case 'edit':
+            return 'Edit';
+          case 'owner':
+            return 'Full Control';
+          default:
+            return 'Unknown';
+        }
+      } else {
+        throw new Error(`User does not have permissions on item ${itemId}`);
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
-
-  }
-
+  
   private async setBookmarkSwitchState(isChecked: boolean) {
     const bookmarkSwitch = document.getElementById("bookmark-switch") as HTMLInputElement;
+
+
     bookmarkSwitch.checked = isChecked;
+
+    if (isChecked) {
+      const starIcon = document.querySelector(".star-icon") as HTMLElement;
+
+      starIcon.classList.remove("fa-regular");
+      starIcon.classList.add("fa-solid");
+    }
   }
 
   private async handleBookmarkSwitchChange(isChecked: boolean, doc_id: any, title: any) {
@@ -1483,9 +1794,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       if (isChecked) {
         await this.addBookmark(Number(doc_id), title);
         alert("You have set this document as favorite.");
+        window.location.reload();
       } else {
         await this.removeBookmark(doc_id);
         alert("You have removed this document from favorites.");
+        window.location.reload();
       }
     } catch (error) {
       console.error("Failed to update bookmark:", error);
@@ -1585,7 +1898,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         toNotify: "YES",
         description: description,
         FolderID: x.toString(),
-        webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`
+        webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
+        LoginName: user.Title,
       })
         .then(() => {
           alert("Notification ajoutée à ce document avec succès.");
@@ -1600,9 +1914,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     catch (e) {
       alert("Erreur: " + e.message);
     }
-
-
-
 
   }
 
@@ -1625,35 +1936,34 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         <th class="text-left" >Description</th>
         <th class="text-left" >Pdf Name</th>
         <th class="text-left" >Folder ID</th>
+        <th class="text-left" >IsFiligrane</th>
+        <th class="text-left" >Imprimable</th>
         <th class="text-center" >Actions</th>
       </tr>
     </thead>
     <tbody id="tbl_documents_versions_bdy">`;
 
 
-
-      var response_doc_versions = null;
       var value1 = "FALSE";
 
 
       const all_documents_versions: any[] = await sp.web.lists.getByTitle('Documents').items
-        .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, attachmentUrl")
+        .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, attachmentUrl, IsFiligrane, IsDownloadable")
         .filter("Title eq '" + title + "' and IsFolder eq '" + value1 + "'")
         .get();
 
 
-      response_doc_versions = all_documents_versions;
 
       // First, sort the array by revision in descending order
-      all_documents_versions.sort((a, b) => b.revision - a.revision);
+      // all_documents_versions.sort((a, b) => b.revision - a.revision);
 
       // Then, find the highest revision
       const highestRevision = all_documents_versions[0].revision;
 
       // Finally, filter the array and remove the items with the highest revision
-      const filtered_documents_versions_1 = all_documents_versions.filter((document) => document.revision < highestRevision);
+      //  const filtered_documents_versions_1 = all_documents_versions.filter((document) => document.revision < highestRevision);
 
-      const filtered_documents_versions_2 = filtered_documents_versions_1.filter((document) => document.revision !== null);
+      const filtered_documents_versions_2 = all_documents_versions.filter((document) => document.revision !== null);
 
 
       if (filtered_documents_versions_2.length > 0) {
@@ -1693,6 +2003,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
           }
 
+          var x = element_version.IsDownloadable;
+          var y = element_version.Id;
+
 
           html += `
           <tr>
@@ -1720,6 +2033,14 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           <td class="text-left"> 
           ${element_version.FolderID}          
           </td>
+
+          <td class="text-left"> 
+          ${element_version.IsFiligrane}          
+          </td>
+
+          <td class="text-left"> 
+          ${element_version.IsDownloadable}          
+          </td>
           
           <td class="text-center">
 
@@ -1727,7 +2048,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
          <i class="fa-sharp fa-solid fa-eye" style="font-size: x-large;"></i>
          </a>
 
-         <a href="#" title="Telecharger le document" title="delete_perm" id="${element_version.Id}_download_doc" class="btn_download_doc" style="padding-left: 1em;">
+         <a href="#" title="Telecharger le document" title="imprimer le document" id="${element_version.Id}_download_doc" class="btn_download_doc" style="padding-left: 1em;">
          <i class="fa-solid fa-download" style="font-size: x-large;"></i>
 
      
@@ -1737,15 +2058,21 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
          `;
 
+          return { x, y };
 
         }))
+          .then((results: { x: any; y: any; }[]) => {
+            if (results[0].x === "NO") {
+              $(`#${results[0].y}_download_doc`).css("display", "none");
+            }
+
+          })
           .then(() => {
 
             html += `</tbody>
           </table>`;
             listContainerDocVersions.innerHTML += html;
           });
-
 
 
 
@@ -1772,15 +2099,50 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
             visible: false,
             searchable: false
           }
+            ,
+          {
+            target: 7,
+            visible: false,
+            searchable: false
+          }
+            ,
+          {
+            target: 8,
+            visible: false,
+            searchable: false
+          }
           ]
         });
 
+        table.rows().every(function () {
+          // Get the data in the eighth column of the current row
+          var data = this.cell(this.index(), 8).data();
+
+          // Check if the value is "NO"
+          if (data === "NO") {
+            // Get the button element in the current row
+            var btnCurrentRow = $(this.node()).find(".btn_download_doc");
+            // Hide the button element in the current row
+            btnCurrentRow.css('display', 'none');
+          }
+        });
 
 
-
-        $('#tbl_doc_versions tbody').on('click', '.btn_view_doc', (event) => {
+        $('#tbl_doc_versions tbody').on('click', '.btn_view_doc', async (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
-          window.open(`${data[2]}`, '_blank');
+
+          if (data[7] === "NO") {
+            alert("FILIGRANE = NO");
+            window.open(`${data[2]}`, '_blank');
+          }
+
+          else if (data[7] === "YES") {
+
+            alert("FILIGRANE = YES");
+            //   await this.openPDFInBrowser(url, 'UNCONTROLLED COPY - Downloaded on: ');
+            await this.openPDFInIframe(data[2], 'UNCONTROLLED COPY - Downloaded on: ');
+          }
+          //  window.open(`${data[2]}`, '_blank');
         });
 
 
@@ -1790,7 +2152,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         });
 
       }
-
 
     }
 
@@ -2008,8 +2369,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     users.forEach((result: ISiteUserInfo) => {
       if (result.UserPrincipalName != null) {
         var opt = document.createElement('option');
-        opt.appendChild(document.createTextNode(result.UserPrincipalName));
-        opt.value = result.UserPrincipalName;
+        opt.appendChild(document.createTextNode(result.Email));
+        opt.value = result.Email;
         drp_users.appendChild(opt);
       }
     });

@@ -76,7 +76,6 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
     }
   }
 
-
   private getKeywords() {
     var queryParms = new URLSearchParams(document.location.search.substring(1));
     var myParm = queryParms.get("keywords");

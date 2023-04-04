@@ -54,13 +54,18 @@
 #edit_details,
 #access_rights_form,
 #doc_details,
-#doc_details_add {
+#doc_details_add,
+#notifications_form {
     display: none;
     padding: 2em;
     background-color: rgb(18 87 150 / 18%);
     border-radius: 1em;
 
 }
+
+#spListNotification {
+    display: none;
+  }
 
 .dataTables_wrapper .dataTables_filter input {
     border: 1px solid #aaa;

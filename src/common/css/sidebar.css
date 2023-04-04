@@ -96,9 +96,8 @@ button {
   width: 10em;
 }
 
-
 #desc_doc{
-  width: 16em;
+  width: 49em;
 }
 
 @media (min-width: 576px) {
