@@ -1,0 +1,253 @@
+.close-sidebar,
+.left-arrow-responsive{
+display: none;
+}
+
+
+
+@media only screen and (max-width:1230px){
+    .link-header li{
+        margin: 0 5px !important;
+    }
+
+    #sidebarMenu span {
+        font-size: 12px;
+    }
+
+    #sidebarMenu div#tree {
+        margin: 1rem 0 0 0 !important;
+    }
+
+}
+
+
+@media only screen and (max-width:1024px){
+    .hamburger .nav-ham span {
+        width: 2.5rem;
+        display: block;
+        border: 1.5px solid #004a8e;
+        margin-bottom: 5px;
+    }
+    
+    .hamburger .nav-ham span:last-of-type {
+        margin-bottom: 0px;
+    }
+    
+    .inner-link-header nav ul {
+        flex-direction: column;
+        padding: 2rem;
+    }
+    
+    .inner-link-header nav ul li {
+        width: 40%;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    
+    .link-header li:first-child{
+        margin-left: 5px !important;
+    }
+    
+    .link-header {
+        background: #004a8e;
+        padding: 0!important;
+        position: absolute;
+        left: 0;
+        width: 100%;
+        z-index: 100;
+        height: 100%;
+        transform: translateY(-100%);
+        transition: transform ease-in-out 300ms;
+        z-index: 900;
+    }
+
+    .toggled-nav {
+        transform: translateY(0%) !important;
+    }
+    
+    .link-header a {
+        text-decoration: none;
+    }
+    
+    .inner-link-header nav .icn {
+        width: 5rem;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .icn img {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+
+    .inner-top-header {
+        z-index: 999;
+        background-color: #f2f2f2;
+        max-width: 100% !important;
+    }
+
+    .left-header.w25 {
+        width: 8rem;
+    }
+
+    .inner-left-header img {
+        width: 100%;
+    }
+   
+
+    div:has(>#sidebarMenu) {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 75%;
+        padding: 0;
+        z-index: 200;
+        transition: transform ease-in-out 300ms;
+        height: 100%;
+    }
+
+    .row:has(>div>#sidebarMenu) .col-sm-9 {
+        width: 100%;
+    }
+
+    .l_c_50a7110f.k_c_50a7110f {
+        padding: 0 !important;
+    }
+
+    .container-fluid:has(>div>div>#sidebarMenu) {
+        padding: 0;
+    }
+
+    #sidebarMenu div#tree {
+        margin-top: 0 !important;
+    }
+
+    div:has(>.sidebar){
+        transform: translateX(-150%);
+    }
+
+
+
+    .sidebar-toggle {
+        transform: translateX(0%) !important;
+    }
+
+    #form_metadata {
+        height: auto !important;
+        min-height: 80vh;
+    }
+
+    .left-arrow-responsive {
+        margin: 0 5%;
+        /* border: 1px solid red; */
+        width: 2rem;
+        padding: 0;
+        font-size: 2rem;
+        font-weight: 900;
+        height: 4rem;
+    }
+
+    .close-sidebar {
+        position: absolute;
+        right: 2px;
+        top: 2px;
+        z-index: 1;
+        background-color: white;
+        color: black;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 2px;
+        cursor: pointer;
+    }
+
+    .inner-link-header .dropdown {
+        width: 100%;
+    }
+
+    .inner-link-header button.dropbtn {
+        margin: 0 18px;
+        width: calc(100% - 36px);
+    }
+
+
+    /* DOCUMENTS PAGE */
+
+    #contentDetails .jumbotron .row>div {
+        width: 50%;
+        margin: 0;
+        padding: 0;
+    }
+
+    #contentDetails .jumbotron .row {
+        display: flex;
+        justify-content: space-between;
+        margin: 0 !important;
+        padding: 0 1.5rem;
+    }
+
+    #contentDetails .jumbotron div#view_doc i {
+        font-size: 2rem;
+    }
+
+    #contentDetails .jumbotron .row>div h2 {
+        padding-left: 0;
+    }
+
+    .close-sidebar,
+    .left-arrow-responsive{
+        display: flex;
+    }
+
+    .dropdown-content{
+        position: relative;
+    }
+
+}
+
+@media only screen and (max-width:760px){
+    .inner-link-header nav ul li {
+        width: 50%;
+    }
+
+    .link-header a,
+    .inner-link-header button.dropbtn{
+        margin: 0 !important;
+    }
+
+    #informations .row #form .row>div {
+        padding: 0;
+    }
+}
+
+
+@media only screen and (max-width:490px){
+    .inner-link-header nav ul li {
+        width: 90%;
+    }
+
+    #informations .row, #access .row, #notifications .row {
+        margin: 2rem 0 !important;
+        border-radius: 5px;
+    }
+
+    #access .row, #notifications .row {
+        padding: 0 !important;
+    }
+
+    #myTab {
+        font-size: 1.5rem;
+    }
+
+
+    
+}
+
+
+
+
+
+
+

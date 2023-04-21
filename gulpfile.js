@@ -43,44 +43,44 @@ build.configureWebpack.mergeConfig({
 
 });
 
-build.configureWebpack.mergeConfig({
-  additionalConfig: (generatedConfiguration1) => {
-    generatedConfiguration1.module.rules.push({
+// build.configureWebpack.mergeConfig({
+//   additionalConfig: (generatedConfiguration1) => {
+//     generatedConfiguration1.module.rules.push({
 
-      test: /\.pdf$/,
-      use: [
-        {
-          loader: 'url-loader',
-          options: {
-            limit: 8192, // in bytes
-            name: '[name].[hash].[ext]', // customize output filename
-            outputPath: 'pdfs/', // output path for PDF files
-            publicPath: '/pdfs/', // public URL path for PDF files
-          },
-        },
-      ],
-    });
+//       test: /\.pdf$/,
+//       use: [
+//         {
+//           loader: 'url-loader',
+//           options: {
+//             limit: 8192, // in bytes
+//             name: '[name].[hash].[ext]', // customize output filename
+//             outputPath: 'pdfs/', // output path for PDF files
+//             publicPath: '/pdfs/', // public URL path for PDF files
+//           },
+//         },
+//       ],
+//     });
 
-    return generatedConfiguration1;
-  }
-});
+//     return generatedConfiguration1;
+//   }
+// });
 
-module.exports = {
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env']
-          }
-        }
-      }
-    ]
-  }
-};
+// module.exports = {
+//   module: {
+//     rules: [
+//       {
+//         test: /\.js$/,
+//         exclude: /(node_modules|bower_components)/,
+//         use: {
+//           loader: 'babel-loader',
+//           options: {
+//             presets: ['@babel/preset-env']
+//           }
+//         }
+//       }
+//     ]
+//   }
+// };
 
 
 

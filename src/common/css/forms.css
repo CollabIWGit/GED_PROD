@@ -1,0 +1,20 @@
+
+#edit_details .row:last-of-type {flex-direction: row;margin-top: 2rem}
+#doc_details_add>.row:last-of-type {justify-content: flex-end;margin-top: 2rem;padding-right: 1rem}
+#edit_details .row {flex-direction: column}
+#edit_details .row:last-of-type>div.col-8, #doc_details_add>.row:last-of-type .col-8 {width: 0}
+#edit_details .row:last-of-type>div.col-2, #doc_details_add .row .col-2, #doc_details_add>.row:last-of-type .col-2 {width: auto}
+#doc_details_add .row .col-4 {width: 50%}
+#doc_details_add .row .col-2 label input {margin-right: 1rem}
+#doc_details_add>.row:last-of-type {justify-content: flex-end}
+
+@media only screen and (max-width:767px){
+    #doc_details_add .row:not(:last-of-type), #access_rights_form .row {flex-direction: column}
+    #doc_details_add .row:not(:last-of-type)>div, #edit_details .row:not(:last-of-type)>div, #access_rights_form>.row>div:not(:last-of-type), #subfolders_form>.row>.col-6 {width: 100% !important}
+    div#edit_details,div#doc_details_add,div#access_rights_form {padding: 0.75rem 1rem 2rem; border-radius: 5px;}
+    #edit_details .row:last-of-type {justify-content: flex-end;padding-right: 1rem;}
+    #access_rights_form div#add_btn_user, #access_rights_form div#add_btn_group {width: auto !important;margin-bottom: 3rem}
+    #form_metadata label {margin: 0 !important}
+    #access_rights_form div#add_btn_user>button, #access_rights_form div#add_btn_group>button, div#inheritParentFolderPermission>button {margin-top: 0.75rem}
+    #subfolders_form>.row>div.col-3 {width: auto !important}
+}

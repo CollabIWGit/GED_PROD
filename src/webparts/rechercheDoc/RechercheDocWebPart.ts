@@ -138,10 +138,8 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
   <tbody id="tbl_documents_versions_bdy">`;
 
 
-
       var response_doc_versions = null;
       var value1 = "FALSE";
-
 
       if (uniqueResponse.length > 0) {
         $("#table_version_doc").css("display", "block");
@@ -190,9 +188,6 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
           });
 
 
-
-
-
           html += `
         <tr>
         <td class="text-left">${element_version.Id}</td>
@@ -204,11 +199,7 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
        ${url}          
         </td>
 
- 
-
         <td class="text-left"><a href="https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${element_version.ParentID}" target="_blank" data-interception="off">${titleFolder}</a></td>
-
-
 
         <td class="text-left"> 
         ${element_version.description}          

@@ -98,6 +98,10 @@ body {
     letter-spacing: 1px;
 } */
 
+a {
+    text-decoration: none !important;
+}
+
 .link-header .text {
     margin-left: 15px;
 }

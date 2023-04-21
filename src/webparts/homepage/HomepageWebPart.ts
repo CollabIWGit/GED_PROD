@@ -32,13 +32,6 @@ import * as _ from 'lodash';
 
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> fdf4fd44f05486068e109e7465cdfcc07e607039
-
-
-
 export interface IHomepageWebPartProps {
     description: string;
 }
@@ -187,12 +180,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
         require('./../../../src/common/js/custom.js');
         setTimeout(() => {
             require('./../../../src/common/js/animation.js');
-<<<<<<< HEAD
-        }, 2000);
-
-=======
         }, 2000)
->>>>>>> fdf4fd44f05486068e109e7465cdfcc07e607039
 
         SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js");
         SPComponentLoader.loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js");
@@ -397,11 +385,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                 bgImage: element.bgImage
             };
             const imageJson2 = ((JSON.parse(element.bgImage)).serverRelativeUrl);
-<<<<<<< HEAD
-            if (imageJson2 != null) {
-=======
             if(imageJson2 != null){
->>>>>>> fdf4fd44f05486068e109e7465cdfcc07e607039
                 htmlcatBtn += `
                 <div class="cta-mg-repeated">
                     <a href="${element.url}" style="background-image: url('https://ncaircalin.sharepoint.com/${imageJson2}')">
@@ -409,11 +393,7 @@ export default class HomepageWebPart extends BaseClientSideWebPart<IHomepageWebP
                     </a>
                 </div>`;
             }
-<<<<<<< HEAD
-            else if (imageJson2 == null) {
-=======
             else if (imageJson2 == null){
->>>>>>> fdf4fd44f05486068e109e7465cdfcc07e607039
                 htmlcatBtn += `
                 <div class="cta-mg-repeated">
                     <a href="${element.url}" style="background-image: url('${require<string>('./../../common/images/bg-cta4.png')}')">

@@ -33,6 +33,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 import Viewer from 'viewerjs';
 import { PermissionKind } from "@pnp/sp/security";
 import 'viewerjs/dist/viewer.css';
+import { Group } from '@microsoft/microsoft-graph-types';
+import { User } from '@microsoft/microsoft-graph-types';
+
+
 
 
 
@@ -44,9 +48,7 @@ SPComponentLoader.loadCss('https://cdn.datatables.net/1.10.25/css/jquery.dataTab
 // SPComponentLoader.loadCss("https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css");
 
 
-SPComponentLoader.loadScript('');
-SPComponentLoader.loadScript('');
-SPComponentLoader.loadScript('');
+
 
 
 
@@ -106,6 +108,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   }
 
 
+
+
   private getDocTitle() {
     var queryParms = new URLSearchParams(document.location.search.substring(1));
     var myParm = queryParms.get("document");
@@ -129,6 +133,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var parent_title = "";
     var value2 = "FALSE";
     var value1 = "TRUE";
+
+    let parentIDArray: any[] = [];
+    let parentTitle: any[] = [];
 
 
     //var parentIDArray = [] ;
@@ -197,10 +204,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     console.log("ArrayParent_Title", parentTitle);
 
 
+    // this.createPath(parentTitle);
 
-
-
-    this.createPath(parentTitle);
+    return { parentIDArray, parentTitle };
 
 
   }
@@ -245,7 +251,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
       const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
-      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const pdfDoc = await PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
       console.log('pdfDoc Starting...');
 
       const pages = await pdfDoc.getPages();
@@ -293,10 +299,62 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async openPDFInIframe(url: string, filigraneText: string) {
-    const pdfBytes = await this.generatePdfBytes(url, filigraneText);
-    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+  // private async openPDFInIframe(url: string, filigraneText: string) {
+  //   const pdfBytes = await this.generatePdfBytes(url, filigraneText);
+  //   const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
 
+  //   const overlay = document.createElement('div');
+  //   overlay.style.cssText = `
+  //     position: fixed;
+  //     top: 0;
+  //     left: 0;
+  //     width: 100%;
+  //     height: 100%;
+  //     background-color: rgba(0, 0, 0, 0.8);
+  //     display: flex;
+  //     justify-content: center;
+  //     align-items: center;
+  //     z-index: 9999;
+  //   `;
+
+  //   const iframe = document.createElement('iframe');
+  //   iframe.src = pdfUrl;
+  //   iframe.style.cssText = `
+  //     border: none;
+  //     width: 100%;
+  //     height: 100%;
+  //     max-width: 1000px;
+  //     max-height: 90vh;
+  //   `;
+  //   // iframe.setAttribute('sandbox', 'allow-same-origin allow-popups allow-scripts');
+
+  //   iframe.addEventListener('contextmenu', (event) => {
+  //     event.preventDefault();
+  //   });
+
+  //   const closeButton = document.createElement('button');
+  //   closeButton.innerText = 'Close';
+  //   closeButton.style.cssText = `
+  //     position: absolute;
+  //     top: 20px;
+  //     right: 20px;
+  //     background-color: #fff;
+  //     border: none;
+  //     padding: 10px;
+  //     cursor: pointer;
+  //     font-size: 16px;
+  //   `;
+
+  //   closeButton.addEventListener('click', () => {
+  //     document.body.removeChild(overlay);
+  //   });
+
+  //   overlay.appendChild(iframe);
+  //   overlay.appendChild(closeButton);
+  //   document.body.appendChild(overlay);
+  // }
+
+  private async openPDFInIframe(url: string, filigraneText: string) {
     const overlay = document.createElement('div');
     overlay.style.cssText = `
       position: fixed;
@@ -311,6 +369,31 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       z-index: 9999;
     `;
 
+    const loader = document.createElement('div');
+    loader.style.cssText = `
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    `;
+
+    const loaderText = document.createElement('div');
+    loaderText.style.cssText = `
+      font-size: 24px;
+      color: #fff;
+    `;
+    loaderText.innerText = 'Loading...';
+    loader.appendChild(loaderText);
+
+    overlay.appendChild(loader);
+
+    const pdfBytes = await this.generatePdfBytes(url, filigraneText);
+    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+
     const iframe = document.createElement('iframe');
     iframe.src = pdfUrl;
     iframe.style.cssText = `
@@ -321,6 +404,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       max-height: 90vh;
     `;
     // iframe.setAttribute('sandbox', 'allow-same-origin allow-popups allow-scripts');
+
+    iframe.addEventListener('load', () => {
+      loader.style.display = 'none';
+    });
 
     iframe.addEventListener('contextmenu', (event) => {
       event.preventDefault();
@@ -351,7 +438,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   private async generatePdfBytes(fileUrl: string, filigraneText: string): Promise<Uint8Array> {
     try {
       const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
-      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const pdfDoc = await PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
 
       const pages = await pdfDoc.getPages();
 
@@ -383,6 +470,23 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
+  private async getChildrenById(id, items) {
+
+    const children = await sp.web.lists.getByTitle("Documents").items
+      .select("ID, Title, ParentID, inheriting")
+      .filter(`ParentID eq '${id}'`)
+      .get();
+
+    let result = [];
+
+    for (const child of children) {
+      result.push(child);
+      const subChildren = await this.getChildrenById(child.ID, items);
+      result = [...result, ...subChildren];
+    }
+
+    return result;
+  }
 
   public async render(): Promise<void> {
 
@@ -422,7 +526,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
                                 <label class="switch" id="switch_fav">
                                 <input type="checkbox" id="bookmark-switch" style="display: none;">
-                                <i class="fa-regular fa-star star-icon" style="padding-left: 0.5em;"></i>
+                                <i class="fa-regular fa-bookmark star-icon" style="padding-left: 0.5em;"></i>
                               </label>
   
     
@@ -437,7 +541,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
             <ul class="nav nav-tabs" id="myTab">
                 <li class="active"><a data-toggle="tab" href="#informations">Informations</a></li>
-                <li><a data-toggle="tab" href="#versions">Toute Versions</a></li>
+                <li><a data-toggle="tab" href="#versions">Toutes Versions</a></li>
                 <li><a data-toggle="tab" href="#access">Droits d'accès</a></li>
                 <li><a data-toggle="tab" href="#notifications">Notifications</a></li>
                 <li><a data-toggle="tab" href="#audit">Piste d'audit</a></li>
@@ -467,7 +571,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                     <div class="col-lg-6">
     
                                         <div class="form-group">
-                                            <label for="input_number">Nom du document</label>
+                                            <label for="input_number">Référence du document </label>
                                             <input type="text" id='input_number' class='form-control' disabled>
                                         </div>
     
@@ -484,6 +588,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                             </datalist>
                                         </div>
                                     </div>
+
+                                <!--    <div class="col-lg-2">
+                                    <div class="form-group">
+                                        <label for="input_dossier_id"></label>
+                                        <input type="text" class="form-control" id="input_dossier_id"
+                                            disabled />
+
+                                    </div> -->
+                                </div>
                                 </div>
     
                                 <div class="row">
@@ -505,19 +618,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                 </div>
     
                                 <div class="row">
+                                
+                                <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="input_number">Date de diffusion</label>
+                                    <input type="text" id='creation_date' class='form-control' disabled>
+                                </div>
+                            </div>
+
                                     <div class="col-lg-6">
-                                        <div class="form-group">
+                                        <div class="form-group" id='created_by_group'>
                                             <label for="input_number">Owner</label>
                                             <input type="text" id='created_by' class='form-control' disabled>
                                         </div>
                                     </div>
     
-                                    <div class="col-lg-6">
-                                        <div class="form-group">
-                                            <label for="input_number">Date de création</label>
-                                            <input type="text" id='creation_date' class='form-control' disabled>
-                                        </div>
-                                    </div>
+                              
                                 </div>
     
                                 <legend>Détails de dernière mise à jour</legend>
@@ -533,7 +649,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
                                     <div class="col-lg-6">
                                         <div class="form-group">
-                                            <label for="input_number">Date</label>
+                                            <label for="input_number">Date de Revision</label>
                                             <input id="input_reviewDate" name="myBrowser" class='form-control' type="text"
                                                 readonly>
     
@@ -545,13 +661,13 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                     <div class="col-lg-6">
                                         <div class="form-group">
                                             <label for="input_number">Fichier</label>
-                                            <input type="file" name="file" id="file_ammendment_update" class="form-control">
+                                            <input type="file" name="file" id="file_ammendment_update" class="form-control" style="font-size: 1em;">
     
                                         </div>
                                     </div>
     
                                     <div class="col-lg-6">
-                                        <div class="form-group">
+                                        <div class="form-group" id='input_filename_group'>
                                             <label for="input_number">Nom du fichier local</label>
                                             <input type="text" id='input_filename' class='form-control' disabled />
     
@@ -561,7 +677,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
                                 <div class="row">
                                     <div class="col-lg-6">
-                                        <div class="form-group">
+                                        <div class="form-group" id='updated_by_group'>
                                             <label for="input_number">Updated by :</label>
                                             <input type="text" id='updated_by' class='form-control' disabled>
     
@@ -569,7 +685,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                     </div>
     
                                     <div class="col-lg-6">
-                                        <div class="form-group">
+                                        <div class="form-group" id='updated_time_group'>
                                             <label for="input_number">Date</label>
                                             <input type="text" id='updated_time' class='form-control' disabled>
     
@@ -693,6 +809,18 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="row">
+    <div class="col-lg-3" style="padding-top: 1.7em;">
+        <div class="form-group">
+            <button type="button" class="btn btn-primary add_group mb-2" id="inherit_parent">Inherit parent permission</button>
+        </div>
+    </div>
+    <div class="col-lg-6" style="padding-top: 1.7em;">
+    <div id="inherit">
+    </div>
+</div>
+</div>
     
                             </div>
     
@@ -803,6 +931,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     `;
 
+    // this.require_libraries();
+
+
+
     const starIcon = document.querySelector(".star-icon") as HTMLElement;
 
     starIcon.addEventListener("click", function () {
@@ -818,15 +950,56 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
 
-
     require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
-    require('./../../common/jqueryui/jquery-ui.js');
     require('./../../common/css/doctabs.css');
     require('./../../common/css/minBootstrap.css');
+    require('./../../common/css/responsive.css');
 
-    SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js');
-    SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
-    SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
+    // Load JavaScript dependencies
+    require('./../../common/js/jquery.min');
+    require('./../../common/jqueryui/jquery-ui');
+    require('./../../common/js/popper');
+    require('./../../common/js/bootstrap.min');
+    // require('./../../common/js/responsive');
+
+    // Load custom JavaScript code
+    // require('./../../common/js/main');
+
+    // Load external libraries using SPComponentLoader
+    // SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js', {
+    //   globalExportsName: 'jQuery'
+    // }).then(() => {
+    //   return SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
+    // }).then(() => {
+    //   return SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
+    // });
+
+    SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js', {
+      globalExportsName: 'jQuery'
+    }).then(() => {
+      return SPComponentLoader.loadScript('https://code.jquery.com/jquery.min.js', {
+        globalExportsName: 'jQuery'
+      });
+    }).then(() => {
+      return SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
+    }).then(() => {
+      return SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
+    });
+
+    // require('./../../common/js/jquery.min');
+    // require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
+    // require('./../../common/jqueryui/jquery-ui');
+    // require('./../../common/css/doctabs.css');
+    // require('./../../common/css/minBootstrap.css');
+    // require('./../../common/css/responsive.css');
+    // require('./../../common/js/responsive');
+    // require('./../../common/js/bootstrap.min');
+    // require('./../../common/js/popper');
+    // require('./../../common/js/main');
+
+    // SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js');
+    // SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
+    // SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
 
 
 
@@ -839,16 +1012,35 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     this.getParentID(this.getDocId());
 
+    var items = await sp.web.lists.getByTitle("Documents").items
+      .select("ID, Title, ParentID, inheriting")
+      .filter(`FolderID eq '${docId}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
+      .get();
+
+
+    if (items[0].inheriting === "YES") {
+      $("#splistDocAccessRights").css("display", "none");
+
+      var newP = $("<p>").text("This document is inheriting permissions from its parent.");
+
+      // Append the new p element to an existing HTML element
+      $("#inherit").append(newP);
+    }
+
+    const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
+
+    const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;;
+    const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;;
+
     try {
 
       await this._getDocDetails(parseInt(docId)),
         // await this.checkPermission(),
-        await this._getAllVersions(title),
+        await this._getAllVersions(title, docId),
         await this._getAllAccess(docId),
-        await this._getAllAudit(docId),
+        await this._getAllAudit(docId, title),
         await this._getAllNotifications(docId),
-        await this.getSiteGroups(),
-        await this.getSiteUsers(),
+
         await this.load_folders(),
         this.fileUpload();
 
@@ -860,20 +1052,62 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       console.log(error.message);
     }
+
+    try {
+      await this.getSiteGroups(),
+        await this.getSiteUsers();
+    }
+    catch (err) {
+      console.log(err.message);
+
+    }
     //update document
 
 
+    drp_folders.addEventListener("change", function () {
+
+      alert("Changed dropdown");
+      // get selected option
+      const selectedOption = drp_folders.options[drp_folders.selectedIndex];
+
+      // set input field values based on selected option
+      folderTitleInput.value = selectedOption.text;
+      folderValueInput.value = selectedOption.value;
+    });
+
     //add_permission user
     $("#add_user").click(async (e) => {
-      await this.add_permission($("#users_name").val().toString());
+
+      if ($("#users_name").val() === "") {
+        alert("Please select a user.");
+      }
+      else {
+        await this.add_permission($("#users_name").val().toString(), items[0].ID);
+
+      }
+
     });
+
+    $("#inherit_parent").click(async (e) => {
+
+      await this.inheritParentPermission(docId, title);
+
+    });
+
 
     //add_permission_group
     $("#add_group").click(async (e) => {
+      if ($("#group_name").val() === "") {
+        alert("Please select a group.");
+      }
+      else {
 
-      const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name").val());
-      console.log("TESTER GROUP USERS", stringGroupUsers);
-      await this.add_permission_group(stringGroupUsers);
+
+
+        await this.add_permission_group($("#group_name").val().toString(), items[0].ID);
+
+
+      }
     });
 
     //add group notif
@@ -882,6 +1116,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name_notif").val());
       console.log("TESTER GROUP USERS", stringGroupUsers);
       await this.add_notification_group(stringGroupUsers);
+
     });
 
 
@@ -890,17 +1125,46 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
 
-    // var isBookmark = localStorage.getItem('bookmark') === 'true';
-    // if (isBookmark) {
-    //   $('#bookmark-switch').prop('checked', true);
-
-    // }
-
-    // Toggle the switch
-
   }
 
+  private async inheritParentPermission(id: any, title: any) {
+    try {
+      // console.log(item_perm.title);
 
+      var items = await sp.web.lists.getByTitle("Documents").items
+        .select("ID, Title, ParentID")
+        .filter(`FolderID eq '${id}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
+        .get();
+
+
+      await sp.web.lists.getByTitle("InheritParentPermission").items.add({
+        Title: title,
+        FolderID: items[0].ID,
+        IsDone: "NO",
+        ParentID: Number(items[0].ParentID)
+        // Group_principleID: user.Id
+
+      }).then(() => {
+        console.log("ADDED PARENT");
+      })
+        .then(() => {
+
+          sp.web.lists.getByTitle("Documents").items.getById(items[0].ID).update({
+            inheriting: "YES",
+          }).then(result => {
+            console.log("Item updated successfully");
+          }).catch(error => {
+            console.log("Error updating item: ", error);
+          });
+        });
+
+      alert("Parent permissions added.");
+
+    }
+    catch (e) {
+      alert(e.message);
+    }
+  }
 
   private async addBookmark(docID: any, title: any) {
     // Get the current page URL and title
@@ -941,90 +1205,62 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     console.log('Item removed from Favourites list.');
   }
 
-  // private async checkUserPermissions( listTitle: string, itemId: number, userId: number): Promise<PermissionKind[]> {
+  // public async checkIfUserIsMemberOfGroup(graphClient: MSGraphClient, groupName: string): Promise<boolean> {
+  //   if (!graphClient) {
+  //     return false;
+  //   }
+
   //   try {
-  //     // Get the item with ID 'itemId' from the list with title 'listTitle' using PnP JS library.
-  //     const item: any = await sp.web.lists.getByTitle(listTitle).items.getById(itemId).get();
+  //     // Get the user's groups
+  //     const groups = await graphClient.api('/me/memberOf')
+  //       .version('v1.0')
+  //       .get();
 
-  //     // Get the site user with ID 'userId' using PnP JS library.
-  //     const user: any = await sp.web.siteUsers.getById(userId).get();
-
-  //     // Get the user's effective permissions on the item using PnP JS library.
-  //     const userPermissions: PermissionKind[] = await item.getEffectiveBasePermissions(user.LoginName);
-
-  //     return userPermissions;
+  //     // Check if the user is a member of the desired group
+  //     const group = groups.value.find((g: any) => g.displayName === groupName);
+  //     return Boolean(group);
   //   } catch (error) {
   //     console.error(error);
-  //     throw error;
+  //     return false;
   //   }
   // }
 
-  public async checkIfUserIsMemberOfGroup(graphClient: MSGraphClient, groupName: string): Promise<boolean> {
-    if (!graphClient) {
-      return false;
-    }
+  // private async getAllGroups(graphClient: MSGraphClient): Promise<any[]> {
+  //   try {
+  //     const groups = await graphClient.api('/groups')
+  //       .version('v1.0')
+  //       .get();
 
-    try {
-      // Get the user's groups
-      const groups = await graphClient.api('/me/memberOf')
-        .version('v1.0')
-        .get();
+  //     return groups.value;
+  //   } catch (error) {
+  //     console.error(error);
+  //     return [];
+  //   }
+  // }
 
-      // Check if the user is a member of the desired group
-      const group = groups.value.find((g: any) => g.displayName === groupName);
-      return Boolean(group);
-    } catch (error) {
-      console.error(error);
-      return false;
-    }
-  }
-
-  private async getAllGroups(graphClient: MSGraphClient): Promise<any[]> {
-    try {
-      const groups = await graphClient.api('/groups')
-        .version('v1.0')
-        .get();
-
-      return groups.value;
-    } catch (error) {
-      console.error(error);
-      return [];
-    }
-  }
-
-  private async updateDocument(folderId: string, title: string) {
+  private async updateDocument(folderId: string, title: string, folder: any) {
 
     let user_current = await sp.web.currentUser();
 
-    let text = $("#input_type_doc").val();
-    const value1 = "TRUE";
-    var folder = '';
 
 
-    const all_folders = await sp.web.lists.getByTitle('Documents').items
-      .select("ID,ParentID,FolderID,Title,IsFolder,description")
-      .top(5000)
-      .filter("Title eq '" + text + "' and IsFolder eq '" + value1 + "' ")
-      .get();
+    if ($('#file_ammendment_update').val() == '') {
 
-    await Promise.all(all_folders.map(async (doc) => {
-
-      folder = doc.FolderID;
-
-    }));
-
-    // const myArray = text.toString().split("_");
-    // let parentId = myArray[0];
-
-    if ($('#file_ammendment').val() == '') {
-
-      alert("Veuillez télécharger le fichier avant de continuer.");
+      alert("Veuillez télécharger un fichier avant de continuer.");
 
     }
 
     else {
 
-      if (confirm(`Etes-vous sûr de vouloir mettre à jour les détails de ${title} ?`)) {
+      if (confirm(`Etes-vous sûr de creer un nouveaux version de ${title} ?`)) {
+
+        const now: Date = new Date();
+        const day: number = now.getDate();
+        const month: number = now.getMonth() + 1; // Note: Month is zero-indexed
+        const year: number = now.getFullYear();
+
+        const date: string = `${day < 10 ? '0' + day : day}/${month < 10 ? '0' + month : month}/${year}`;
+        console.log(date); // Output: "10/04/2023"
 
         try {
           const i = await sp.web.lists.getByTitle('Documents').items.add({
@@ -1034,6 +1270,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
             doc_number: $("#input_number").val(),
             revision: $("#input_revision").val(),
             ParentID: parseInt(folder),
+            revisionDate: date,
             IsFolder: "FALSE",
             owner: $("#created_by").val(),
             updatedBy: user_current.Title,
@@ -1064,7 +1301,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
             })
             .then(async ({ title, folderId_link }) => {
-              await this.createAudit($("#input_number").val(), folderId, user_current.Title, "Modification");
+              await this.createAudit($("#input_number").val(), folderId_link, user_current.Title, "Modification");
               return { title, folderId_link }
             })
             .then(({ title, folderId_link }) => {
@@ -1108,7 +1345,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     // if (groupTitle.includes("myGed Visitors")) {
     if (groupTitle.includes("Utilisateur MyGed")) {
 
-      $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc, #download_doc").css("display", "none");
+      $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc").css("display", "none");
 
       $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
 
@@ -1124,7 +1361,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       $("#input_number, #input_type_doc").prop('disabled', false);
       // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
     }
-
 
   }
 
@@ -1149,7 +1385,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async _getAllAudit(id: string) {
+  private async _getAllAudit(id: string, title: string) {
 
     var value1 = "FALSE";
     var itemID = "";
@@ -1176,7 +1412,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   </thead>
   <tbody id="tbl_documents_audit_bdy">`;
 
-    const allAudit: any[] = await sp.web.lists.getByTitle('Audit').items.select("ID, Title, Person, FolderID, Action, DateCreated").filter("FolderID eq '" + parseInt(id) + "'").getAll();
+    const allAudit: any[] = await sp.web.lists.getByTitle('Audit').items.select("ID, Title, Person, FolderID, Action, DateCreated").filter("FolderID eq '" + parseInt(id) + "' and Title eq '" + title + "'").getAll();
 
 
     console.log("AAAUUDIIIT", allAudit);
@@ -1205,7 +1441,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async add_permission(user_group: any) {
+  private async add_permission(user_group: any, id: any) {
 
     //add permission user
 
@@ -1217,6 +1453,24 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
     const user: any = await sp.web.siteUsers.getByEmail(user_group)();
+
+    var selected_permission = $("#permissions_user option:selected").val();
+
+    var permission = 0;
+
+    if (selected_permission === "ALL") {
+
+      permission = 1073741829;
+    }
+
+    else if (selected_permission === "READ") {
+      permission = 1073741826;
+
+    }
+    else if (selected_permission === "READ_WRITE") {
+      permission = 1073741830;
+
+    }
 
 
 
@@ -1244,11 +1498,21 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         Title: doc_title.toString(),
         groupName: $("#users_name").val(),
         permission: $("#permissions_user option:selected").val(),
-        FolderIDId: docID.toString(),
+        FolderID: Number(docID),
         PrincipleID: user.Id,
         LoginName: user.Title,
-        groupTitle: $("#group_name").val()
+        groupTitle: $("#group_name").val(),
+        RoleDefID: permission
       })
+        .then(() => {
+          sp.web.lists.getByTitle("Documents").items.getById(Number(id)).update({
+            inheriting: "NO",
+          }).then(result => {
+            console.log("Item updated successfully");
+          }).catch(error => {
+            console.log("Error updating item: ", error);
+          });
+        })
         .then(() => {
           alert("Autorisation ajoutée à ce document avec succès.");
         })
@@ -1285,40 +1549,74 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     return 'No Access';
   }
 
-  private async add_permission_group(group_name: string[]) {
+  private async add_permission_group(group_name: string, id: any) {
 
     //add permission user
 
     var ifFolder = "FALSE";
     var x = this.getDocId();
-    var doc_title = "";
-    var docID = "";
+
 
     const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
       .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
       .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
       .get();
 
-    await Promise.all(all_documents.map(async (doc) => {
-      doc_title = doc.Title;
-      docID = doc.Id;
-    }));
+    const group: any = await sp.web.siteGroups.getByName(group_name);
+
+    console.log("GROUP TESTER SA", group);
+
+    const groups1: any = await sp.web.siteGroups.get();
+    const filteredGroups: ISiteGroupInfo[] = groups1.filter(group => group.LoginName === group_name);
+
+    // await Promise.all(all_documents.map(async (doc) => {
+    //   doc_title = doc.Title;
+    //   docID = doc.Id;
+    // }));
 
     console.log("USERS FOR PERMISSION", group_name);
 
+    var selected_permission = $("#permissions_group option:selected").val();
+
+    var permission = 0;
+
+    if (selected_permission === "ALL") {
+
+      permission = 1073741829;
+    }
+
+    else if (selected_permission === "READ") {
+      permission = 1073741826;
+
+    }
+    else if (selected_permission === "READ_WRITE") {
+      permission = 1073741830;
+
+    }
+
     try {
-      await Promise.all(group_name.map(async (email) => {
-        const user: any = await sp.web.siteUsers.getByEmail(email)();
-        await sp.web.lists.getByTitle("AccessRights").items.add({
-          Title: doc_title.toString(),
-          groupName: email,
-          permission: $("#permissions_group option:selected").val(),
-          FolderIDId: docID.toString(),
-          PrincipleID: user.Id,
-          LoginName: user.Title,
-          groupTitle: $("#group_name").val()
+      // await Promise.all(group_name.map(async (email) => {
+      await sp.web.lists.getByTitle("AccessRights").items.add({
+        Title: all_documents[0].Title.toString(),
+        // groupName: email,
+        permission: $("#permissions_group option:selected").val(),
+        FolderID: Number(all_documents[0].ID),
+        PrincipleID: filteredGroups[0].Id,
+        LoginName: filteredGroups[0].LoginName,
+        groupTitle: filteredGroups[0].LoginName,
+        RoleDefID: permission
+      })
+
+        .then(async () => {
+          await sp.web.lists.getByTitle("Documents").items.getById(Number(id)).update({
+            inheriting: "NO",
+          }).then(result => {
+            console.log("Item updated successfully");
+          }).catch(error => {
+            console.log("Error updating item: ", error);
+          });
         });
-      }));
+      // }));
 
       alert("Authorization added successfully.");
       window.location.reload();
@@ -1342,7 +1640,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
     const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, revisionDate")
       .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
       .get();
 
@@ -1370,7 +1668,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           FolderID: x.toString(),
           webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
           LoginName: user.Title,
-          revision: revision
+          revision: revision,
+          TypeNotif: "manual"
         })
       }));
 
@@ -1384,7 +1683,13 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   private async load_folders() {
     const value1 = "TRUE";
-    const drp_folders = document.getElementById("select_folders");
+    // const drp_folders = document.getElementById("select_folders");
+    const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
+
+    const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;;
+    const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;;
+
+
 
     if (!drp_folders) {
       console.error("Dropdown element not found");
@@ -1397,14 +1702,40 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       .filter("IsFolder eq '" + value1 + "'")
       .get();
 
+    console.log("ALL FOLDERS", all_folders.length);
+
     folders = all_folders;
 
-    folders.forEach((result: any) => {
+    await Promise.all(all_folders.map(async (result) => {
+
+
       const opt = document.createElement('option');
-      opt.appendChild(document.createTextNode(result.Title));
-      opt.value = result.Title;
+      //  opt.appendChild(document.createTextNode(result.Title));
+
+      opt.text = result.Title;
+      opt.value = result.FolderID; // Set the value of the option to the folder ID
+
+
+      // create a span element for the description
+      const description = document.createElement('span');
+      description.innerHTML = result.description;
+
+      // add a line break element before the description
+      const lineBreak = document.createElement('br');
+      opt.appendChild(lineBreak);
+
+
+      // opt.insertAdjacentElement('beforeend', description);
+
+      opt.appendChild(description);
+
       drp_folders.appendChild(opt);
-    });
+
+
+    }));
+
+
+
   }
 
   private fileUpload() {
@@ -1437,124 +1768,82 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  // private async showPDF(url: any, filigraneText: any) {
-  //   const pdfBytes = await this.generatePdfBytes(url, filigraneText);
-  //   const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+  private async showPDF(url: any, filigraneText: any) {
+    const pdfBytes = await this.generatePdfBytes(url, filigraneText);
+    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
 
-  //   // Create a container element to hold the viewer
-  //   const container = document.createElement('div');
-  //   container.setAttribute('style', 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background-color:#fff;');
-  //   document.body.appendChild(container);
-
-  //   // Create an iframe element to display the PDF file
-  //   const iframe = document.createElement('iframe');
-  //   iframe.setAttribute('src', 'viewer.html');
-  //   iframe.setAttribute('style', 'width:100%;height:100%;border:none;');
-  //   iframe.setAttribute('scrolling', 'no');
-  //   iframe.setAttribute('allowfullscreen', 'true');
-
-  //   // Add the iframe to the container element
-  //   container.appendChild(iframe);
-
-  //   // Wait for the iframe to load
-  //   iframe.addEventListener('load', () => {
-  //     // Get a reference to the iframe's content window
-  //     const iframeWindow = iframe.contentWindow as Window;
-
-  //     // Load Viewer.js in the iframe
-  //     const script = iframeWindow.document.createElement('script');
-  //     script.setAttribute('src', 'viewer.js');
-  //     script.addEventListener('load', () => {
-  //       // Initialize viewer.js with the PDF file
-  //       const viewer = new iframeWindow.Viewer({
-  //         inline: true,
-  //         button: false,
-  //         toolbar: false,
-  //         navbar: false,
-  //         fullscreen: true,
-  //         url: pdfUrl
-  //       });
-  //       viewer.show();
-  //     });
-
-  //     // Add the Viewer.js script to the iframe's document
-  //     iframeWindow.document.body.appendChild(script);
-  //   });
-  // }
-
-  private async showPDF(url: string, filigraneText: string) {
-
-    pdfjsLib.GlobalWorkerOptions.workerSrc = require('../../../node_modules/pdfjs-dist/build/pdf.worker.js');
-
-
-    // Load the PDF document
-    const pdf = await pdfjsLib.getDocument(url).promise;
-
-    // Get the total number of pages in the PDF document
-    const numPages = pdf.numPages;
-
-    // Create a container element to hold the viewer and close button
+    // Create a container element to hold the viewer
     const container = document.createElement('div');
     container.setAttribute('style', 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background-color:#fff;');
     document.body.appendChild(container);
 
-    // Create a close button element
-    const closeButton = document.createElement('button');
-    closeButton.innerHTML = 'Close';
-    closeButton.addEventListener('click', () => {
-      document.body.removeChild(container);
+    // Create an iframe element to display the PDF file
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('src', 'viewer.html');
+    iframe.setAttribute('style', 'width:100%;height:100%;border:none;');
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('allowfullscreen', 'true');
+
+    // Add the iframe to the container element
+    container.appendChild(iframe);
+
+    // Wait for the iframe to load
+    iframe.addEventListener('load', () => {
+      // Get a reference to the iframe's content window
+      const iframeWindow = iframe.contentWindow as Window;
+
+      // Load Viewer.js in the iframe
+      const script = iframeWindow.document.createElement('script');
+      script.setAttribute('src', 'viewer.js');
+      script.addEventListener('load', () => {
+        // Initialize viewer.js with the PDF file
+        const viewer = new iframeWindow.Viewer({
+          inline: true,
+          button: false,
+          toolbar: false,
+          navbar: false,
+          fullscreen: true,
+          url: pdfUrl
+        });
+        viewer.show();
+      });
+
+      // Add the Viewer.js script to the iframe's document
+      iframeWindow.document.body.appendChild(script);
     });
-    container.appendChild(closeButton);
+  }
 
-    // Create a div element to hold the pages of the PDF document
-    const pagesContainer = document.createElement('div');
-    pagesContainer.setAttribute('style', 'width:100%;height:calc(100% - 30px);overflow:auto;');
-    container.appendChild(pagesContainer);
-
-    // Loop through each page of the PDF document and add it to the pages container
-    for (let i = 1; i <= numPages; i++) {
-      // Load the page
-      const page = await pdf.getPage(i);
-
-      // Get the page viewport
-      const viewport = page.getViewport({ scale: 1 });
-
-      // Create a canvas element to display the page
-      const canvas = document.createElement('canvas');
-      canvas.setAttribute('style', 'display:block;margin:10px auto;border:1px solid #ccc;');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      // Add the canvas element to the pages container
-      pagesContainer.appendChild(canvas);
-
-      // Render the page on the canvas
-      await page.render({
-        canvasContext: canvas.getContext('2d'),
-        viewport
-      }).promise;
-
-      // Add the filigrane text to the canvas
-      const context = canvas.getContext('2d');
-      context.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.font = '24px Arial';
-      context.fillStyle = 'red';
-      context.fillText(filigraneText, 20, 40);
+  private getFileExtensionFromUrl(url: string): string {
+    const lastDotIndex = url.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+      // no dot in the URL
+      return '';
     }
+
+    const pathAfterLastSlash = url.slice(url.lastIndexOf('/') + 1);
+    const lastSlashIndex = pathAfterLastSlash.lastIndexOf('/');
+    const filenameWithExtension = pathAfterLastSlash.slice(lastSlashIndex + 1);
+    const extension = filenameWithExtension.slice(filenameWithExtension.lastIndexOf('.') + 1);
+
+    return extension;
   }
 
   private async _getDocDetails(id: number) {
 
+    const parentArray = await this.getParentID(this.getDocId());
+
+    this.createPath(parentArray.parentTitle);
+
+    //  this.createPath(parentArray.parentTitle);
     // var externalUrl = '';
     // var url = '';
     var urlFile_download = '';
     var pdfNameDownload = '';
 
     await this.checkPermission();
-    var x = await this.getAllGroups(this.graphClient);
+    //  var x = await this.getAllGroups(this.graphClient);
 
-    console.log("ALL AD GROUPS", x);
+    // console.log("ALL AD GROUPS", x);
 
 
     $('#file_ammendment_update').on('change', () => {
@@ -1619,6 +1908,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     $("#updated_time").val(itemDoc[0].updatedDate);
     $("#creation_date").val(itemDoc[0].createdDate);
     $("#h2_doc_title").text(itemDoc[0].Title);
+    $("#input_reviewDate").val(itemDoc[0].revisionDate);
 
     // Set the URL for downloading the attachment
     let url = '';
@@ -1634,34 +1924,58 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       $("#download_doc").css("display", "none");
     }
 
-    var xx = await this.getPermissionLevel(this.graphClient, "TestMyGed", "Documents", itemDoc[0].Id);
-    console.log("GRAPH PERMISSION", xx);
+    // var xx = await this.getPermissionLevel(this.graphClient, "TestMyGed", "Documents", itemDoc[0].Id);
+    // console.log("GRAPH PERMISSION", xx);
 
     // Open the attachment in a new tab
 
     let user_current = await sp.web.currentUser();
     $("#open_doc").click(async (e) => {
 
-      if (itemDoc[0].IsFiligrane === "NO") {
+      //   url = "https://ncaircalin.sharepoint.com" + url;
+
+      if (this.getFileExtensionFromUrl(url) !== "pdf" || itemDoc[0].IsFiligrane === "NO") {
+
+        //  if (itemDoc[0].IsFiligrane === "NO") {
         window.open(`${url}`, '_blank');
       }
 
       else {
 
-        // else if (itemDoc[0].IsFiligrane === "YES") {
 
-        await this.openPDFInIframe(url, 'UNCONTROLLED COPY - Downloaded on: ');
+        // create a div element to blur the screen
+        const blurDiv = document.createElement('div');
+        blurDiv.classList.add('blur');
+        document.body.appendChild(blurDiv);
 
-        //  await this.showPDF(url, 'UNCONTROLLED COPY - Downloaded on: ');
+        // create a div element to show the loader
+        const loaderDiv = document.createElement('div');
+        loaderDiv.classList.add('loader1');
+        document.body.appendChild(loaderDiv);
+
+        try {
+          await this.openPDFInIframe(url, 'UNCONTROLLED COPY - Downloaded on: ');
+        } finally {
+          // remove the loader and the blur elements
+          document.body.removeChild(loaderDiv);
+          document.body.removeChild(blurDiv);
+        }
       }
+      // }
+
+      // else {
+      //   alert("This is not a pdf file");
+
+      //   window.open(`${url}`, '_blank');
+      // }
 
       await this.createAudit(itemDoc[0].Title, itemDoc[0].FolderID, user_current.Title, "Consultation");
     });
 
 
     //check user permission
-    var userPermission = this.getUserPermissionLevelOnSharePointListItem("Documents", itemDoc[0].Id, user_current.Email);
-    console.log("User Permission", userPermission);
+    // var userPermission = this.getUserPermissionLevelOnSharePointListItem("Documents", itemDoc[0].Id, user_current.Email);
+    // console.log("User Permission", userPermission);
 
 
     // Delete the document
@@ -1670,7 +1984,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         try {
           await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc[0].Id)).recycle();
           alert("Document deleted successfully.");
-          window.location.reload();
+          window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${itemDoc[0].ParentID}`;
         } catch (err) {
           alert(err.message);
         }
@@ -1692,15 +2006,24 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         $("#input_keywords").val() === itemDoc[0].keywords ||
         $("#input_description").val() === itemDoc[0].description) && $("#input_revision").val() !== itemDoc[0].revision && fileInput.value) {
         // The fields are unchanged, so update the document metadata
-        await this.updateDocument(itemDoc[0].Id, itemDoc[0].Title);
+        //  const folder = await this.getFolder(itemFolder[0].FolderID);
+
+        // await this.updateDocument(itemDoc[0].FolderID, itemDoc[0].Title, folder.ID);
+
+        await this.updateDocument(itemDoc[0].FolderID, itemDoc[0].Title, Number($("#input_type_doc").val()));
+
 
         alert("You have created a new version of : " + itemDoc[0].Title);
       } else {
         // The fields are changed, so get the folder details and update the document metadata
-        const folder = await this.getFolder();
-        await this.updateDocMetadata(itemDoc[0].Id, folder.ID, itemDoc[0].FolderID, user_current.Title);
+        // const folder = await this.getFolder(itemFolder[0].FolderID);
+        // await this.updateDocMetadata(itemDoc[0].Id, folder.ID, itemDoc[0].FolderID, user_current.Title);
+        await this.updateDocMetadata(itemDoc[0].Id, Number($("#input_type_doc").val()), itemDoc[0].FolderID, user_current.Title);
+
         alert("You have modified some metadata of : " + itemDoc[0].Title);
       }
+
+      // await this.createAudit()
 
     });
 
@@ -1737,22 +2060,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       // Get site ID
       const siteResponse = await graphClient.api(`/sites/${siteName}`).get();
       const siteId = siteResponse.id;
-  
+
       // Get list ID
       const listResponse = await graphClient.api(`/sites/${siteId}/lists?$filter=displayName eq '${listName}'`).get();
       const listId = listResponse.value[0].id;
-  
+
       // Get item permissions
       const response = await graphClient.api(`/sites/${siteId}/lists/${listId}/items/${itemId}/driveItem/permissions`).get();
       const permissions = response.value;
-  
+
       // Get current user
       const currentUser = await graphClient.api('/me').get();
       const currentUserObjectId = currentUser.id;
-  
+
       // Get permission level for current user
       const permissionLevel = permissions.find(p => p.grantedToIdentities.some(identity => identity.user && identity.user.id === currentUserObjectId));
-  
+
       if (permissionLevel) {
         switch (permissionLevel.role) {
           case 'write':
@@ -1774,7 +2097,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       throw error;
     }
   }
-  
+
   private async setBookmarkSwitchState(isChecked: boolean) {
     const bookmarkSwitch = document.getElementById("bookmark-switch") as HTMLInputElement;
 
@@ -1805,20 +2128,32 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async getFolder() {
-    let folder = { ID: '', Title: '' };
-    const items = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title")
-      .filter(`Title eq '${$("#input_type_doc").val().toString()}' and IsFolder eq 'TRUE'`)
-      .get();
-    if (items.length > 0) {
-      folder.ID = items[0].Id;
-      folder.Title = items[0].Title;
-    }
-    return folder;
-  }
+  // private async getFolder(docParentID: any) {
+  //   let folder = { ID: '', Title: '' };
+  //   const items = await sp.web.lists.getByTitle('Documents').items
+  //     .select("Id,ParentID,FolderID,Title")
+  //     .filter(`Title eq '${$("#input_type_doc").val().toString()}' and FolderID eq '${docParentID}'`)
+  //     .get();
 
-  private async updateDocMetadata(id: any, folder: any, folderID: any, userTitle: any) {
+  //   const folders = items.filter(item => item.IsFolder === "TRUE");
+
+
+
+  //   // if (items.length > 0) {
+  //   //   folder.ID = items[0].FolderID;
+  //   //   folder.Title = items[0].Title;
+  //   // }
+
+  //   if (folders.length > 0) {
+  //     folder.ID = folders.FolderID;
+  //     folder.Title = folders.Title;
+  //   }
+
+  //   return folder;
+  // }
+
+  private async updateDocMetadata(id: any, folder: any, folderID: any, userTitle: any,) {
+
 
     try {
       const list = sp.web.lists.getByTitle("Documents");
@@ -1860,6 +2195,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var revisionDate = "";
     var description = "";
     var link = "";
+    var revision = "";
 
 
     const user: any = await sp.web.siteUsers.getByEmail($("#users_name_notif").val().toString())();
@@ -1879,27 +2215,27 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       revisionDate = doc.revisionDate;
       description = doc.description;
       link = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=OWNERTEST&documentId=${doc.FolderID}`;
+      revision = doc.revision;
 
     }));
-
 
     console.log("USERS FOR PERMISSION", users_Permission);
     console.log("LIIINK", link);
 
-
     try {
-
 
       await sp.web.lists.getByTitle("Notifications").items.add({
         Title: doc_title.toString(),
         group_person: $("#users_name_notif").val(),
         IsFolder: "FALSE",
         revisionDate: revisionDate,
+        revision: revision,
         toNotify: "YES",
         description: description,
         FolderID: x.toString(),
         webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
         LoginName: user.Title,
+        TypeNotif: "manual"
       })
         .then(() => {
           alert("Notification ajoutée à ce document avec succès.");
@@ -1917,7 +2253,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async _getAllVersions(title: string) {
+  private async _getAllVersions(title: string, doc_id: any) {
 
     {
       //display so table
@@ -1949,7 +2285,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       const all_documents_versions: any[] = await sp.web.lists.getByTitle('Documents').items
         .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, attachmentUrl, IsFiligrane, IsDownloadable")
-        .filter("Title eq '" + title + "' and IsFolder eq '" + value1 + "'")
+        .filter("Title eq '" + title + "' and IsFolder eq '" + value1 + "' and FolderID ne '" + doc_id + "'")
         .get();
 
 
@@ -1958,12 +2294,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       // all_documents_versions.sort((a, b) => b.revision - a.revision);
 
       // Then, find the highest revision
-      const highestRevision = all_documents_versions[0].revision;
+      //const highestRevision = all_documents_versions[0].revision;
+
+      var filtered_docs_versions = all_documents_versions;
 
       // Finally, filter the array and remove the items with the highest revision
       //  const filtered_documents_versions_1 = all_documents_versions.filter((document) => document.revision < highestRevision);
 
-      const filtered_documents_versions_2 = all_documents_versions.filter((document) => document.revision !== null);
+      //  const filtered_documents_versions_2 = all_documents_versions.filter((document) => document[0].revision !== null && document[0].FolderID !== doc_id);
+
+      const filtered_documents_versions_2 = filtered_docs_versions.filter((document) => {
+        return document.revision !== null && document.FolderID !== doc_id;
+      });
+
+      //const filteredItems = filtered_documents_versions_2.filter(doc => doc.FolderID !== doc_id);
 
 
       if (filtered_documents_versions_2.length > 0) {
@@ -2131,16 +2475,33 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         $('#tbl_doc_versions tbody').on('click', '.btn_view_doc', async (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
 
-          if (data[7] === "NO") {
-            alert("FILIGRANE = NO");
+
+
+          if (this.getFileExtensionFromUrl(data[2]) !== "pdf" || data[7] === "NO") {
+            // alert("FILIGRANE = NO");
             window.open(`${data[2]}`, '_blank');
           }
 
-          else if (data[7] === "YES") {
+          else {
 
-            alert("FILIGRANE = YES");
-            //   await this.openPDFInBrowser(url, 'UNCONTROLLED COPY - Downloaded on: ');
-            await this.openPDFInIframe(data[2], 'UNCONTROLLED COPY - Downloaded on: ');
+
+            // create a div element to blur the screen
+            const blurDiv = document.createElement('div');
+            blurDiv.classList.add('blur');
+            document.body.appendChild(blurDiv);
+
+            // create a div element to show the loader
+            const loaderDiv = document.createElement('div');
+            loaderDiv.classList.add('loader1');
+            document.body.appendChild(loaderDiv);
+
+            try {
+              await this.openPDFInIframe(data[2], 'ARCHIVED COPY - Downloaded on: ');
+            } finally {
+              // remove the loader and the blur elements
+              document.body.removeChild(loaderDiv);
+              document.body.removeChild(blurDiv);
+            }
           }
           //  window.open(`${data[2]}`, '_blank');
         });
@@ -2180,12 +2541,12 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       <th class="text-left">Nom</th>
       <th class="text-left" >Droits d'accès</th>
 
-      <th class="text-left" >Actions</th>
+     <!-- <th class="text-left" >Actions</th>- -->
     </tr>
   </thead>
   <tbody id="tbl_documents_access_bdy">`;
 
-    const allPermissions: any[] = await sp.web.lists.getByTitle('AccessRights').items.select("ID,groupName,permission,FolderIDId,LoginName, groupTitle, Created").filter("FolderIDId eq '" + Number(itemID) + "'").getAll();
+    const allPermissions: any[] = await sp.web.lists.getByTitle('AccessRights').items.select("ID,groupName,permission,FolderID,LoginName, groupTitle, Created").filter("FolderID eq '" + Number(itemID) + "'").getAll();
 
     const permissionsByGroup = allPermissions.reduce((groups, permission) => {
       const groupName = permission.groupTitle;
@@ -2207,7 +2568,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           <td class="text-left">${perm.LoginName}</td>
           <td class="text-left">${perm.permission}</td>
           
-          <td class="text-left">
+   <!--       <td class="text-left">
 
          <a href="#"  title="delete_perm" id="${perm.Id}_view_doc_version" class="btn_delete_access" style="padding-left: inherit;">
          <i class="fa-solid fa-trash" style="font-size: x-large;"></i>
@@ -2215,7 +2576,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
      
          </a>
 
-          </td>
+          </td> -->
 
          `;
 
@@ -2241,11 +2602,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       }
     );
 
-    $('#tbl_doc_rights tbody').on('click', '.btn_delete_access', async (event) => {
-      var data = table.row($(event.currentTarget).parents('tr')).data();
-      await this._delete(data[0], "AccessRights", "Droits d'accès");
-      window.location.reload();
-    });
+    // $('#tbl_doc_rights tbody').on('click', '.btn_delete_access', async (event) => {
+    //   var data = table.row($(event.currentTarget).parents('tr')).data();
+    //   await this._delete(data[0], "AccessRights", "Droits d'accès");
+    //   window.location.reload();
+    // });
 
 
 
@@ -2350,51 +2711,26 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   }
 
   public async getSiteUsers() {
+
     var drp_users = document.getElementById("select_users");
-    // var drp_users2 = document.getElementById("select_users2");
+    drp_users.innerHTML = "";
 
-
-    if (drp_users == null) {
-      console.error("select_users element not found");
-      return;
-    }
-
-    // drp_users.innerHTML = "";
-    // drp_users2.innerHTML = "";
 
     const users1: any = await sp.web.siteUsers();
 
     users = users1;
-
-    users.forEach((result: ISiteUserInfo) => {
-      if (result.UserPrincipalName != null) {
-        var opt = document.createElement('option');
-        opt.appendChild(document.createTextNode(result.Email));
-        opt.value = result.Email;
-        drp_users.appendChild(opt);
-      }
-    });
-  }
-
-  public async getSiteGroups() {
-
-    var drp_users = document.getElementById("select_groups");
-
-
-    const groups1: any = await sp.web.siteGroups();
-
-    groups = groups1;
     //console.log('SITEUSERSSSS ++++>', users1);
 
-    groups.forEach((result: ISiteGroupInfo) => {
+    users.forEach((result: ISiteUserInfo) => {
 
-      if (result.Title != null) {
-        //  console.log("USER", result.Email);
+      if (result.UserPrincipalName != null ) {
+
+        console.log("USER", result.Id, result.Email);
         // if(result.IsFolder == "TRUE"){
         // console.log("SELECT_FOLDERS", result.Title);
         var opt = document.createElement('option');
-        opt.appendChild(document.createTextNode(result.LoginName));
-        opt.value = result.LoginName;
+        opt.appendChild(document.createTextNode(result.Email));
+        opt.value = result.Email;
         drp_users.appendChild(opt);
         // }
       }
@@ -2402,6 +2738,129 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
   }
+
+
+  public async getUserPrincipalId(graphClient: MSGraphClient, userId: string): Promise<string> {
+    try {
+      const user = await graphClient.api(`/users/${userId}`)
+        .version('v1.0')
+        .select('id,displayName,userPrincipalName,mail,userType,userPrincipalId')
+        .get();
+
+      return user.userPrincipalId;
+    } catch (error) {
+      console.error(`Error retrieving user ${userId} from Microsoft Graph API:`, error);
+      throw error;
+    }
+  }
+
+
+
+  public async getSiteGroups() {
+
+    var drp_users = document.getElementById("select_groups");
+
+    try {
+      const groups1: any = await sp.web.siteGroups();
+      // const allGroups = await this.getAllGroups(this.graphClient);
+
+      for (const group of groups1) {
+        // console.log("GROUP ID: " + group.displayName + ", " + group.mail);
+
+        // const opt = document.createElement('option');
+        // opt.appendChild(document.createTextNode(group.mail));
+        // opt.value = group.mail;
+        // opt.text = group.displayName;
+        // drp_users.appendChild(opt);
+        if (group.Title != null || group.OwnerTitle !== "System Account") {
+          console.log("GROUP ID : " + group.Id + " , " + group.LoginName);
+          //  console.log("USER", result.Email);
+          // if(result.IsFolder == "TRUE"){
+          // console.log("SELECT_FOLDERS", result.Title);
+          var opt = document.createElement('option');
+          opt.appendChild(document.createTextNode(group.LoginName));
+          opt.value = group.LoginName;
+          drp_users.appendChild(opt);
+        }
+      }
+    } catch (error) {
+      console.error("Error retrieving groups:", error);
+    }
+    //   })
+    //   .catch((error) => {
+    //     console.error(error);
+    //   });
+
+    // groups = groups1;
+    //console.log('SITEUSERSSSS ++++>', users1);
+
+    //   groups.forEach((result: ISiteGroupInfo) => {
+    // groups.forEach((result: ISiteGroupInfo) => {
+
+    //   if (result.Title != null) {
+    //     console.log("GROUP ID : " + result.Id + " , " + result.LoginName);
+    //     //  console.log("USER", result.Email);
+    //     // if(result.IsFolder == "TRUE"){
+    //     // console.log("SELECT_FOLDERS", result.Title);
+    //     var opt = document.createElement('option');
+    //     opt.appendChild(document.createTextNode(result.LoginName));
+    //     opt.value = result.LoginName;
+    //     drp_users.appendChild(opt);
+    //     // }
+    //   }
+
+    // });
+
+  }
+
+  private async getAllGroups(graphClient: MSGraphClient): Promise<Group[]> {
+    const allGroups: Group[] = [];
+
+    let nextPageUrl = '/groups';
+    while (nextPageUrl) {
+      const response = await graphClient.api(nextPageUrl).version('v1.0').get();
+      allGroups.push(...response.value);
+      nextPageUrl = response["@odata.nextLink"] ?? null;
+    }
+
+    return allGroups;
+  }
+
+  private async getAllUsers(graphClient: MSGraphClient): Promise<User[]> {
+    const allUsers: User[] = [];
+
+    let nextPageUrl = '/users';
+    while (nextPageUrl) {
+      const response = await graphClient.api(nextPageUrl).version('v1.0').get();
+      allUsers.push(...response.value);
+      nextPageUrl = response["@odata.nextLink"] ?? null;
+    }
+
+    return allUsers;
+  }
+
+  // private async getAllUsers(graphClient: MSGraphClient): Promise<User[]> {
+  //   const allUsers: User[] = [];
+
+  //   let nextPageUrl = '/users';
+  //   while (nextPageUrl) {
+  //     const response = await graphClient.api(nextPageUrl).version('v1.0').get();
+  //     const users = response.value.map(async (user: any) => {
+  //       const userResponse = await graphClient.api(`/users/${user.id}/?$select=id,displayName,userPrincipalName`).version('v1.0').get();
+  //       const userPrincipleIdResponse = await graphClient.api(`/users/${user.id}/?$select=id,mailNickname`).version('v1.0').get();
+  //       return {
+  //         id: userResponse.id,
+  //         displayName: userResponse.displayName,
+  //         userPrincipalName: userResponse.userPrincipalName,
+  //         principleId: userPrincipleIdResponse.mailNickname
+  //       };
+  //     });
+  //     allUsers.push(...await Promise.all(users));
+  //     nextPageUrl = response["@odata.nextLink"] ?? null;
+  //   }
+
+  //   return allUsers;
+  // }
 
   private _getEnvironmentMessage(): string {
     if (!!this.context.sdks.microsoftTeams) { // running in Teams

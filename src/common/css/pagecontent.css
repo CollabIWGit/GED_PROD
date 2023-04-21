@@ -30,6 +30,10 @@ span:hover {
     display: none;
 }
 
+#CommentsWrapper{
+  display: none;
+}
+
 #tbl_documents_versions {
     margin: 2em;
     width: 96%;
@@ -37,10 +41,6 @@ span:hover {
 
 #spListPermissions {
     display: block;
-}
-
-#table_version_doc {
-    display: none;
 }
 
 .update_details_doc {
@@ -75,8 +75,84 @@ span:hover {
     text-align: center;
 }
 
+.k_b_beed2cf1.m_b_beed2cf1 {
+
+    background-color: white;
+}
+
 /* .breadcrumb1>li>a {
     color: #0d6efd;
     text-decoration: none;
 } */
 
+::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+  }
+   
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: #888; 
+  }
+  
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555; 
+  }
+
+  @keyframes beat {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  #loader_else {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+  }
+  
+  #loader_else:before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 0.5em;
+    background-color: white;
+    animation: beat 1s ease-in-out infinite;
+  }
+
+  .CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read {
+    padding: 0;
+    height: 100%;
+  }
+  
+  .simpleFooterContainer-153 {
+    display: none;
+  }
+  
+  .simpleFooterContainer-160{
+    display: none;
+  }
+  
+  .l_b_beed2cf1{
+    display: none;
+  }
+  
