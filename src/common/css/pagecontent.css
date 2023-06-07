@@ -15,23 +15,10 @@
 
 span:hover {
     color: rgb(212, 189, 43);
-
-}
-
-.simpleFooterContainer-215 {
-    display: none;
 }
 
 #doc_form_access_rights {
     display: none;
-}
-
-.e_a_ada2ac09 {
-    display: none;
-}
-
-#CommentsWrapper{
-  display: none;
 }
 
 #tbl_documents_versions {
@@ -41,6 +28,7 @@ span:hover {
 
 #spListPermissions {
     display: block;
+    padding: 2em;
 }
 
 .update_details_doc {
@@ -75,10 +63,7 @@ span:hover {
     text-align: center;
 }
 
-.k_b_beed2cf1.m_b_beed2cf1 {
 
-    background-color: white;
-}
 
 /* .breadcrumb1>li>a {
     color: #0d6efd;
@@ -137,22 +122,5 @@ span:hover {
     margin-right: 0.5em;
     background-color: white;
     animation: beat 1s ease-in-out infinite;
-  }
-
-  .CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read {
-    padding: 0;
-    height: 100%;
-  }
-  
-  .simpleFooterContainer-153 {
-    display: none;
-  }
-  
-  .simpleFooterContainer-160{
-    display: none;
-  }
-  
-  .l_b_beed2cf1{
-    display: none;
   }
   

@@ -25,8 +25,10 @@ export interface IRechercheDocWebPartProps {
   description: string;
 }
 
-require('./../../common/css/doctabs.css');
-SPComponentLoader.loadCss('https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css');
+
+
+
+SPComponentLoader.loadCss('//cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css');
 
 
 export default class RechercheDocWebPart extends BaseClientSideWebPart<IRechercheDocWebPartProps> {
@@ -53,15 +55,30 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
     });
   }
 
-
   public async render(): Promise<void> {
     this.domElement.innerHTML = `
-      <div id="splistAlldocsMatching" style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
-        <div id="loader" style="display: flex; align-items: center; justify-content: center; height: 100%;">
-          <img src="https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/loader.gif" alt="Loading..." />
-        </div>
-      </div>
-    `;
+    <div class="container" style=" margin-top: 1em;">
+    <div id="splistAlldocsMatching" style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
+    <div id="loader" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+    <!--  <img src="https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/loader.gif" alt="Loading..." /> -->
+      <img src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/images/logoGed.png" id="logoGedBeat" alt="Loading..." />
+
+    </div>
+  </div>
+  </div>`;
+
+
+    require('./../../common/css/doctabs.css');
+    require('./../../common/js/jquery.min');
+    require('./../../common/js/popper');
+    require('./../../common/js/bootstrap.min');
+    require('./../../common/js/main');
+    // require('./../../common/css/common.css');
+    require('./../../common/css/bugfix.css');
+    require('./../../common/css/minBootstrap.css');
+    require('./../../common/css/responsive.css');
+    require('./../../common/css/forms.css');
+
 
     const loader = document.getElementById('loader');
     const keywords = this.getKeywords();
@@ -192,14 +209,14 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
         <tr>
         <td class="text-left">${element_version.Id}</td>
 
-        <td class="text-left"><a href="https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element_version.Title}&documentId=${element_version.FolderID}" target="_blank" data-interception="off">${element_version.Title}</a></td>
+        <td class="text-left"><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${element_version.Title}&documentId=${element_version.FolderID}" target="_blank" data-interception="off">${element_version.Title}</a></td>
 
 
         <td class="text-left"> 
        ${url}          
         </td>
 
-        <td class="text-left"><a href="https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${element_version.ParentID}" target="_blank" data-interception="off">${titleFolder}</a></td>
+        <td class="text-left"><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=${element_version.ParentID}" target="_blank" data-interception="off">${titleFolder}</a></td>
 
         <td class="text-left"> 
         ${element_version.description}          
@@ -237,13 +254,13 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
                 visible: false,
                 searchable: false
               }
-                ,
+              ,
               {
                 target: 2,
                 visible: false,
                 searchable: false
               }
-            
+
             ]
 
           }

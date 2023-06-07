@@ -1,12 +1,10 @@
 .close-sidebar,
-.left-arrow-responsive{
-display: none;
+.left-arrow-responsive {
+    display: none;
 }
 
-
-
-@media only screen and (max-width:1230px){
-    .link-header li{
+@media only screen and (max-width:1230px) {
+    .link-header li {
         margin: 0 5px !important;
     }
 
@@ -20,37 +18,36 @@ display: none;
 
 }
 
-
-@media only screen and (max-width:1024px){
+@media only screen and (max-width:1024px) {
     .hamburger .nav-ham span {
         width: 2.5rem;
         display: block;
         border: 1.5px solid #004a8e;
         margin-bottom: 5px;
     }
-    
+
     .hamburger .nav-ham span:last-of-type {
         margin-bottom: 0px;
     }
-    
+
     .inner-link-header nav ul {
         flex-direction: column;
         padding: 2rem;
     }
-    
+
     .inner-link-header nav ul li {
         width: 40%;
         border-radius: 5px;
         overflow: hidden;
     }
-    
-    .link-header li:first-child{
+
+    .link-header li:first-child {
         margin-left: 5px !important;
     }
-    
+
     .link-header {
         background: #004a8e;
-        padding: 0!important;
+        padding: 0 !important;
         position: absolute;
         left: 0;
         width: 100%;
@@ -64,17 +61,17 @@ display: none;
     .toggled-nav {
         transform: translateY(0%) !important;
     }
-    
+
     .link-header a {
         text-decoration: none;
     }
-    
+
     .inner-link-header nav .icn {
         width: 5rem;
         display: flex;
         justify-content: center;
     }
-    
+
     .icn img {
         width: 2.25rem;
         height: 2.25rem;
@@ -93,7 +90,7 @@ display: none;
     .inner-left-header img {
         width: 100%;
     }
-   
+
 
     div:has(>#sidebarMenu) {
         position: absolute;
@@ -122,11 +119,9 @@ display: none;
         margin-top: 0 !important;
     }
 
-    div:has(>.sidebar){
+    div:has(>.sidebar) {
         transform: translateX(-150%);
     }
-
-
 
     .sidebar-toggle {
         transform: translateX(0%) !important;
@@ -197,23 +192,23 @@ display: none;
     }
 
     .close-sidebar,
-    .left-arrow-responsive{
+    .left-arrow-responsive {
         display: flex;
     }
 
-    .dropdown-content{
+    .dropdown-content {
         position: relative;
     }
 
 }
 
-@media only screen and (max-width:760px){
+@media only screen and (max-width:760px) {
     .inner-link-header nav ul li {
         width: 50%;
     }
 
     .link-header a,
-    .inner-link-header button.dropbtn{
+    .inner-link-header button.dropbtn {
         margin: 0 !important;
     }
 
@@ -222,18 +217,20 @@ display: none;
     }
 }
 
-
-@media only screen and (max-width:490px){
+@media only screen and (max-width:490px) {
     .inner-link-header nav ul li {
         width: 90%;
     }
 
-    #informations .row, #access .row, #notifications .row {
+    #informations .row,
+    #access .row,
+    #notifications .row {
         margin: 2rem 0 !important;
         border-radius: 5px;
     }
 
-    #access .row, #notifications .row {
+    #access .row,
+    #notifications .row {
         padding: 0 !important;
     }
 
@@ -241,13 +238,104 @@ display: none;
         font-size: 1.5rem;
     }
 
-
-    
 }
 
+@media screen and (max-width:768px) {
+
+    .inner-left-header img {
+        width: 10rem;
+    }
+
+    #informations .col-lg-6 {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    button#edit_cancel_doc {
+        margin-top: 0;
+    }
+
+    .dossier_headers>div,
+    .dossier_headers>nav {
+        margin-left: 0 !important;
+    }
+
+    h2#h2_folderName {
+        font-size: 1.5rem;
+    }
+
+    h4#alert_0_doc {
+        font-size: 1.25rem;
+    }
+
+    #nav .fa-2x {
+        font-size: 2rem;
+    }
+
+
+    .col-lg-2:has(.add_user),
+    .col-lg-2:has(.add_group) {
+        padding-top: 0 !important;
+        padding-bottom: 1.5rem;
+    }
+
+
+    #access>.row,
+
+    #notifications>.row {
+        margin: 2em 0 !important;
+    }
+
+    button#edit_cancel_doc {
+        margin-top: 1.5rem !important;
+    }
+
+    button#archive_btn {
+        margin-left: 2rem;
+    }
+
+    #archiver_dossier{
+        margin-top: -16px;
+        width: 2rem;
+        height: 2rem;
+        margin-top: -0.8rem !important;
+    }
+}
+
+@media screen and(max-width:498px) {
 
 
 
+    h2#h2_doc_title {
+        font-size: 1.5rem !important;
+    }
 
 
 
+    .row:has(h2#h2_doc_title) {
+        flex-direction: column;
+    }
+
+
+
+    #view_doc h2 {
+        margin: 1rem 0 !important;
+        display: flex !important;
+        gap: 5%;
+    }
+
+
+
+    #contentDetails .jumbotron .row>div {
+        width: 100% !important;
+    }
+
+
+
+    .jumbotron {
+        padding: 1rem !important;
+    }
+
+
+
+}

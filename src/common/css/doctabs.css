@@ -2,36 +2,6 @@
     font-size: larger;
 }
 
-.CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read {
-    padding: 0;
-    height: 100%;
-}
-
-.simpleFooterContainer-153 {
-    display: none;
-}
-
-.simpleFooterContainer-160 {
-    display: none;
-}
-
-.spAppAndPropertyPanelContainer .sp-appBar {
-    background: #f3f2f1;
-    display: none;
-    min-width: 47px;
-}
-
-.l_b_beed2cf1 {
-    display: none;
-}
-
-#CommentsWrapper {
-    display: none;
-}
-
-#spCommandBar {
-    display: none;
-}
 
 .breadcrumb>li>a {
     color: #f3f2f1;
@@ -43,10 +13,6 @@
     text-decoration: none;
 }
 
-.webPartContainer {
-    display: none;
-}
-
 #breadcrumb {
     padding: 8px 15px;
     margin-bottom: 20px;
@@ -54,13 +20,6 @@
     background-color: #004a8e;
     border-radius: 4px;
     /* color: white; */
-}
-
-.r_b_beed2cf1,
-.s_b_beed2cf1 {
-    position: relative;
-    z-index: 7;
-    display: none;
 }
 
 #h2_doc_title {
@@ -72,21 +31,6 @@
     padding-right: 3em;
 }
 
-.hb_u_9f38462c {
-    position: relative;
-    display: none;
-}
-
-
-
-.hb_af_9f38462c {
-    display: none;
-}
-
-.x_c_ada2ac09 {
-    display: none;
-}
-
 .btn {
     display: inline-block;
 }
@@ -95,17 +39,6 @@ h3 {
     font-weight: 600;
 }
 
-.mt_ba_ada2ac09 {
-    box-sizing: border-box;
-    overflow: hidden;
-    position: relative;
-    display: none;
-}
-
-.hb_s_9f38462c {
-    position: relative;
-    display: none;
-}
 
 
 /* .star-grey {
@@ -126,21 +59,35 @@ h3 {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-  
+
     /* display the loading indicator */
-    border: 4px solid #f3f3f3; /* Light grey */
-    border-top: 4px solid #3498db; /* Blue */
+    border: 4px solid #f3f3f3;
+    /* Light grey */
+    border-top: 4px solid #3498db;
+    /* Blue */
     border-radius: 50%;
     width: 30px;
     height: 30px;
     animation: spin 1s linear infinite;
-  }
+}
 
-  #input_filename_group, #created_by_group, #updated_time_group, #updated_by_group {
+#splistDocAudit button {
+    width: 6em;
+    background-color: #f54630;
+}
+
+
+/* #input_filename_group, #created_by_group, #updated_time_group, #updated_by_group {
     display: none;
-  }
+  } */
 
-  .dataTables_wrapper {
+#input_filename_group,
+#updated_time_group,
+#updated_by_group {
+    display: none;
+}
+
+.dataTables_wrapper {
     position: relative;
     clear: both;
     *zoom: 1;
@@ -148,8 +95,117 @@ h3 {
     overflow-x: auto;
 }
 
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.spinner {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+ }
+ 
+ .spinner div {
+    position: absolute;
+    width: 50%;
+    height: 150%;
+    background: #474bff;
+    transform: rotate(calc(var(--rotation) * 1deg)) translate(0, calc(var(--translation) * 1%));
+    animation: spinner-fzua35 1s calc(var(--delay) * 1s) infinite ease;
+ }
+ 
+ .spinner div:nth-child(1) {
+    --delay: 0.1;
+    --rotation: 36;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(2) {
+    --delay: 0.2;
+    --rotation: 72;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(3) {
+    --delay: 0.3;
+    --rotation: 108;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(4) {
+    --delay: 0.4;
+    --rotation: 144;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(5) {
+    --delay: 0.5;
+    --rotation: 180;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(6) {
+    --delay: 0.6;
+    --rotation: 216;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(7) {
+    --delay: 0.7;
+    --rotation: 252;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(8) {
+    --delay: 0.8;
+    --rotation: 288;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(9) {
+    --delay: 0.9;
+    --rotation: 324;
+    --translation: 150;
+ }
+ 
+ .spinner div:nth-child(10) {
+    --delay: 1;
+    --rotation: 360;
+    --translation: 150;
+ }
+ 
+ @keyframes spinner-fzua35 {
+    0%, 10%, 20%, 30%, 50%, 60%, 70%, 80%, 90%, 100% {
+       transform: rotate(calc(var(--rotation) * 1deg)) translate(0, calc(var(--translation) * 1%));
+    }
+ 
+    50% {
+       transform: rotate(calc(var(--rotation) * 1deg)) translate(0, calc(var(--translation) * 1.5%));
+    }
+ }
+
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+
+#logoGedBeat{
+    transform: scale(1);
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+
+@keyframes pulsate {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
   }

@@ -5,6 +5,7 @@ import {
 } from '@microsoft/sp-property-pane';
 
 import * as $ from 'jquery';
+
 import 'jquery-ui';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -23,36 +24,38 @@ import 'datatables.net';
 import { ISiteUserInfo } from '@pnp/sp/site-users/types';
 import 'jstree';
 import { Navigation } from 'spfx-navigation';
-import * as moment from 'moment';
+import moment from 'moment';
 import 'downloadjs';
 import { degrees, PDFDocument, radians, rgb, rotateDegrees, rotateRadians, StandardFonts, } from 'pdf-lib/cjs/api';
 import download from 'downloadjs';
 import { saveAs } from 'file-saver';
-import { SiteGroups } from '@pnp/sp/site-groups';
-import * as pdfjsLib from 'pdfjs-dist';
-import Viewer from 'viewerjs';
-import { PermissionKind } from "@pnp/sp/security";
 import 'viewerjs/dist/viewer.css';
 import { Group } from '@microsoft/microsoft-graph-types';
 import { User } from '@microsoft/microsoft-graph-types';
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import ExcelJS from "exceljs";
 
-
-
-
-
+require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
+require('./../../common/css/bugfix.css');
+require('./../../common/css/doctabs.css');
+require('./../../common/css/minBootstrap.css');
+require('./../../common/css/responsive.css');
 
 
 SPComponentLoader.loadCss('https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css');
+// SPComponentLoader.loadScript('//cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js');
+SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js');
+SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js');
+SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js');
+SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js');
+SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js');
+SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js');
+
+
 
 // SPComponentLoader.loadScript("https://code.jquery.com/ui/1.12.1/jquery-ui.js");
 // SPComponentLoader.loadCss("https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css");
-
-
-
-
-
-
-
 
 //require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
 // require('./../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
@@ -108,8 +111,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   }
 
 
-
-
   private getDocTitle() {
     var queryParms = new URLSearchParams(document.location.search.substring(1));
     var myParm = queryParms.get("document");
@@ -126,7 +127,283 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async getParentID(id: any) {
+  private async createWebpageInNewTab4(url) {
+    const htmlContent = `<html>
+        <head>
+            <title>Dynamic Webpage</title>
+            <style>
+                /* CSS styles */
+
+                body {
+                    margin: 0;
+                }
+        
+                #header {
+                    height: 105px;
+                    overflow: hidden;
+                    padding-top: 10px;
+                    padding-left: 10px;
+                    background-color: #14789057;
+                    position: relative;
+                }
+        
+                canvas {
+                    display: block;
+                }
+        
+                .pdfjs-toolbar {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    background-color: #f2f2f2;
+                    padding: 8px;
+                    z-index: 9999;
+                }
+        
+                .jumbotron {
+                    background-image: url('C:\\Users\\MusharafG\\Desktop\\prise-vue-au-grand-angle-seul-arbre-poussant-sous-ciel-assombri-pendant-coucher-soleil-entoure-herbe_181624-22807.avif');
+                    background-size: cover;
+                    background-position: center;
+                    padding: 2rem;
+                    margin-bottom: 2rem;
+                    border-radius: 0.3rem;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                    color: #fff;
+                }
+        
+                #loader {
+                    display: none;
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: #f2f2f2;
+                    padding: 16px;
+                    border-radius: 4px;
+                }
+        
+                .container {
+                    max-width: 960px;
+                    margin: 0 auto;
+                    padding: 0 1rem;
+                }
+
+
+                #loader {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(255, 255, 255, 0.7);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                }
+            </style>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
+            <script>
+                const url = '${url}';
+
+                function renderPDF() {
+                    const loader = document.getElementById("loaderPDF");
+                    loader.style.display = "block";
+
+                    const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
+                    loadingTask.promise.then(function (pdf) {
+                        const numPages = pdf.numPages;
+                        const container = document.getElementById("documentViewer");
+
+                        function renderPage(pageNumber) {
+                            pdf.getPage(pageNumber).then(function (page) {
+                                const viewport = page.getViewport({ scale: 5.3 });
+                                const canvas = document.createElement("canvas");
+                                const context = canvas.getContext("2d");
+                                canvas.width = viewport.width;
+                                canvas.height = viewport.height;
+
+                                canvas.style.width = "100%";
+                                canvas.style.height = "auto";
+                                container.appendChild(canvas);
+
+                                page.render({ canvasContext: context, viewport: viewport }).promise.then(function () {
+                                    if (pageNumber < numPages) {
+                                        renderPage(pageNumber + 1); // Render the next page
+                                    } else {
+                                        loader.style.display = "none"; // Hide the loader when rendering is complete
+                                    }
+                                });
+                            });
+                        }
+
+                        renderPage(1);
+                    });
+                }
+
+                window.addEventListener("DOMContentLoaded", function () {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
+                    pdfRenderOptions = {
+                        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
+                        cMapPacked: true
+                    };
+
+                    renderPDF();
+                });
+
+                document.addEventListener("contextmenu", function (event) {
+                  event.preventDefault();
+               }); 
+
+
+            </script>
+        </head>
+        <body>
+        <div class="container">
+    
+            <div class="row">
+                <div id="header" style="
+                /* position: fixed; */
+                display: none;
+            " >
+    
+                    <a href="/">
+                        <img src="C:\Users\MusharafG\Downloads\logoGed-removebg-preview (1).png" alt=""/>
+                    </a>
+    
+        
+                </div>
+            </div>
+    
+            <div class="row">
+                <div id="content">
+                    <div id="main">
+    
+                        <!-- Viewer-->
+                        <div id="flexcontainer" style="height: 95%;border: 1px solid;">
+                            <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
+    
+                            <div id="documentViewer" style="
+                            /* position: fixed; */
+                            top: 0;
+                            left: 0;
+                            width: 100%; /* Adjust the width to your preference */
+                            height: 100%; /* Adjust the height to your preference */
+                            overflow: auto;
+                        ">
+
+                        <div id="loaderPDF">Loading...</div>
+
+    
+    
+                            </div>
+                            
+                            
+                            </div>
+    
+    
+    
+                        </div>
+    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    const newTab = window.open("", "_blank");
+    newTab.document.open();
+    newTab.document.write(htmlContent);
+    newTab.document.close();
+  }
+
+  private async createWebpageInNewTab2(url) {
+    const htmlContent = `<html>
+      <head>
+        <title>MyGed PDF Viewer</title>
+        <style>
+          /* CSS styles */
+  
+          body {
+            margin: 0;
+          }
+  
+          #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+          }
+  
+          .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 1rem;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="loader"></div>
+        <div class="container">
+          <iframe id="documentViewer" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+        <script>
+          const url = '${url}#toolbar=0';
+  
+          function renderPDF() {
+            const loader = document.getElementById("loader");
+            const documentViewer = document.getElementById("documentViewer");
+            loader.style.display = "block";
+  
+            documentViewer.src = url;
+  
+            documentViewer.onload = function () {
+              loader.style.display = "none"; // Hide the loader when rendering is complete
+            };
+  
+            documentViewer.contentWindow.addEventListener("contextmenu", function (event) {
+              event.preventDefault();
+            });
+          }
+  
+          window.addEventListener("DOMContentLoaded", function () {
+            renderPDF();
+          });
+        </script>
+      </body>
+    </html>`;
+  
+    const newTab = window.open("", "_blank");
+    newTab.document.open();
+    newTab.document.write(htmlContent);
+    newTab.document.close();
+  }
+
+  
+  
+
+  private async getGroupsByName(graphClient: MSGraphClient, displayNameStartsWith: string): Promise<Group[]> {
+    const allGroups: Group[] = [];
+
+    let nextPageUrl = `/groups?$filter=startswith(displayName,'${displayNameStartsWith}')`;
+    while (nextPageUrl) {
+      const response = await graphClient.api(nextPageUrl).version('v1.0').get();
+      allGroups.push(...response.value);
+      nextPageUrl = response["@odata.nextLink"] ?? null;
+    }
+
+    return allGroups;
+  }
+
+  private async getParentID(id: any, title: any) {
 
     var parentID = null;
     var folderID = null;
@@ -140,7 +417,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     //var parentIDArray = [] ;
 
-    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
+    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter(`FolderID eq '${id}' and Title eq '${title}' and IsFolder eq 'FALSE'`).get().then((results) => {
 
       // if (results[0].ParentID != undefined || results[0].ParentID != null) {
       parentID = results[0].ParentID;
@@ -299,8 +576,479 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  // private async openPDFInIframe(url: string, filigraneText: string) {
-  //   const pdfBytes = await this.generatePdfBytes(url, filigraneText);
+  private async downloadDocWithoutFili(fileUrl: string, fileName: any, folderID: any) {
+
+    try {
+      // Add message to the DOM to notify the user that the file is being downloaded
+      const message = document.createElement('div');
+      message.textContent = 'Downloading file...';
+      message.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #f54630;
+        color: white;
+        text-align: center;
+        font-size: 24px;
+        padding: 10px 0;
+      `;
+      document.body.appendChild(message);
+
+      const user = await sp.web.currentUser();
+
+      const dateDownload = Date();
+
+      // const textWatermark = 'UNCONTROLLED COPY - Downloaded on ' + dateDownload + ' .';
+     // const textWatermark = filigraneText + dateDownload + ' .';
+
+
+      const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
+      console.log('pdfDoc Starting...');
+
+      const pages = await pdfDoc.getPages();
+
+      // for (const [i, page] of Object.entries(pages)) {
+      //   const firstPage = pages[0];
+
+      //   const { width, height } = firstPage.getSize();
+
+      //   const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      //   const fontSize = 16;
+
+      //   page.drawText(textWatermark, {
+      //     x: 60,
+      //     y: 60,
+      //     size: fontSize,
+      //     font: helveticaFont,
+      //     color: rgb(1, 0, 1),
+      //     opacity: 0.4,
+      //     rotate: degrees(55)
+      //   });
+      // }
+
+      const pdfBytes = await pdfDoc.save();
+
+      console.log('pdfBytes: ', pdfBytes);
+
+      // Remove the message from the DOM
+      document.body.removeChild(message);
+
+      download(pdfBytes, fileName, "application/pdf");
+
+      await this.createAudit($("#input_number").val(), folderID, user.Title, "Telechargement");
+
+    } catch (e) {
+      alert("Cannot download this file for the following reason: " + e);
+
+      // Remove the message from the DOM in case of an error
+      const message = document.querySelector('div');
+      if (message) {
+        document.body.removeChild(message);
+      }
+
+      window.location.reload();
+    }
+  }
+
+  private async createWebpageInIframe(url) {
+    // Create an iframe element
+    var iframe = document.createElement('iframe');
+
+    // Set attributes for the iframe
+    iframe.setAttribute('src', 'about:blank');
+    iframe.setAttribute('width', '35%');
+    iframe.setAttribute('height', '75%');
+
+    // Append the iframe to the document body
+    document.body.appendChild(iframe);
+
+    // Get the document object of the iframe
+    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+    // Create an HTML content for the webpage
+    var htmlContent = '<html><head><title>Dynamic Webpage</title>';
+
+    // Add pdf.js viewer CSS styles
+    htmlContent += '<style>body { margin: 0; } canvas { display: block; }</style>';
+
+    // Add pdf.js viewer script
+    //htmlContent += '<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>';
+    htmlContent += '<script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>';
+
+
+
+    // Add PDF rendering script
+    htmlContent += '<script>';
+    htmlContent += 'window.addEventListener("DOMContentLoaded", function() {';
+    htmlContent += `  var url = '${url}';`;
+    htmlContent += "pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';";
+
+
+    // Replace with the URL of your PDF file
+    htmlContent += '  pdfjsLib.getDocument(url).promise.then(function(pdf) {';
+    htmlContent += '    pdf.getPage(1).then(function(page) {';
+    htmlContent += '      var viewport = page.getViewport({ scale: 1.5 });';
+    htmlContent += '      var canvas = document.createElement("canvas");';
+    htmlContent += '      var context = canvas.getContext("2d");';
+    htmlContent += '      canvas.width = viewport.width;';
+    htmlContent += '      canvas.height = viewport.height;';
+    htmlContent += '      page.render({ canvasContext: context, viewport: viewport });';
+    htmlContent += '      document.body.appendChild(canvas);';
+    htmlContent += '    });';
+    htmlContent += '  });';
+    htmlContent += '});';
+    htmlContent += '</script>';
+
+    htmlContent += '</head><body></body></html>';
+
+    // Write the HTML content to the iframe document
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+  }
+
+  private async createWebpageInIframe2(url) {
+
+    const pdfBytes = await this.generatePdfBytes2(url);
+    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    `;
+
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'Close';
+    closeButton.style.cssText = `
+      position: absolute;
+      top: 87px;
+      right: 130px;
+      padding: 5px 10px;
+      background-color: white;
+      border: none;
+      cursor: pointer;
+      font-size: large;
+    `;
+
+    overlay.appendChild(closeButton);
+
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = `
+      width: 50%;
+      height: 98%;
+    `;
+    iframe.src = 'about:blank';
+
+    overlay.appendChild(iframe);
+    document.body.appendChild(overlay);
+
+    closeButton.addEventListener('click', function () {
+      document.body.removeChild(overlay);
+    });
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+    // const htmlContent = `
+    //   <html>
+    //     <head>
+    //       <title>Dynamic Webpage</title>
+    //       <style>body { margin: 0; } canvas { display: block; width: 100%; }</style>
+    //       <script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>
+    //       <script>
+    //         window.addEventListener("DOMContentLoaded", function() {
+    //           pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+    //           const url = '${url}';
+    //           pdfjsLib.getDocument(url).promise.then(function(pdf) {
+    //             const numPages = pdf.numPages;
+
+    //             for (let pageNumber = 1; pageNumber <= numPages; pageNumber++) {
+    //               pdf.getPage(pageNumber).then(function(page) {
+    //                 const viewport = page.getViewport({ scale: 5 });
+    //                 const canvas = document.createElement("canvas");
+    //                 const context = canvas.getContext("2d");
+    //                 canvas.width = viewport.width;
+    //                 canvas.height = viewport.height;
+    //                 canvas.style.width = "100%";
+    //                 canvas.style.height = "100%";
+    //                 page.render({ canvasContext: context, viewport: viewport });
+    //                 document.body.appendChild(canvas);
+    //               });
+    //             }
+    //           });
+
+    //           document.addEventListener("contextmenu", function(event) {
+    //             event.preventDefault();
+    //           });
+    //         });
+    //       </script>
+    //     </head>
+    //     <body></body>
+    //   </html>
+    // `;
+
+    //     const htmlContent = `
+    // <html>
+    //   <head>
+    //     <title>Dynamic Webpage</title>
+    //     <style>body { margin: 0; }</style>
+    //     <script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>
+    //     <script>
+    //       window.addEventListener("DOMContentLoaded", function() {
+    //         pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+    //         const url = '${url}';
+    //         const container = document.createElement("div");
+    //         container.style.width = "100%";
+    //         container.style.height = "100%";
+    //         document.body.appendChild(container);
+
+    //         pdfjsLib.getDocument(url).promise.then(function(pdf) {
+    //           const numPages = pdf.numPages;
+
+    //           for (let pageNumber = 1; pageNumber <= numPages; pageNumber++) {
+    //             pdf.getPage(pageNumber).then(function(page) {
+    //               const viewport = page.getViewport({ scale: 1 });
+    //               const canvas = document.createElement("canvas");
+    //               const context = canvas.getContext("2d");
+    //               container.appendChild(canvas);
+
+    //               page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
+    //                 canvas.style.display = "block";
+    //                 canvas.style.margin = "0 auto";
+    //               });
+    //             });
+    //           }
+    //         });
+
+    //         document.addEventListener("contextmenu", function(event) {
+    //           event.preventDefault();
+    //         });
+    //       });
+    //     </script>
+    //   </head>
+    //   <body></body>
+    // </html>
+    // `;
+
+    // const htmlContent = `
+    // <html>
+    //   <head>
+    //     <title>Dynamic Webpage</title>
+    //     <style>
+    //       body { margin: 0; }
+    //       canvas { display: block; }
+    //     </style>
+    //     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    //     <script>
+    //       const url = '${url}';
+
+    //       function renderPDF() {
+    //         const loadingTask = pdfjsLib.getDocument(url);
+    //         loadingTask.promise.then(function(pdf) {
+    //           const numPages = pdf.numPages;
+    //           const container = document.createElement("div");
+    //           document.body.appendChild(container);
+
+    //           for (let pageNumber = 1; pageNumber <= numPages; pageNumber++) {
+    //             pdf.getPage(pageNumber).then(function(page) {
+    //               const viewport = page.getViewport({ scale: 3 });
+    //               const canvas = document.createElement("canvas");
+    //               const context = canvas.getContext("2d");
+    //               canvas.width = viewport.width;
+    //               canvas.height = viewport.height;
+    //               container.appendChild(canvas);
+
+    //               page.render({ canvasContext: context, viewport: viewport });
+    //             });
+    //           }
+    //         });
+    //       }
+
+    //       window.addEventListener("DOMContentLoaded", renderPDF);
+    //       document.addEventListener("contextmenu", function(event) {
+    //         event.preventDefault();
+    //       });
+    //     </script>
+    //   </head>
+    //   <body></body>
+    // </html>
+    // `;
+
+    //     const htmlContent = `
+    // <html>
+    //   <head>
+    //     <title>Dynamic Webpage</title>
+    //     <style>
+    //       body { margin: 0; }
+    //       canvas { display: block; }
+    //     </style>
+    //     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    //     <script>
+    //       const url = '${pdfUrl}';
+
+    //       function renderPDF() {
+    //         const loadingTask = pdfjsLib.getDocument(url);
+    //         loadingTask.promise.then(function(pdf) {
+    //           const numPages = pdf.numPages;
+    //           const container = document.createElement("div");
+    //           document.body.appendChild(container);
+
+    //           function renderPage(pageNumber) {
+    //             pdf.getPage(pageNumber).then(function(page) {
+    //               const viewport = page.getViewport({ scale: 4 });
+    //               const canvas = document.createElement("canvas");
+    //               const context = canvas.getContext("2d");
+    //               canvas.width = viewport.width;
+    //               canvas.height = viewport.height;
+    //               container.appendChild(canvas);
+
+    //               page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
+    //                 if (pageNumber < numPages) {
+    //                   renderPage(pageNumber + 1); // Render the next page
+    //                 }
+    //               });
+    //             });
+    //           }
+
+    //           renderPage(1); // Start rendering from the first page
+    //         });
+    //       }
+
+    //       window.addEventListener("DOMContentLoaded", function() {
+    //         pdfjsLib.getDocument(url).promise.then(renderPDF);
+    //       });
+
+    //       document.addEventListener("contextmenu", function(event) {
+    //         event.preventDefault();
+    //       });
+    //     </script>
+    //   </head>
+    //   <body></body>
+    // </html>
+    // `;
+
+
+    const htmlContent = `
+<html>
+  <head>
+    <title>Dynamic Webpage</title>
+    <style>
+      body { margin: 0; }
+      canvas { display: block; }
+      .pdfjs-toolbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: #f2f2f2;
+        padding: 8px;
+        z-index: 9999;
+      }
+
+      #loader {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #f2f2f2;
+        padding: 16px;
+        border-radius: 4px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.js"></script>
+    <script>
+
+
+      const url = '${url}';
+
+      function renderPDF() {
+
+        const loader = document.getElementById("loader");
+  loader.style.display = "block";
+
+        const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
+        loadingTask.promise.then(function(pdf) {
+          const numPages = pdf.numPages;
+          const container = document.createElement("div");
+          document.body.appendChild(container);
+
+        
+
+          function renderPage(pageNumber) {
+            pdf.getPage(pageNumber).then(function(page) {
+              const viewport = page.getViewport({ scale: 5.3});
+              const canvas = document.createElement("canvas");
+              const context = canvas.getContext("2d");
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+
+              canvas.style.width = "100%"; 
+              canvas.style.height = "auto";
+              container.appendChild(canvas);
+
+              page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
+                if (pageNumber < numPages) {
+                  renderPage(pageNumber + 1); // Render the next page
+                }
+              });
+            });
+          }
+
+          renderPage(1);
+          loader.style.display = "none"; // Start rendering from the first page
+        });
+      }
+
+
+
+      window.addEventListener("DOMContentLoaded", function() {
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.worker.min.js";
+        pdfRenderOptions = {
+          // where cmaps are downloaded from
+          cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/cmaps/',
+          // The cmaps are compressed in the case
+          cMapPacked: true,
+          // any other options for pdfjsLib.getDocument.
+          // params: {}
+        }
+
+
+      //  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
+        pdfjsLib.getDocument(url).promise.then(renderPDF);
+      });
+
+
+
+      document.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+      });
+    </script>
+  </head>
+  <body>
+  <div id="loader">Loading...</div>
+  
+  </body>
+</html>
+`;
+
+
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+  }
+
+  // private async createWebpageInIframe3(url) {
+  //   const pdfBytes = await this.generatePdfBytes2(url);
   //   const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
 
   //   const overlay = document.createElement('div');
@@ -310,49 +1058,89 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   //     left: 0;
   //     width: 100%;
   //     height: 100%;
-  //     background-color: rgba(0, 0, 0, 0.8);
+  //     background-color: rgba(0, 0, 0, 0.5);
   //     display: flex;
   //     justify-content: center;
   //     align-items: center;
-  //     z-index: 9999;
   //   `;
-
-  //   const iframe = document.createElement('iframe');
-  //   iframe.src = pdfUrl;
-  //   iframe.style.cssText = `
-  //     border: none;
-  //     width: 100%;
-  //     height: 100%;
-  //     max-width: 1000px;
-  //     max-height: 90vh;
-  //   `;
-  //   // iframe.setAttribute('sandbox', 'allow-same-origin allow-popups allow-scripts');
-
-  //   iframe.addEventListener('contextmenu', (event) => {
-  //     event.preventDefault();
-  //   });
 
   //   const closeButton = document.createElement('button');
-  //   closeButton.innerText = 'Close';
+  //   closeButton.textContent = 'Close';
   //   closeButton.style.cssText = `
   //     position: absolute;
-  //     top: 20px;
-  //     right: 20px;
-  //     background-color: #fff;
+  //     top: 87px;
+  //     right: 130px;
+  //     padding: 5px 10px;
+  //     background-color: white;
   //     border: none;
-  //     padding: 10px;
   //     cursor: pointer;
-  //     font-size: 16px;
+  //     font-size: large;
   //   `;
 
-  //   closeButton.addEventListener('click', () => {
+  //   overlay.appendChild(closeButton);
+
+  //   const iframe = document.createElement('iframe');
+  //   iframe.style.cssText = `
+  //     width: 100%;
+  //     height: 100%;
+  //     border: none;
+  //   `;
+  //   iframe.src = 'about:blank';
+
+  //   overlay.appendChild(iframe);
+  //   document.body.appendChild(overlay);
+
+  //   closeButton.addEventListener('click', function () {
   //     document.body.removeChild(overlay);
   //   });
 
-  //   overlay.appendChild(iframe);
-  //   overlay.appendChild(closeButton);
-  //   document.body.appendChild(overlay);
+  //   const iframeWindow = iframe.contentWindow || iframe.contentDocument.defaultView;
+  //   const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+  //   iframeWindow.addEventListener('DOMContentLoaded', function () {
+  //     const renderPDF = function () {
+  //       const loadingTask = pdfjsLib.getDocument(pdfUrl);
+  //       loadingTask.promise.then(function (pdf) {
+  //         const numPages = pdf.numPages;
+  //         const container = iframeDoc.createElement('div');
+  //         iframeDoc.body.appendChild(container);
+
+  //         function renderPage(pageNumber) {
+  //           pdf.getPage(pageNumber).then(function (page) {
+  //             const viewport = page.getViewport({ scale: 1 });
+  //             const canvas = iframeDoc.createElement('canvas');
+  //             const context = canvas.getContext('2d');
+  //             canvas.width = viewport.width;
+  //             canvas.height = viewport.height;
+  //             container.appendChild(canvas);
+
+  //             page.render({ canvasContext: context, viewport: viewport }).promise.then(function () {
+  //               if (pageNumber < numPages) {
+  //                 renderPage(pageNumber + 1); // Render the next page
+  //               }
+  //             });
+  //           });
+  //         }
+
+  //         renderPage(1); // Start rendering from the first page
+  //       });
+  //     };
+
+  //     iframeDoc.addEventListener('contextmenu', function (event) {
+  //       event.preventDefault();
+  //     });
+
+  //     const script = iframeDoc.createElement('script');
+  //     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js';
+  //     script.onload = function () {
+  //       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+  //       renderPDF();
+  //     };
+
+  //     iframeDoc.head.appendChild(script);
+  //   });
   // }
+
 
   private async openPDFInIframe(url: string, filigraneText: string) {
     const overlay = document.createElement('div');
@@ -391,11 +1179,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     overlay.appendChild(loader);
 
-    const pdfBytes = await this.generatePdfBytes(url, filigraneText);
-    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+    // const pdfBytes = await this.generatePdfBytes(url, filigraneText);
+    // const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
 
     const iframe = document.createElement('iframe');
-    iframe.src = pdfUrl;
+    iframe.src = `${url}#toolbar=0`;
     iframe.style.cssText = `
       border: none;
       width: 100%;
@@ -470,6 +1258,17 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
+  private async generatePdfBytes2(fileUrl: string): Promise<Uint8Array> {
+    try {
+      const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
+      return new Uint8Array(existingPdfBytes);
+    } catch (e) {
+      console.error('Failed to generate PDF bytes:', e);
+      throw e;
+    }
+  }
+
+
   private async getChildrenById(id, items) {
 
     const children = await sp.web.lists.getByTitle("Documents").items
@@ -488,19 +1287,276 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     return result;
   }
 
+  public async generateTable(groups: any, x) {
+    {
+
+      var value2 = 'FALSE';
+
+      const folderInfo = await sp.web.lists.getByTitle('Documents').items
+        .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, inheriting")
+        .top(5000)
+        .filter(`FolderID eq '${x}' and IsFolder eq '${value2}'`)
+        .getAll();
+
+      var permission_container: Element = document.getElementById("splistDocAccessRights");
+
+      // while (permission_container.firstChild) {
+      //   permission_container.removeChild(permission_container.firstChild);
+      // }
+
+
+      // permission_container.innerHTML = "";
+
+      // var response = null;
+      let html: string = `<table id='tbl_permission' className='table table-striped' style="width: 100%;">`;
+
+      html += `<thead>
+  
+      <tr>
+      <th class="text-left">Id</th>
+        <th class="text-left">Nom</th>
+        <th class="text-center">Droits d'accès</th>
+        <th class="text-center">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="tbl_permission_bdy">
+        `;
+
+
+      for (const element1 of groups) {
+
+        //  if (element1.role !== "NONE") {
+        html += `
+          <tr>
+          <td class="text-left" id="${element1.id}">${element1.id}</td>
+
+          <td class="text-left" id="${element1.id}_personName">${element1.title}</td>
+          
+          <td class="text-center" id="${element1.id}_permission_value"> ${element1.role} </td>
+
+          <td class="text-center">
+          <a id="btn${element1.id}_edit" class='buttoncss' role="button">
+          
+          <i class="fa-solid fa-trash"
+          title="Archiver le document" style="
+      padding-left: 0.5em;font-size: 2em;"></i>
+          
+          </a>
+        </td>
+          
+
+          </tr>
+          `;
+
+        //  }
+
+      }
+
+      html += `</tbody>
+            </table>`;
+
+      if (permission_container.childElementCount === 0) {
+        permission_container.innerHTML += html;
+        var table = $("#tbl_permission").DataTable({
+          columnDefs: [{
+            target: 0,
+            visible: false,
+            searchable: false
+          }]
+        });
+
+        // var table = $('#tbl_permission').DataTable({
+        //   order: [0, 'desc'],
+        //   columnDefs: [{
+        //     targets: [8],
+        //     orderable: false,
+        //   },
+        //   {
+        //     targets: [0],
+        //     visible: false,
+        //   }]
+        // });
+
+        $('#tbl_permission tbody').on('click', '.buttoncss', async (event) => {
+          var data = table.row($(event.currentTarget).parents('tr')).data();
+          alert("Remove permission with people id" + data[0]);
+
+          try {
+
+            console.log("KEY", folderInfo[0].FolderID);
+
+            await sp.web.lists.getByTitle("AccessRights").items.add({
+              Title: folderInfo[0].Title.toString(),
+              groupName: $("#users_name").val(),
+              permission: "NONE",
+              FolderID: folderInfo[0].ID.toString(),
+              PrincipleID: data[0]
+              //  RoleDefID: permission
+            })
+              .then(async () => {
+                alert("Autorisation supprimée avec succès.");
+                await sp.web.lists.getByTitle("Documents").items.getById(folderInfo[0].ID).update({
+                  inheriting: "NO"
+                }).then(result => {
+                  console.log("Item updated successfully");
+                }).catch(error => {
+                  console.log("Error updating item: ", error);
+                });
+
+                window.location.reload();
+
+              });
+          }
+          catch (e) {
+            console.log(e.message);
+          }
+
+          // await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
+        });
+
+      } else {
+        // Container is not empty
+      }
+
+
+
+
+    }
+  }
+
+  public async checkIfUserIsRefUser(graphClient: MSGraphClient): Promise<boolean> {
+    try {
+      const groups = await graphClient.api('/me/transitiveMemberOf/microsoft.graph.group?$count=true&$top=999').get();
+      const groupList = groups.value;
+      const isRefUser = groupList.some(group => group.displayName.startsWith('MYGED_REF'));
+      return isRefUser;
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  public async checkIfUserIsGuestUser(graphClient: MSGraphClient): Promise<boolean> {
+    try {
+      const groups = await graphClient.api('/me/transitiveMemberOf/microsoft.graph.group?$count=true&$top=999').get();
+      const groupList = groups.value;
+      const isGuestUser = groupList.some(group => group.displayName.startsWith('MYGED_GUEST'));
+      return isGuestUser;
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  public async getListItemPermissions(siteUrl, listName, itemId, username, password) {
+    try {
+      const credentials = btoa(`${username}:${password}`);
+      const url = `${siteUrl}/_api/Web/Lists/GetByTitle('${listName}')/Items(${itemId})/RoleAssignments?$expand=Member,RoleDefinitionBindings`;
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json;odata=verbose',
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const permissions = [];
+
+      for (const entry of data.d.results) {
+        const userOrGroup = entry.Member;
+
+        if (userOrGroup.PrincipalType === 1 || userOrGroup.PrincipalType === 4) {
+          // User or domain group
+          const principalId = userOrGroup.Id;
+          const title = userOrGroup.Title;
+          const roleName = entry.RoleDefinitionBindings.results[0].Name;
+
+          // Add member to permissions
+          permissions.push({ type: 'member', id: principalId, role: roleName, title: title });
+        }
+      }
+
+      console.log("All Permissions on Item:", permissions);
+
+      return { permissions };
+    } catch (err) {
+      console.error(err);
+      return { permissions: [] };
+    }
+  }
+
+  private requireLibraries() {
+    // Load JavaScript dependencies
+    require('./../../common/js/jquery.min');
+    require('./../../common/js/popper');
+    require('./../../common/jqueryui/jquery-ui');
+    require('./../../common/js/bootstrap.min');
+    require('./../../common/js/main');
+
+  }
+
   public async render(): Promise<void> {
+
+    Promise.all([
+      this.requireLibraries(),
+      SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
+      SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
+      SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
+      SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'),
+    ]);
+
+    // Promise.all([
+    //   this.requireLibraries(),
+    //   new Promise((resolve, reject) => {
+    //     const script = document.createElement('script');
+    //     script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js';
+    //     script.onload = resolve;
+    //     script.onerror = reject;
+    //     document.head.appendChild(script);
+    //   }),
+    //   new Promise((resolve, reject) => {
+    //     const script = document.createElement('script');
+    //     script.src = 'https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js';
+    //     script.onload = resolve;
+    //     script.onerror = reject;
+    //     document.head.appendChild(script);
+    //   }),
+    //   new Promise((resolve, reject) => {
+    //     const script = document.createElement('script');
+    //     script.src = 'https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js';
+    //     script.onload = resolve;
+    //     script.onerror = reject;
+    //     document.head.appendChild(script);
+    //   }),
+    //   new Promise((resolve, reject) => {
+    //     const script = document.createElement('script');
+    //     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js';
+    //     script.onload = resolve;
+    //     script.onerror = reject;
+    //     document.head.appendChild(script);
+    //   }),
+    // ]);
+    
+    
+    
+    
 
     this.domElement.innerHTML = `
 
 
     <div class="wrapper d-flex align-items-stretch">
     
-    <div id="loader" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; backdrop-filter: blur(5px);">
-    <img src="https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/loader.gif" alt="Loading..." />
-  </div>
+       <div id="loader"
+            style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; backdrop-filter: blur(5px);">
+            <img src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/images/logoGed.png" alt="Loading..." id="logoGedBeat" />
+        </div> 
 
-
-  
+      
     
         <div id="contentDetails">
     
@@ -515,20 +1571,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                             <a href="#" role="button" id="open_doc" title="View document"> <i class="fa-regular fa-eye"
                                     title="voir"></i></a>
     
-                            <a href="#" id="delete_doc" role="button" title="delete document"> <i class="fa-solid fa-trash"
-                                    title="Supprimer le document" style="
+                            <a href="#" id="delete_doc" role="button" title="delete document"> <i
+                                    class="fa-solid fa-box-archive" title="Archiver le document" style="
                                 padding-left: 0.5em;"></i></a>
     
                             <a href="#" id="download_doc" role="button" title="Telecharger le document"> <i
                                     class="fa-solid fa-download" title="Telecharger le document" style="
                                 padding-left: 0.5em;"></i></a>
-
-
-                                <label class="switch" id="switch_fav">
+    
+    
+                            <label class="switch" id="switch_fav">
                                 <input type="checkbox" id="bookmark-switch" style="display: none;">
-                                <i class="fa-regular fa-bookmark star-icon" style="padding-left: 0.5em;"></i>
-                              </label>
-  
+                                <i class="fa-regular fa-bookmark star-icon" title="Ajouter dns marque-pages" style="padding-left: 0.5em;"></i>
+                            </label>
+    
     
                         </h2>
                     </div>
@@ -549,151 +1605,157 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
             <div class="tab-content">
     
-                <div id="informations" class="tab-pane fade in active">
+                <div id="informations" class="tab-pane fade in active"
+                    style=" box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); margin: 2em; padding: 2em;">
                     <h3>Informations</h3>
     
     
+                    <legend>Détails</legend>
     
     
+                    <div class="row">
+                        <div class="col-lg-6">
     
-                    <div class="row" style="
-      box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%);
-      margin: 2em;
-      padding: 2em;">
-                        <div class="col-lg-12">
-    
-    
-                            <div class="w3-container" id="form">
-    
-                                <legend>Détails</legend>
-    
-                                <div class="row">
-                                    <div class="col-lg-6">
-    
-                                        <div class="form-group">
-                                            <label for="input_number">Référence du document </label>
-                                            <input type="text" id='input_number' class='form-control' disabled>
-                                        </div>
-    
-                                    </div>
-    
-                                    <div class="col-lg-6">
-                                        <div class="form-group">
-                                            <label for="input_type_doc">Dossier</label>
-                                            <input type="text" class="form-control" id="input_type_doc" list='folders'
-                                                disabled />
-    
-                                            <datalist id="folders">
-                                                <select id="select_folders"></select>
-                                            </datalist>
-                                        </div>
-                                    </div>
-
-                                <!--    <div class="col-lg-2">
-                                    <div class="form-group">
-                                        <label for="input_dossier_id"></label>
-                                        <input type="text" class="form-control" id="input_dossier_id"
-                                            disabled />
-
-                                    </div> -->
-                                </div>
-                                </div>
-    
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <div class="form-group">
-                                            <label for="input_number">Description</label>
-                                            <textarea id='input_description' class='form-control' rows="2"></textarea>
-                                        </div>
-    
-                                    </div>
-    
-                                    <div class="col-lg-6">
-    
-                                        <div class="form-group">
-                                            <label for="input_number">Mots-clés</label>
-                                            <textarea id='input_keywords' class='form-control' rows="2"></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-    
-                                <div class="row">
-                                
-                                <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="input_number">Date de diffusion</label>
-                                    <input type="text" id='creation_date' class='form-control' disabled>
-                                </div>
+                            <div class="form-group">
+                                <label for="input_number">Référence du document </label>
+                                <input type="text" id='input_number' class='form-control' disabled>
                             </div>
+    
+                        </div>
+    
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="input_type_doc">Dossier</label>
+                                <input type="text" class="form-control" id="input_type_doc" list='folders' disabled />
+    
+                                <datalist id="folders">
+                                </datalist>
+                            </div>
+                        </div>
+    
+    
+                    </div>
+    
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="input_number">Description</label>
+                                <textarea id='input_description' class='form-control' rows="2"></textarea>
+                            </div>
+    
+                        </div>
+    
+                        <div class="col-lg-6">
+    
+                            <div class="form-group">
+                                <label for="input_number">Mots-clés</label>
+                                <textarea id='input_keywords' class='form-control' rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
 
-                                    <div class="col-lg-6">
-                                        <div class="form-group" id='created_by_group'>
-                                            <label for="input_number">Owner</label>
-                                            <input type="text" id='created_by' class='form-control' disabled>
-                                        </div>
-                                    </div>
+                    <div class="row" style="
+                    margin-bottom: 2rem;
+                ">
+                    <div class="col-lg-6">
+                    <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="check1" name="option_filigrane" style="
+                    width: 29px;
+                    height: 19px;
+                ">
+                    <label class="form-check-label" for="check1">Ajouter un filigrane sur le document?</label>
+                  </div>
+
+                    </div>
+
+                    <div class="col-lg-6">
+                    <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="check2" name="option_download" style="
+                    width: 29px;
+                    height: 19px;
+                ">
+                    <label class="form-check-label" for="check2">Document imprimable?</label>
+                  </div>
+                    </div>
+                </div>
     
-                              
-                                </div>
+                    <div class="row">
     
-                                <legend>Détails de dernière mise à jour</legend>
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="input_number">Date de diffusion</label>
+                                <input type="text" id='creation_date' class='form-control' disabled>
+                            </div>
+                        </div>
     
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <div class="form-group">
-                                            <label for="input_number">Revision</label>
-                                            <input type="text" id='input_revision' class='form-control'>
+                        <div class="col-lg-6">
+                            <div class="form-group" id='created_by_group'>
+                                <label for="input_number">Dossier ID</label>
+                                <input type="text" id='created_by' class='form-control' disabled>
+                            </div>
+                        </div>
     
-                                        </div>
-                                    </div>
     
-                                    <div class="col-lg-6">
-                                        <div class="form-group">
-                                            <label for="input_number">Date de Revision</label>
-                                            <input id="input_reviewDate" name="myBrowser" class='form-control' type="text"
-                                                readonly>
+                    </div>
     
-                                        </div>
-                                    </div>
-                                </div>
+                    <legend>Détails de dernière mise à jour</legend>
     
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <div class="form-group">
-                                            <label for="input_number">Fichier</label>
-                                            <input type="file" name="file" id="file_ammendment_update" class="form-control" style="font-size: 1em;">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="input_number">Revision</label>
+                                <input type="text" id='input_revision' class='form-control'>
     
-                                        </div>
-                                    </div>
+                            </div>
+                        </div>
     
-                                    <div class="col-lg-6">
-                                        <div class="form-group" id='input_filename_group'>
-                                            <label for="input_number">Nom du fichier local</label>
-                                            <input type="text" id='input_filename' class='form-control' disabled />
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="input_number">Date de Revision</label>
+                                <input id="input_reviewDate" name="myBrowser" class='form-control' type="text" readonly>
     
-                                        </div>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
+                    </div>
     
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <div class="form-group" id='updated_by_group'>
-                                            <label for="input_number">Updated by :</label>
-                                            <input type="text" id='updated_by' class='form-control' disabled>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="input_number">Fichier</label>
+                                <input type="file" name="file" id="file_ammendment_update" class="form-control"
+                                    style="font-size: 1em;">
     
-                                        </div>
-                                    </div>
+                            </div>
+                        </div>
     
-                                    <div class="col-lg-6">
-                                        <div class="form-group" id='updated_time_group'>
-                                            <label for="input_number">Date</label>
-                                            <input type="text" id='updated_time' class='form-control' disabled>
+                        <div class="col-lg-6">
+                            <div class="form-group" id='input_filename_group'>
+                                <label for="input_number">Nom du fichier local</label>
+                                <input type="text" id='input_filename' class='form-control' disabled />
     
-                                        </div>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
+                    </div>
     
-                                <div class="line line-dashed" style="
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group" id='updated_by_group'>
+                                <label for="input_number">Updated by :</label>
+                                <input type="text" id='updated_by' class='form-control' disabled>
+    
+                            </div>
+                        </div>
+    
+                        <div class="col-lg-6">
+                            <div class="form-group" id='updated_time_group'>
+                                <label for="input_number">Date</label>
+                                <input type="text" id='updated_time' class='form-control' disabled>
+    
+                            </div>
+                        </div>
+                    </div>
+    
+                    <div class="line line-dashed" style="
       height: 2px;
       margin: 10px 0;
       font-size: 0;
@@ -702,23 +1764,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       border-width: 0;
       border-top: 1px solid #c9cbcc;"></div>
     
-                                <div class="row">
-                                    <div class="col-lg-8">
+                    <div class="row">
+                        <div class="col-lg-8">
     
-                                    </div>
+                        </div>
     
-                                    <div class="col-lg-4 offset-8">
-                                        <button type="button" class="btn btn-primary update_details_doc"
-                                            id='update_details_doc'>Sauvegarder</button>
-                                        <button type="button" class="btn btn-primary" id='edit_cancel_doc'>Cancel</button>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="col-lg-4 offset-8">
+                            <button type="button" class="btn btn-primary update_details_doc"
+                                id='update_details_doc'>Sauvegarder</button>
+                            <button type="button" class="btn btn-success" id="archive_btn" title="Archiver la revision">Archiver</button>
+                            <button type="button" class="btn btn-primary" id='edit_cancel_doc'>Cancel</button>
                         </div>
                     </div>
-    
-    
                 </div>
+    
     
                 <div id="versions" class="tab-pane fade">
                     <h3>Toute Versions</h3>
@@ -759,7 +1818,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                         <div class="form-group">
                                             <label for="permissions_user">Type</label>
                                             <select class='form-control' name="permissions" id="permissions_user">
-                                                <option value="NONE">NONE</option>
+                                                <!--    <option value="NONE">NONE</option> -->
                                                 <option value="READ">READ</option>
                                                 <option value="READ_WRITE">READ_WRITE</option>
                                                 <option value="ALL">ALL</option>
@@ -794,7 +1853,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                         <div class="form-group">
                                             <label for="permissions_group">Type</label>
                                             <select class='form-control' name="permissions_group" id="permissions_group">
-                                                <option value="NONE">NONE</option>
+                                                <!--   <option value="NONE">NONE</option> -->
                                                 <option value="READ">READ</option>
                                                 <option value="READ_WRITE">READ_WRITE</option>
                                                 <option value="ALL">ALL</option>
@@ -811,20 +1870,26 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                 </div>
 
                                 <div class="row">
-    <div class="col-lg-3" style="padding-top: 1.7em;">
-        <div class="form-group">
-            <button type="button" class="btn btn-primary add_group mb-2" id="inherit_parent">Inherit parent permission</button>
-        </div>
-    </div>
-    <div class="col-lg-6" style="padding-top: 1.7em;">
-    <div id="inherit">
-    </div>
-</div>
-</div>
+                                <div class="col-lg-6" style="padding-top: 1.7em;">
+                                <div id="inherit" style="display: none;">
+                                <p class="h4">Ce document hérite des permissions de son parent.</p>
+                                </div>
+                            </div>
+
+                                </div>
+
+    
+                                <div class="row">
+                                    <div class="col-lg-3" style="padding-top: 1.7em;">
+                                        <div class="form-group">
+                                            <button type="button" class="btn btn-primary add_group mb-2"
+                                                id="inherit_parent">Inherit parent permission</button>
+                                        </div>
+                                    </div>
+                              
+                                </div>
     
                             </div>
-    
-    
     
     
                         </div>
@@ -877,10 +1942,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
                                         <div class="form-group">
                                             <label for="group_name_notif">Ajouter une notification de groupe :</label>
-                                            <input type="text" class="form-control" id="group_name_notif" list='group' />
+                                            <input type="text" class="form-control" id="group_name_notif"
+                                                list='groups_notif' />
     
-                                            <datalist id="group">
-                                                <select id="select_group"></select>
+                                            <datalist id="groups_notif">
                                             </datalist>
                                         </div>
     
@@ -917,6 +1982,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                     <div id="splistDocAudit"
                         style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
     
+                        <button type="button" class="btn btn-success" id="btn_pdf" style="
+                        margin: 1rem;
+                        margin-bottom: 2em;
+                    ">Pdf</button>
+                        <button type="button" class="btn btn-success" id="btn_excel" style="
+                        margin: 1rem;
+                        margin-bottom: 2em;
+                    ">Excel</button>
+    
                     </div>
     
     
@@ -927,13 +2001,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         </div>
     
     </div>
-    
-
     `;
 
-    // this.require_libraries();
-
-
+     this.requireLibraries();
 
     const starIcon = document.querySelector(".star-icon") as HTMLElement;
 
@@ -950,111 +2020,160 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
 
-    require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
-    require('./../../common/css/doctabs.css');
-    require('./../../common/css/minBootstrap.css');
-    require('./../../common/css/responsive.css');
-
-    // Load JavaScript dependencies
-    require('./../../common/js/jquery.min');
-    require('./../../common/jqueryui/jquery-ui');
-    require('./../../common/js/popper');
-    require('./../../common/js/bootstrap.min');
-    // require('./../../common/js/responsive');
-
-    // Load custom JavaScript code
-    // require('./../../common/js/main');
-
-    // Load external libraries using SPComponentLoader
-    // SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js', {
-    //   globalExportsName: 'jQuery'
-    // }).then(() => {
-    //   return SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
-    // }).then(() => {
-    //   return SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
-    // });
-
-    SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js', {
-      globalExportsName: 'jQuery'
-    }).then(() => {
-      return SPComponentLoader.loadScript('https://code.jquery.com/jquery.min.js', {
-        globalExportsName: 'jQuery'
-      });
-    }).then(() => {
-      return SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
-    }).then(() => {
-      return SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
-    });
-
-    // require('./../../common/js/jquery.min');
-    // require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
-    // require('./../../common/jqueryui/jquery-ui');
-    // require('./../../common/css/doctabs.css');
-    // require('./../../common/css/minBootstrap.css');
-    // require('./../../common/css/responsive.css');
-    // require('./../../common/js/responsive');
-    // require('./../../common/js/bootstrap.min');
-    // require('./../../common/js/popper');
-    // require('./../../common/js/main');
-
-    // SPComponentLoader.loadScript('https://code.jquery.com/jquery-3.3.1.slim.min.js');
-    // SPComponentLoader.loadScript('https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js');
-    // SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js');
-
-
-
     var title = this.getDocTitle();
     var docId = this.getDocId();
+
+
+    var principleIdOfGroup = null;
+    var principleIdOfGroup_notif = null;
+
 
     //require('./DocDetailsWebPartJS');
 
     const loader = document.getElementById('loader');
 
-    this.getParentID(this.getDocId());
+    this.getParentID(this.getDocId(), this.getDocTitle());
 
     var items = await sp.web.lists.getByTitle("Documents").items
       .select("ID, Title, ParentID, inheriting")
       .filter(`FolderID eq '${docId}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
       .get();
 
+    {
+      try {
+        const isAdmin = await this.checkIfUserIsAdmin(this.graphClient);
+        const isRefUser = isAdmin || await this.checkIfUserIsRefUser(this.graphClient);
+        const isGuestUser = isAdmin || await this.checkIfUserIsGuestUser(this.graphClient);
 
-    if (items[0].inheriting === "YES") {
-      $("#splistDocAccessRights").css("display", "none");
+        if (isAdmin) {
+          console.log('User is an administrator.');
+          $("#input_number, #input_type_doc").prop('disabled', false);
 
-      var newP = $("<p>").text("This document is inheriting permissions from its parent.");
+          // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
-      // Append the new p element to an existing HTML element
-      $("#inherit").append(newP);
+          // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+          const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+          await this.generateTable(permissions, Number(docId));
+          console.log("PERMISSIONS ON ITEM", permissions);
+
+        } else if (isRefUser) {
+          console.log('User is a MYGED_REF user.');
+          $("#access").css('display', "none");
+
+
+        } else if (isGuestUser) {
+          console.log('User is a MYGED_GUEST user.');
+          $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
+
+          $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
+
+
+        } else {
+
+          $("#input_number, #input_type_doc").prop('disabled', false);
+
+          console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
+
+          // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+          const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+          await this.generateTable(permissions, Number(docId));
+          console.log("PERMISSIONS ON ITEM", permissions);
+
+        }
+      } catch (error) {
+        console.log('An error occurred while checking user permissions:', error);
+      }
+
+
+
     }
+
+
+    if (items.length > 0 && items[0] && items[0].inheriting && items[0].inheriting !== "NO") {
+
+      $("#inherit").css("display", "block");
+    }
+
 
     const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
 
-    const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;;
-    const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;;
+    const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;
+    const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;
+
+
 
     try {
 
-      await this._getDocDetails(parseInt(docId)),
+      await this._getDocDetails(parseInt(docId), title),
         // await this.checkPermission(),
         await this._getAllVersions(title, docId),
-        await this._getAllAccess(docId),
+        // await this._getAllAccess(docId),
         await this._getAllAudit(docId, title),
         await this._getAllNotifications(docId),
-
         await this.load_folders(),
         this.fileUpload();
 
       $("#loader").css("display", "none");
+      // $(".spinner").css("display", "none");
 
     } catch (error) {
       // $("#loader").html(`Error: ${error.message}`);
       $("#loader").css("display", "none");
+      // $(".spinner").css("display", "none");
 
       console.log(error.message);
     }
 
+
+    $("#input_type_doc").bind('input', () => {
+      const shownVal = (document.getElementById("input_type_doc") as HTMLInputElement).value;
+      // var shownVal = document.getElementById("name").value;
+
+      const value2send = (document.querySelector<HTMLSelectElement>(`#folders option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
+
+      console.log(value2send);
+      $("#created_by").val(value2send);
+    });
+
+
+    $("#group_name").bind('input', () => {
+      const shownVal = (document.getElementById("group_name") as HTMLInputElement).value;
+      // var shownVal = document.getElementById("name").value;
+
+      const value2send = (document.querySelector<HTMLSelectElement>(`#group option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
+      principleIdOfGroup = value2send;
+      console.log(value2send);
+      //  $("#created_by").val(value2send);
+    });
+
+
+    $("#group_name_notif").bind('input', () => {
+      const shownVal = (document.getElementById("group_name_notif") as HTMLInputElement).value;
+      // var shownVal = document.getElementById("name").value;
+
+      const value2send = (document.querySelector<HTMLSelectElement>(`#groups_notif option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
+      principleIdOfGroup_notif = value2send;
+      console.log(value2send);
+      //  $("#created_by").val(value2send);
+    });
+
+
+
+    const inputRevision = document.getElementById("input_revision") as HTMLInputElement;
+
+    inputRevision.addEventListener("keyup", function () {
+      if (this.value) {
+        alert("Téléchargez votre fichier avant de continuer.");
+        $('#file_ammendment_update').focus();
+      }
+    });
+
+
     try {
       await this.getSiteGroups(),
+        await this.getSiteGroups_notif(),
         await this.getSiteUsers();
     }
     catch (err) {
@@ -1063,17 +2182,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
     //update document
 
-
-    drp_folders.addEventListener("change", function () {
-
-      alert("Changed dropdown");
-      // get selected option
-      const selectedOption = drp_folders.options[drp_folders.selectedIndex];
-
-      // set input field values based on selected option
-      folderTitleInput.value = selectedOption.text;
-      folderValueInput.value = selectedOption.value;
-    });
 
     //add_permission user
     $("#add_user").click(async (e) => {
@@ -1095,27 +2203,23 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
 
+
     //add_permission_group
     $("#add_group").click(async (e) => {
       if ($("#group_name").val() === "") {
         alert("Please select a group.");
       }
       else {
-
-
-
-        await this.add_permission_group($("#group_name").val().toString(), items[0].ID);
-
-
+        await this.add_permission_group($("#group_name").val().toString(), items[0].ID, principleIdOfGroup);
       }
     });
 
     //add group notif
     $("#add_group_notif").click(async (e) => {
 
-      const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name_notif").val());
-      console.log("TESTER GROUP USERS", stringGroupUsers);
-      await this.add_notification_group(stringGroupUsers);
+      // const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name_notif").val());
+      // console.log("TESTER GROUP USERS", stringGroupUsers);
+      await this.add_notification_group($("#group_name_notif").val(), principleIdOfGroup_notif);
 
     });
 
@@ -1242,91 +2346,187 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     let user_current = await sp.web.currentUser();
 
+    if (confirm(`Etes-vous sûr de creer un nouveaux version de ${title} ?`)) {
 
+      const now: Date = new Date();
+      const day: number = now.getDate();
+      const month: number = now.getMonth() + 1; // Note: Month is zero-indexed
+      const year: number = now.getFullYear();
 
-    if ($('#file_ammendment_update').val() == '') {
+      const date: string = `${day < 10 ? '0' + day : day}/${month < 10 ? '0' + month : month}/${year}`;
+      console.log(date); // Output: "10/04/2023"
 
-      alert("Veuillez télécharger un fichier avant de continuer.");
+      try {
+        const i = await sp.web.lists.getByTitle('Documents').items.add({
+          Title: $("#input_number").val(),
+          description: $("#input_description").val(),
+          keywords: $("#input_keywords").val(),
+          doc_number: $("#input_number").val(),
+          revision: $("#input_revision").val(),
+          ParentID: $("#created_by").val(),
+          revisionDate: date,
+          IsFolder: "FALSE",
+          // owner: $("#created_by").val(),
+          updatedBy: user_current.Title,
+          createdDate: $("#creation_date").val(),
+          updatedDate: new Date().toLocaleString()
 
-    }
+        })
+          .then(async (iar) => {
 
-    else {
+            const list = sp.web.lists.getByTitle("Documents");
 
-      if (confirm(`Etes-vous sûr de creer un nouveaux version de ${title} ?`)) {
+            let folderId_link = iar.data.ID;
+            let title = iar.data.Title;
 
-        const now: Date = new Date();
-        const day: number = now.getDate();
-        const month: number = now.getMonth() + 1; // Note: Month is zero-indexed
-        const year: number = now.getFullYear();
+            await list.items.getById(iar.data.ID).attachmentFiles.add(filename_add, content_add);
 
-        const date: string = `${day < 10 ? '0' + day : day}/${month < 10 ? '0' + month : month}/${year}`;
-        console.log(date); // Output: "10/04/2023"
-
-        try {
-          const i = await sp.web.lists.getByTitle('Documents').items.add({
-            Title: $("#input_number").val(),
-            description: $("#input_description").val(),
-            keywords: $("#input_keywords").val(),
-            doc_number: $("#input_number").val(),
-            revision: $("#input_revision").val(),
-            ParentID: parseInt(folder),
-            revisionDate: date,
-            IsFolder: "FALSE",
-            owner: $("#created_by").val(),
-            updatedBy: user_current.Title,
-            createdDate: $("#creation_date").val(),
-            updatedDate: new Date().toLocaleString()
+            return { list, title, folderId_link };
 
           })
-            .then(async (iar) => {
+          .then(async ({ list, title, folderId_link }) => {
 
-              const list = sp.web.lists.getByTitle("Documents");
-
-              let folderId_link = iar.data.ID;
-              let title = iar.data.Title;
-
-              await list.items.getById(iar.data.ID).attachmentFiles.add(filename_add, content_add);
-
-              return { list, title, folderId_link };
-
-            })
-            .then(async ({ list, title, folderId_link }) => {
-
-              await list.items.getById(folderId_link).update({
-                FolderID: parseInt(folderId_link),
-                filename: filename_add
-              });
-
-              return { title, folderId_link };
-
-            })
-            .then(async ({ title, folderId_link }) => {
-              await this.createAudit($("#input_number").val(), folderId_link, user_current.Title, "Modification");
-              return { title, folderId_link }
-            })
-            .then(({ title, folderId_link }) => {
-              // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
-
-              alert("Détails mis à jour avec succès");
-              return { title, folderId_link };
-            })
-            .then(({ title, folderId_link }) => {
-              //    location.reload(true)
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
-
+            await list.items.getById(folderId_link).update({
+              FolderID: parseInt(folderId_link),
+              filename: filename_add
             });
 
-        }
-        catch (err) {
-          alert(err.message);
-        }
+            return { title, folderId_link };
 
+          })
+          .then(async ({ title, folderId_link }) => {
+            await this.createAudit($("#input_number").val(), folderId_link, user_current.Title, "Modification");
+            return { title, folderId_link }
+          })
+          .then(({ title, folderId_link }) => {
+            // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
+
+            alert("Détails mis à jour avec succès");
+            return { title, folderId_link };
+          })
+          .then(({ title, folderId_link }) => {
+            //    location.reload(true)
+            window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
+
+          });
 
       }
-      else {
-
+      catch (err) {
+        alert(err.message);
       }
+
+
     }
+    else {
+
+
+    }
+
+  }
+
+  private async updateAllDocNumberForDocument(docNumber: any, newDocNumber: any, docid: any) {
+
+    var ifFolder = "FALSE";
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+      .filter("Title eq '" + docNumber + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
+
+
+    try {
+
+      await Promise.all(all_documents.map(async (doc) => {
+        const list = sp.web.lists.getByTitle("Documents");
+
+        // if (item.inheriting !== "NO") {
+        const i = await list.items.getById(doc.ID).update({
+          Title: newDocNumber.toString(),
+        });
+
+      }))
+        .then((iar) => {
+          alert("Le numéro de document a été modifié pour toutes les versions précédentes.");
+          window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${newDocNumber}&documentId=${docid}`;
+        });
+
+    }
+    catch (e) {
+
+      alert(e.message);
+    }
+
+
+
+  }
+
+  private async updateAllDossierForDocument(docNumber: any, docid: any) {
+
+    var ifFolder = "FALSE";
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+      .filter("Title eq '" + docNumber + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
+
+
+    try {
+
+      await Promise.all(all_documents.map(async (doc) => {
+        const list = sp.web.lists.getByTitle("Documents");
+
+        // if (item.inheriting !== "NO") {
+        const i = await list.items.getById(doc.ID).update({
+          ParentID: $("#created_by").val(),
+        });
+
+      }))
+        .then(() => {
+          alert("Toutes les versions précédentes ont été déplacées vers le dossier spécifié.");
+          window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${docNumber}&documentId=${docid}`;
+        });
+
+    }
+    catch (e) {
+
+      alert(e.message);
+    }
+
+
+
+  }
+
+  private async moveAllRevisionsToArchive(docNumber: any, docid: any) {
+
+    var ifFolder = "FALSE";
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+      .filter("Title eq '" + docNumber + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
+
+
+    try {
+
+      const list = sp.web.lists.getByTitle("Documents");
+
+      await Promise.all(all_documents.map(async (doc) => {
+
+        // if (item.inheriting !== "NO") {
+        const i = await list.items.getById(doc.ID).update({
+          ParentID: 791,
+        });
+
+      }))
+        .then(() => {
+          alert("Toutes les versions précédentes ont été déplacées vers le dossier archivé.");
+          window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${docNumber}&documentId=${docid}`;
+        });
+
+    }
+    catch (e) {
+
+      alert(e.message);
+    }
+
+
 
   }
 
@@ -1345,7 +2545,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     // if (groupTitle.includes("myGed Visitors")) {
     if (groupTitle.includes("Utilisateur MyGed")) {
 
-      $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc").css("display", "none");
+      $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
 
       $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
 
@@ -1437,14 +2637,94 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         listContainerDocAudit.innerHTML += html;
       });
 
-    var table = $("#tbl_doc_audit").DataTable();
+
+    const tableSelector = "#tbl_doc_audit"; // Replace with your table selector
+    const table = $("#tbl_doc_audit").DataTable();
+    //var table = $(tableSelector).DataTable();
+
+    //const table1 = $('#tbl_doc_audit')[0];
+
+
+    const btnExcelExport = $('#btn_excel');
+    const btnPDFExport = $('#btn_pdf');
+
+
+    btnExcelExport.click(() => {
+      // Get all the data in the table, not just the visible data
+      const headers = $(table.table().header())
+        .find("th")
+        .map(function () {
+          return [$(this).text()];
+        })
+        .get();
+
+      const data: any[][] = table.rows().data().toArray();
+
+      console.log("TABLE ROWS LENTGH", data.length);
+
+      data.unshift(headers); // Add the headers at the beginning of the data array
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+
+      data.forEach((row, rowIndex) => {
+        row.forEach((cell, colIndex) => {
+          const worksheetCell = worksheet.getCell(rowIndex + 1, colIndex + 1);
+          worksheetCell.value = cell;
+
+          // Apply bold style to the first row
+          if (rowIndex === 0) {
+            worksheetCell.font = { bold: true };
+          }
+        });
+      });
+
+      workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], { type: "application/octet-stream" });
+        saveAs(blob, `${title}_audit.xlsx`);
+      });
+    });
+
+    btnPDFExport.click(() => {
+      // Get the data from the table as an array of arrays
+
+      const data: any[][] = table.rows().data().toArray(); // Create a new jsPDF instance
+
+      const doc = new jsPDF();
+
+      // var dataTableHeaderElements = table.columns().header();
+
+      const headers = $(table.table().header())
+        .find("th")
+        .map(function () {
+          return [$(this).text()];
+        })
+        .get(); // Add the table data to the PDF document using autoTable
+
+      const date = new Date();
+      const formattedDate = date.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+
+      // Add the title
+      doc.setFontSize(18);
+      doc.text(`${title} audit ` + formattedDate, 10, 10);
+      autoTable(doc, {
+        head: [headers], // use the first row as the header
+        body: data, // use the rest of the rows as the body
+        startY: 20, // Adjust the startY value to leave space for the title
+      });
+
+      doc.save(`${title}_audit.pdf`);
+    });
 
   }
 
   private async add_permission(user_group: any, id: any) {
 
     //add permission user
-
 
     var ifFolder = "FALSE";
     var x = this.getDocId();
@@ -1549,7 +2829,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     return 'No Access';
   }
 
-  private async add_permission_group(group_name: string, id: any) {
+  private async add_permission_group(group_name: string, id: any, principleIdOfGroup: any) {
 
     //add permission user
 
@@ -1598,12 +2878,12 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       // await Promise.all(group_name.map(async (email) => {
       await sp.web.lists.getByTitle("AccessRights").items.add({
         Title: all_documents[0].Title.toString(),
-        // groupName: email,
+        groupName: group_name,
         permission: $("#permissions_group option:selected").val(),
         FolderID: Number(all_documents[0].ID),
-        PrincipleID: filteredGroups[0].Id,
-        LoginName: filteredGroups[0].LoginName,
-        groupTitle: filteredGroups[0].LoginName,
+        PrincipleID: principleIdOfGroup,
+        LoginName: group_name,
+        groupTitle: group_name,
         RoleDefID: permission
       })
 
@@ -1626,7 +2906,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async add_notification_group(group_name: string[]) {
+  private async add_notification_group(group_name: any, email: any) {
 
     //add permission group
 
@@ -1656,22 +2936,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     console.log("USERS FOR PERMISSION", group_name);
 
     try {
-      await Promise.all(group_name.map(async (email) => {
-        const user: any = await sp.web.siteUsers.getByEmail(email)();
-        await sp.web.lists.getByTitle("Notifications").items.add({
-          Title: doc_title.toString(),
-          group_person: email,
-          IsFolder: "FALSE",
-          revisionDate: revisionDate,
-          toNotify: "YES",
-          description: description,
-          FolderID: x.toString(),
-          webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
-          LoginName: user.Title,
-          revision: revision,
-          TypeNotif: "manual"
-        })
-      }));
+      // await Promise.all(group_name.map(async (email) => {
+      // const user: any = await sp.web.siteUsers.getByEmail(email)();
+      await sp.web.lists.getByTitle("Notifications").items.add({
+        Title: doc_title.toString(),
+        group_person: email,
+        IsFolder: "FALSE",
+        revisionDate: revisionDate,
+        toNotify: "YES",
+        description: description,
+        FolderID: x.toString(),
+        webLink: `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
+        LoginName: group_name,
+        revision: revision,
+        TypeNotif: "manual"
+      });
+      // }));
 
       alert("Notification ajoutée à ce document avec succès.");
       window.location.reload();
@@ -1684,7 +2964,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   private async load_folders() {
     const value1 = "TRUE";
     // const drp_folders = document.getElementById("select_folders");
-    const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
+    // const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
+    const drp_folders = document.getElementById("folders") as HTMLSelectElement;
+
 
     const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;;
     const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;;
@@ -1704,16 +2986,16 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     console.log("ALL FOLDERS", all_folders.length);
 
-    folders = all_folders;
 
     await Promise.all(all_folders.map(async (result) => {
-
 
       const opt = document.createElement('option');
       //  opt.appendChild(document.createTextNode(result.Title));
 
-      opt.text = result.Title;
-      opt.value = result.FolderID; // Set the value of the option to the folder ID
+      // opt.text = result.Title;
+      opt.value = result.Title;
+      opt.setAttribute('data-value', result.FolderID);
+      opt.dataset// Set the value of the option to the folder ID
 
 
       // create a span element for the description
@@ -1728,9 +3010,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       // opt.insertAdjacentElement('beforeend', description);
 
       opt.appendChild(description);
-
       drp_folders.appendChild(opt);
-
 
     }));
 
@@ -1828,9 +3108,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     return extension;
   }
 
-  private async _getDocDetails(id: number) {
+  private async _getDocDetails(id: number, title: any) {
 
-    const parentArray = await this.getParentID(this.getDocId());
+    const parentArray = await this.getParentID(this.getDocId(), this.getDocTitle());
+
+    console.log("PARENT BREADCRUMB", parentArray);
 
     this.createPath(parentArray.parentTitle);
 
@@ -1840,11 +3122,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var urlFile_download = '';
     var pdfNameDownload = '';
 
-    await this.checkPermission();
+    // await this.checkPermission();
     //  var x = await this.getAllGroups(this.graphClient);
 
     // console.log("ALL AD GROUPS", x);
-
 
     $('#file_ammendment_update').on('change', () => {
       const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
@@ -1868,8 +3149,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     // Get the document details
     const itemDoc: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate, attachmentUrl, IsFiligrane, IsDownloadable")
-      .filter("FolderID eq '" + id + "' and IsFolder eq 'FALSE'")
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate, attachmentUrl, IsFiligrane, IsDownloadable, filename")
+      .filter(`FolderID eq '${id}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
       .get();
 
     // Get the folder details
@@ -1895,6 +3176,25 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           });
       });
 
+      var checkbox_fili = document.getElementById("check1") as HTMLInputElement;
+      var checkbox_download = document.getElementById("check2") as HTMLInputElement;
+
+      if(itemDoc[0].IsFiligrane == "YES"){
+        checkbox_fili.checked = true;
+      }
+      else{
+        checkbox_fili.checked = false;
+      }
+
+      if(itemDoc[0].IsDownloadable == "YES"){
+        checkbox_download.checked = true;
+      }
+      else{
+        checkbox_download.checked = false;
+      }
+
+
+
 
 
     // Set the document details in the UI
@@ -1903,12 +3203,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     $("#input_revision").val(itemDoc[0].revision);
     $("#input_keywords").val(itemDoc[0].keywords);
     $("#input_description").val(itemDoc[0].description);
-    $("#created_by").val(itemDoc[0].owner);
+    $("#created_by").val(itemDoc[0].ParentID);
     $("#updated_by").val(itemDoc[0].updatedBy);
     $("#updated_time").val(itemDoc[0].updatedDate);
     $("#creation_date").val(itemDoc[0].createdDate);
     $("#h2_doc_title").text(itemDoc[0].Title);
-    $("#input_reviewDate").val(itemDoc[0].revisionDate);
+
+    if (itemDoc[0].revisionDate) {
+      $("#input_reviewDate").val((itemDoc[0].revisionDate).split(" ")[0]);
+    }
+
+    else {
+      $("#input_reviewDate").val(itemDoc[0].revisionDate);
+    }
+
 
     // Set the URL for downloading the attachment
     let url = '';
@@ -1943,18 +3251,24 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       else {
 
 
-        // create a div element to blur the screen
+       // create a div element to blur the screen
         const blurDiv = document.createElement('div');
         blurDiv.classList.add('blur');
         document.body.appendChild(blurDiv);
 
-        // create a div element to show the loader
+        // // create a div element to show the loader
         const loaderDiv = document.createElement('div');
         loaderDiv.classList.add('loader1');
         document.body.appendChild(loaderDiv);
 
         try {
-          await this.openPDFInIframe(url, 'UNCONTROLLED COPY - Downloaded on: ');
+          //await this.openPDFInIframe(url, 'UNCONTROLLED COPY - Downloaded on: ');
+         // window.open(`${url}`, '_blank');
+
+          await this.createWebpageInNewTab(url, itemDoc[0].filename);
+         // await this.createWebpageInIframe2(url);
+         // await this.createWebpageInNewTab2(url);
+
         } finally {
           // remove the loader and the blur elements
           document.body.removeChild(loaderDiv);
@@ -1980,50 +3294,155 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     // Delete the document
     $("#delete_doc").click(async (e) => {
-      if (confirm(`Are you sure you want to delete ${itemDoc[0].Title}?`)) {
+      //  if (confirm(`Are you sure you want to delete ${itemDoc[0].Title}?`)) {
+      if (confirm(`Voulez-vous vraiment archiver ce document et toutes les révisions précédentes : ${itemDoc[0].Title} ?`)) {
         try {
-          await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc[0].Id)).recycle();
-          alert("Document deleted successfully.");
-          window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${itemDoc[0].ParentID}`;
+
+          await this.moveAllRevisionsToArchive(itemDoc[0].Title, itemDoc[0].FolderID);
+          // await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc[0].Id)).recycle();
+          // alert("Document deleted successfully.");
+          // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${itemDoc[0].ParentID}`;
         } catch (err) {
           alert(err.message);
         }
       }
     });
 
+
+
+
+    //archive doc
+    $("#archive_btn").click(async (e) => {
+
+      if (confirm(`Voulez-vous vraiment archiver ce document : ${itemDoc[0].Title} ?`)) {
+        try {
+
+          const list = sp.web.lists.getByTitle("Documents");
+
+          const i = await list.items.getById(itemDoc[0].ID).update({
+            ParentID: 791,
+          })
+            .then(() => {
+              alert("Le document a été archivé.");
+              window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${itemDoc[0].Title}&documentId=${itemDoc[0].FolderID}`;
+            });
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+
+    });
+
     // Download the attachment
     $("#download_doc").click(async (e) => {
       const user = await sp.web.currentUser();
-      await this.downloadDoc(url, pdfNameDownload, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
+      if(itemDoc[0].IsFiligrane === "NO"){
+        await this.downloadDocWithoutFili(url, pdfNameDownload, itemDoc[0].FolderID);
+      }
+
+      else {
+        await this.downloadDoc(url, pdfNameDownload, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
+      }
     });
 
 
     $("#update_details_doc").click(async (e) => {
       const fileInput = document.getElementById("file_ammendment_update") as HTMLInputElement;
 
-      if (($("#input_type_doc").val() === itemFolder[0].Title ||
-        $("#input_number").val() === itemDoc[0].Title ||
-        $("#input_keywords").val() === itemDoc[0].keywords ||
-        $("#input_description").val() === itemDoc[0].description) && $("#input_revision").val() !== itemDoc[0].revision && fileInput.value) {
-        // The fields are unchanged, so update the document metadata
-        //  const folder = await this.getFolder(itemFolder[0].FolderID);
+      // if (($("#input_type_doc").val() === itemFolder[0].Title ||
+      //   $("#input_number").val() === itemDoc[0].Title ||
+      //   $("#input_keywords").val() === itemDoc[0].keywords ||
+      //   $("#input_description").val() === itemDoc[0].description) && $("#input_revision").val() !== itemDoc[0].revision && fileInput.value) {
+      // The fields are unchanged, so update the document metadata
+      //  const folder = await this.getFolder(itemFolder[0].FolderID);
+      // const fileInput = document.getElementById("myFileInput") as HTMLInputElement;
+
+      //   if ($("#myFileInput").get(0).files.length === 0) 
+      if ($("#input_revision").val() !== itemDoc[0].revision && fileInput.value) {
+
+        if (fileInput.files.length == 0 || $("#input_revision").val() === "") {
+          alert("Veuillez entrer le numéro de révision et télécharger votre document.");
+        }
+
+        else {
+
+
+          var confirmed = confirm("Êtes-vous sûr de vouloir créer une nouvelle version de ce document ?");
+
+
+          if (confirmed) {
+
+            // User clicked OK
+            // Your delete code goes here
+            await this.updateDocument(itemDoc[0].FolderID, itemDoc[0].Title, Number($("#input_type_doc").val()));
+            alert("Vous avez créé une nouvelle version de : " + itemDoc[0].Title);
+
+          } else {
+            // User clicked Cancel
+            // Your cancel code goes here
+          }
+
+        }
 
         // await this.updateDocument(itemDoc[0].FolderID, itemDoc[0].Title, folder.ID);
 
-        await this.updateDocument(itemDoc[0].FolderID, itemDoc[0].Title, Number($("#input_type_doc").val()));
+      }
 
+      else if ($("#input_number").val() !== itemDoc[0].Title) {
 
-        alert("You have created a new version of : " + itemDoc[0].Title);
-      } else {
+        var confirmed = confirm("Êtes-vous sûr de vouloir appliquer cette modification à tous les documents portant ce numéro de document?");
+        if (confirmed) {
+
+          await this.updateAllDocNumberForDocument(itemDoc[0].Title, $("#input_number").val(), itemDoc[0].FolderID);
+        }
+        else {
+
+        }
+
+      }
+
+      else if (Number($("#created_by").val()) !== itemDoc[0].ParentID) {
+
+        alert($("#created_by").val());
+        alert(itemDoc[0].ParentID);
+
+        var confirmed = confirm("Êtes-vous sûr de bouger les documents portant ce numéro de document?");
+        if (confirmed) {
+
+          await this.updateAllDossierForDocument(itemDoc[0].Title, itemDoc[0].FolderID);
+        }
+        else {
+
+        }
+
+      }
+
+      else {
+
+        var confirmed = confirm("Êtes-vous sûr de vouloir mettre à jour les détails de ce document?");
+        if (confirmed) {
+          // User clicked OK
+          // Your delete code goes here
+          await this.updateDocMetadata(itemDoc[0].Id, itemDoc[0].FolderID, user_current.Title);
+
+          alert("Vous avez modifié certaines métadonnées de : " + itemDoc[0].Title);
+
+        } else {
+          // User clicked Cancel
+          // Your cancel code goes here
+        }
         // The fields are changed, so get the folder details and update the document metadata
         // const folder = await this.getFolder(itemFolder[0].FolderID);
         // await this.updateDocMetadata(itemDoc[0].Id, folder.ID, itemDoc[0].FolderID, user_current.Title);
-        await this.updateDocMetadata(itemDoc[0].Id, Number($("#input_type_doc").val()), itemDoc[0].FolderID, user_current.Title);
 
-        alert("You have modified some metadata of : " + itemDoc[0].Title);
       }
-
       // await this.createAudit()
+
+    });
+
+    $("#edit_cancel_doc").click(async (e) => {
+
+      window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=${itemFolder[0].FolderID}`;
 
     });
 
@@ -2053,6 +3472,130 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     }
 
+
+
+  }
+
+  private async createWebpageInNewTab(url, filename: any) {
+    try {
+
+      const pdfBytes = await this.generatePdfBytes2(url);
+      const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      `;
+
+      const closeButton = document.createElement('button');
+      closeButton.textContent = 'Close';
+      closeButton.style.cssText = `
+      position: absolute;
+      top: 80px;
+      left: 50px;
+      padding: 5px 10px;
+      background-color: #fa0f00;
+      border: none;
+      cursor: pointer;
+      font-size: large;
+      color: white;
+      `;
+
+  //     const mediaQuery = window.matchMedia('(max-width: 600px)');
+  //     if (mediaQuery.matches) {
+  //       closeButton.style.cssText += `
+  //       position: absolute;
+  //       bottom: 3px;
+  //       right: 19px;
+  //       padding: 5px 10px;
+  //       background-color: darkblue;
+  //       border: none;
+  //       cursor: pointer;
+  //       font-size: smaller;
+  //       color: white;
+  // `;
+  //     }
+
+      overlay.appendChild(closeButton);
+
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = `
+        width: 90%;
+        height: 90%;
+      `;
+
+      overlay.appendChild(iframe);
+      document.body.appendChild(overlay);
+
+      closeButton.addEventListener('click', function () {
+        document.body.removeChild(overlay);
+      });
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <html>
+          <head>
+            <title>MyGed PDF Viewer</title>
+            <style>
+              body { margin: 0; }
+              #adobe-dc-view { width: 100%; height: 100%; }
+            </style>
+            <script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
+            <script type="text/javascript">
+            document.addEventListener("adobe_dc_view_sdk.ready", function(){ 
+              var adobeDCView = new AdobeDC.View({clientId: "d77e60caf95e49169e0443eb71689bd5", divId: "adobe-dc-view"});
+          
+              function convertPDFToBlob(url) {
+                return new Promise((resolve, reject) => {
+                  fetch(url)
+                    .then(response => {
+                      if (!response.ok) {
+                        throw new Error('Failed to fetch the PDF file.');
+                      }
+                      return response.blob();
+                    })
+                    .then(blob => {
+                      resolve(blob);
+                    })
+                    .catch(error => {
+                      reject(error);
+                    });
+                });
+              }
+          
+              // var url = 'https://example.com/path/to/file.pdf';
+              // var filename = 'example.pdf';
+          
+              // var x = convertPDFToBlob('${url}');
+              // x.then(blob => {
+                adobeDCView.previewFile({
+                  content:{location: {url: '${pdfUrl}'}},
+                  metaData: { fileName: '${filename}' }
+                }, { embedMode: "IN_LINE", showDownloadPDF: false, showPrintPDF: false});
+              });
+            // });
+          </script>
+          </head>
+          <body>
+            <div id="adobe-dc-view"></div>
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+    } catch (error) {
+      console.error('Error:', error);
+    }
   }
 
   public async getPermissionLevel(graphClient: MSGraphClient, siteName: string, listName: string, itemId: string): Promise<string> {
@@ -2152,18 +3695,40 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   //   return folder;
   // }
 
-  private async updateDocMetadata(id: any, folder: any, folderID: any, userTitle: any,) {
+  private async updateDocMetadata(id: any, folderID: any, userTitle: any) {
+
+    var checkbox_fili = document.getElementById("check1") as HTMLInputElement;
+    var filivalue = "NO";
+    
+    var checkbox_download = document.getElementById("check2") as HTMLInputElement;
+    var download_value = "NO";
+    
+    if (checkbox_fili.checked === true) {
+      filivalue = "YES";
+    } else {
+      filivalue = "NO";
+    }
+    
+    if (checkbox_download.checked === true) {
+      download_value = "YES";
+    } else {
+      download_value = "NO";
+    }
 
 
     try {
       const list = sp.web.lists.getByTitle("Documents");
 
+
+
       const i = await list.items.getById(id).update({
-        Title: $("#input_number").val(),
+        // Title: $("#input_number").val(),
         description: $("#input_description").val(),
         keywords: $("#input_keywords").val(),
         doc_number: $("#input_number").val(),
-        ParentID: Number(folder),
+        ParentID: $("#created_by").val(),
+        IsFiligrane: filivalue,
+        IsDownloadable: download_value
 
       }).then(async () => {
         await this.createAudit($("#input_number").val(), folderID, userTitle, "Modification");
@@ -2214,7 +3779,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       docID = doc.Id;
       revisionDate = doc.revisionDate;
       description = doc.description;
-      link = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=OWNERTEST&documentId=${doc.FolderID}`;
+      link = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=OWNERTEST&documentId=${doc.FolderID}`;
       revision = doc.revision;
 
     }));
@@ -2233,7 +3798,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         toNotify: "YES",
         description: description,
         FolderID: x.toString(),
-        webLink: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
+        webLink: `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
         LoginName: user.Title,
         TypeNotif: "manual"
       })
@@ -2284,7 +3849,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
       const all_documents_versions: any[] = await sp.web.lists.getByTitle('Documents').items
-        .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, attachmentUrl, IsFiligrane, IsDownloadable")
+        .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, attachmentUrl, IsFiligrane, IsDownloadable, filename")
         .filter("Title eq '" + title + "' and IsFolder eq '" + value1 + "' and FolderID ne '" + doc_id + "'")
         .get();
 
@@ -2490,17 +4055,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
             blurDiv.classList.add('blur');
             document.body.appendChild(blurDiv);
 
-            // create a div element to show the loader
+            // // create a div element to show the loader
             const loaderDiv = document.createElement('div');
             loaderDiv.classList.add('loader1');
             document.body.appendChild(loaderDiv);
 
             try {
-              await this.openPDFInIframe(data[2], 'ARCHIVED COPY - Downloaded on: ');
+              // await this.openPDFInIframe(data[2], 'ARCHIVED COPY - Downloaded on: ');
+              //await this.createWebpageInIframe2(data[2]);
+
+              // window.open(data[2], '_blank');
+              await this.createWebpageInNewTab(data[2], data[5]);
             } finally {
               // remove the loader and the blur elements
               document.body.removeChild(loaderDiv);
               document.body.removeChild(blurDiv);
+
             }
           }
           //  window.open(`${data[2]}`, '_blank');
@@ -2509,13 +4079,33 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
         $('#tbl_doc_versions tbody').on('click', '.btn_download_doc', async (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
-          await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
+
+          if(data[7] === "NO"){
+            await this.downloadDocWithoutFili(data[2], data[5], data[6]);
+          }
+          else{
+            await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
+          }
         });
 
       }
 
     }
 
+  }
+
+  public async checkIfUserIsAdmin(graphClient: MSGraphClient): Promise<boolean> {
+    try {
+      const groups = await graphClient.api('/me/transitiveMemberOf/microsoft.graph.group?$count=true&$top=999').get();
+      const groupList = groups.value;
+      const isAdmin = groupList.some(group => group.displayName === 'MYGED_ADMIN');
+      const isRefUser = groupList.some(group => group.displayName.startsWith('MYGED_REF'));
+      const isGuestUser = groupList.some(group => group.displayName.startsWith('MYGED_GUEST'));
+      return isAdmin || isRefUser || isGuestUser;
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
   }
 
   private async _getAllAccess(id: string) {
@@ -2617,6 +4207,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var value1 = "FALSE";
     var itemID = "";
     var folderID = "";
+    var docTitle = this.getDocTitle();
 
     var doc_detail: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
 
@@ -2641,20 +4232,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   </thead>
   <tbody id="tbl_documents_notif_bdy">`;
 
-    const allNotif: any[] = await sp.web.lists.getByTitle('Notifications').items.select("ID, Title, group_person, revisionDate, toNotify, webLink, description, FolderID").filter("FolderID eq '" + folderID.toString() + "'").getAll();
+    // const allNotif: any[] = await sp.web.lists.getByTitle('Notifications').items.select("ID, Title, group_person, revisionDate, toNotify, webLink, description, FolderID, LoginName").filter("FolderID eq '" + folderID.toString() + "'").getAll();
+    const allNotif: any[] = await sp.web.lists.getByTitle('toNotify').items.select("ID, Title, groupe_name").filter("Title eq '" + docTitle.toString() + "'").getAll();
 
+    
     await Promise.all(allNotif.map(async (notif) => {
 
       html += `
           <tr>
-          <td class="text-left">${notif.Id}</td>
+          <td class="text-left">${notif.ID}</td>
 
 
-          <td class="text-left">${notif.group_person}</td>
+          <td class="text-left">${notif.groupe_name}</td>
           
           <td class="text-left">
 
-         <a href="#"  title="delete_notif" id="${notif.Id}_view_doc_notif" class="btn_delete_notif" style="padding-left: inherit;">
+         <a href="#"  title="delete_notif" id="${notif.ID}_view_doc_notif" class="btn_delete_notif" style="padding-left: inherit;">
          <i class="fa-solid fa-trash" style="font-size: x-large;"></i>
 
      
@@ -2688,7 +4281,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     $('#tbl_doc_notif tbody').on('click', '.btn_delete_notif', async (event) => {
       var data = table.row($(event.currentTarget).parents('tr')).data();
-      await this._delete(data[0], "Notifications", "Notification");
+      await this._delete(data[0], "ToNotify", "Notification");
       window.location.reload();
     });
 
@@ -2723,7 +4316,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     users.forEach((result: ISiteUserInfo) => {
 
-      if (result.UserPrincipalName != null ) {
+      if (result.UserPrincipalName != null) {
 
         console.log("USER", result.Id, result.Email);
         // if(result.IsFolder == "TRUE"){
@@ -2739,7 +4332,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-
   public async getUserPrincipalId(graphClient: MSGraphClient, userId: string): Promise<string> {
     try {
       const user = await graphClient.api(`/users/${userId}`)
@@ -2754,63 +4346,130 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-
-
   public async getSiteGroups() {
 
-    var drp_users = document.getElementById("select_groups");
+    // var drp_users = document.getElementById("select_groups");
+    var drp_users = document.getElementById("group") as HTMLSelectElement;
+
+    if (!drp_users) {
+      console.error("Dropdown element not found");
+      return;
+    }
+
+
 
     try {
-      const groups1: any = await sp.web.siteGroups();
-      // const allGroups = await this.getAllGroups(this.graphClient);
 
-      for (const group of groups1) {
-        // console.log("GROUP ID: " + group.displayName + ", " + group.mail);
+      // const groups1: any = await sp.web.siteGroups();
+      // const allGroups = await this.getGroupsByName(this.graphClient, "myGed");
+      // console.log("groups", allGroups);
 
-        // const opt = document.createElement('option');
-        // opt.appendChild(document.createTextNode(group.mail));
-        // opt.value = group.mail;
-        // opt.text = group.displayName;
-        // drp_users.appendChild(opt);
-        if (group.Title != null || group.OwnerTitle !== "System Account") {
-          console.log("GROUP ID : " + group.Id + " , " + group.LoginName);
-          //  console.log("USER", result.Email);
-          // if(result.IsFolder == "TRUE"){
-          // console.log("SELECT_FOLDERS", result.Title);
-          var opt = document.createElement('option');
-          opt.appendChild(document.createTextNode(group.LoginName));
-          opt.value = group.LoginName;
-          drp_users.appendChild(opt);
-        }
+      //const { permissions } = await this.getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+      const { permissions } = await this.getSitePermissions(this.context.pageContext.web.absoluteUrl, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+      console.log("groups", permissions);
+
+      for (const group of permissions) {
+
+        var opt = document.createElement('option');
+        // opt.appendChild(document.createTextNode(group.title));
+        opt.value = group.title;
+
+        opt.setAttribute('data-value', group.id);
+        opt.dataset;
+
+        drp_users.appendChild(opt);
+
       }
+
+
     } catch (error) {
       console.error("Error retrieving groups:", error);
     }
-    //   })
-    //   .catch((error) => {
-    //     console.error(error);
-    //   });
 
-    // groups = groups1;
-    //console.log('SITEUSERSSSS ++++>', users1);
+  }
 
-    //   groups.forEach((result: ISiteGroupInfo) => {
-    // groups.forEach((result: ISiteGroupInfo) => {
+  public async getSiteGroups_notif() {
 
-    //   if (result.Title != null) {
-    //     console.log("GROUP ID : " + result.Id + " , " + result.LoginName);
-    //     //  console.log("USER", result.Email);
-    //     // if(result.IsFolder == "TRUE"){
-    //     // console.log("SELECT_FOLDERS", result.Title);
-    //     var opt = document.createElement('option');
-    //     opt.appendChild(document.createTextNode(result.LoginName));
-    //     opt.value = result.LoginName;
-    //     drp_users.appendChild(opt);
-    //     // }
-    //   }
+    // var drp_users = document.getElementById("select_groups");
+    var drp_users = document.getElementById("groups_notif") as HTMLSelectElement;
 
-    // });
+    if (!drp_users) {
+      console.error("Dropdown element not found");
+      return;
+    }
 
+
+
+    try {
+      // const groups1: any = await sp.web.siteGroups();
+      const allGroups = await this.getGroupsByName(this.graphClient, "myGed");
+      // console.log("groups", allGroups);
+
+      // const { permissions } = await this.getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+      // console.log("groups", permissions);
+
+      for (const group of allGroups) {
+
+        var opt = document.createElement('option');
+        // opt.appendChild(document.createTextNode(group.title));
+        opt.value = group.displayName;
+
+        opt.setAttribute('data-value', group.mail);
+        opt.dataset;
+        drp_users.appendChild(opt);
+
+      }
+
+
+    } catch (error) {
+      console.error("Error retrieving groups:", error);
+    }
+
+  }
+
+  public async getSitePermissions(siteUrl, username, password) {
+    try {
+      const credentials = btoa(`${username}:${password}`);
+      const url = `${siteUrl}/_api/Web/RoleAssignments?$expand=Member,RoleDefinitionBindings`;
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json;odata=verbose',
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const permissions = [];
+
+      for (const entry of data.d.results) {
+        const userOrGroup = entry.Member;
+
+        if (userOrGroup.PrincipalType === 4) {
+          // User or domain group
+          const principalId = userOrGroup.Id;
+          const title = userOrGroup.Title;
+          const roleName = entry.RoleDefinitionBindings.results[0].Name;
+          const email = userOrGroup.Email;
+
+          // Add member to permissions
+          permissions.push({ type: 'member', id: principalId, role: roleName, title: title, email: email });
+        }
+      }
+
+      console.log("All Site Permissions:", permissions);
+
+      return { permissions };
+    } catch (err) {
+      console.error(err);
+      return { permissions: [] };
+    }
   }
 
   private async getAllGroups(graphClient: MSGraphClient): Promise<Group[]> {

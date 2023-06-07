@@ -1,0 +1,54 @@
+/* .webPartContainer {
+    display: none;
+}
+
+#CommentsWrapper {
+    display: none;
+}
+
+#spCommandBar {
+    display: none;
+} */
+
+.ei_ag_9f38462c {
+    height: 150px;
+    display: none;
+}
+
+.isFluent .SPPageChrome-app .commandBarWrapper {
+    border-bottom: 1px solid;
+    border-color: #edebe9;
+    display: none;
+}
+
+.a_a_ada2ac09>:last-child>:last-child {
+    max-width: 760px;
+    display: none;
+}
+
+/* .a_a_50a7110f:not(.b_a_50a7110f) {
+    margin: 0;
+    padding: 0;
+}
+
+.a_b_50a7110f:not(.b_b_50a7110f):not(.e_b_50a7110f) {
+    padding: 0 0;
+}  */
+
+#SuiteNavWrapper{
+    display: none !important;
+}
+
+.spAppAndPropertyPanelContainer .sp-appBar {
+    background: #f3f2f1;
+    display: block;
+    min-width: 47px;
+    display: none;
+}
+
+.webPartContainer{
+    display: none;
+}
+
+
+

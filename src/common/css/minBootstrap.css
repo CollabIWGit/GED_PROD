@@ -158,7 +158,6 @@ button,
 html input[type=button],
 input[type=reset],
 input[type=submit] {
-    -webkit-appearance: button;
     cursor: pointer
 }
 
@@ -191,7 +190,6 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 input[type=search] {
-    -webkit-appearance: textfield;
     -webkit-box-sizing: content-box;
     -moz-box-sizing: content-box;
     box-sizing: content-box
@@ -5850,7 +5848,7 @@ fieldset[disabled] .navbar-inverse .btn-link:hover {
 .breadcrumb>li+li:before {
     padding: 0 5px;
     color: white;
-    content: "/\00a0"
+    content: "/\00a0";
 }
 
 .breadcrumb>.active {

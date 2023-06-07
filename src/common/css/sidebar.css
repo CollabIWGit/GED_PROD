@@ -1,44 +1,3 @@
-
-#spSiteHeader {
-  display: none;
-}
-#spCommandBar {
-  display: none;
-}
-.webPartContainer{
-    display: none!important;
-}
-#spLeftNav{
-    display:none; 
-}
-#sp-appBar{
-  display:none; 
-}
-.i_a_beed2cf1 {
-  position: relative;
-  z-index: 7;
-  display: none;
-}
-.CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read {
-  padding: 0px;
-}
-
-.CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read > div {
-  width: 100%;
-  display: flex;
-  max-width: 100%;
-}
-
-.CanvasSection.CanvasSection-col.CanvasSection-sm12.CanvasSection--read.CanvasSection-xl12 {
-  padding: 0px;
-}
-
-.CanvasSection.CanvasSection-col.CanvasSection-sm12.CanvasSection--read.CanvasSection-xl12 > div {
-  padding: 0px;
-  margin: 0px;
-}
-
-
 .sidebar {
   width: auto;
   background-color: rgba(0,74,142,.9294117647058824);
@@ -62,58 +21,13 @@ form label {
   font-weight: bolder;
 }
 
-
-
-.simpleFooterContainer-213 {
-  background-color: rgb(3, 120, 124);
-  z-index: 13;
-  min-height: 48px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  height: auto;
-  overflow: hidden;
-  padding: 0px 24px;
-  display: none;
-}
-
-.simpleFooterContainer-207 {
-  background-color: rgb(3, 120, 124);
-  z-index: 13;
-  min-height: 48px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  height: auto;
-  overflow: hidden;
-  padding: 0px 24px;
-  display: none;
-}
-
-
-
-.simpleFooterContainer-220 {
-  background-color: rgb(3, 120, 124);
-  z-index: 13;
-  min-height: 48px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  height: auto;
-  overflow: hidden;
-  padding: 0px 24px;
-  display: none;
-}
-
 #form_metadata {
   margin: 2em;
   height: 100%;
   padding: 2em;
   /* border: groove; */
-  
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
   margin-top: 2em;
-
 }
 
 button {
@@ -159,6 +73,22 @@ select#permissions_user, select#permissions_group {
     vertical-align: top;
     width: calc(100% - 75px); /* adjust as needed */
   }
+}
+
+
+.loader2 {
+  /* position the loader */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* display the loading indicator */
+  border: 4px solid #f3f3f3; /* Light grey */
+  border-top: 4px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
 }
 
 
