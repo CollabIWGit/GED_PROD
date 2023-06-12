@@ -6,6 +6,11 @@ import {
 
 import * as $ from 'jquery';
 
+import {
+  SPHttpClient,
+  SPHttpClientResponse
+} from '@microsoft/sp-http';
+
 import 'jquery-ui';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -13,7 +18,7 @@ import { escape } from '@microsoft/sp-lodash-subset';
 
 import styles from './DocDetailsWebPart.module.scss';
 import * as strings from 'DocDetailsWebPartStrings';
-import { sp, List, IItemAddResult, UserCustomActionScope, Items, IItem, ISiteGroup, ISiteGroupInfo, Web, RoleDefinition, IRoleDefinition, ISiteUser } from "@pnp/sp/presets/all";
+import { sp, List, IItemAddResult, UserCustomActionScope, Items, IItem, ISiteGroup, ISiteGroupInfo, Web, RoleDefinition, IRoleDefinition, ISiteUser, PermissionKind } from "@pnp/sp/presets/all";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
@@ -127,268 +132,16 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async createWebpageInNewTab4(url) {
-    const htmlContent = `<html>
-        <head>
-            <title>Dynamic Webpage</title>
-            <style>
-                /* CSS styles */
+  //   import { sp } from "@pnp/sp";
+  // import "@pnp/sp/webs";
+  // import "@pnp/sp/lists";
+  // import "@pnp/sp/items";
 
-                body {
-                    margin: 0;
-                }
-        
-                #header {
-                    height: 105px;
-                    overflow: hidden;
-                    padding-top: 10px;
-                    padding-left: 10px;
-                    background-color: #14789057;
-                    position: relative;
-                }
-        
-                canvas {
-                    display: block;
-                }
-        
-                .pdfjs-toolbar {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    background-color: #f2f2f2;
-                    padding: 8px;
-                    z-index: 9999;
-                }
-        
-                .jumbotron {
-                    background-image: url('C:\\Users\\MusharafG\\Desktop\\prise-vue-au-grand-angle-seul-arbre-poussant-sous-ciel-assombri-pendant-coucher-soleil-entoure-herbe_181624-22807.avif');
-                    background-size: cover;
-                    background-position: center;
-                    padding: 2rem;
-                    margin-bottom: 2rem;
-                    border-radius: 0.3rem;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                    color: #fff;
-                }
-        
-                #loader {
-                    display: none;
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background-color: #f2f2f2;
-                    padding: 16px;
-                    border-radius: 4px;
-                }
-        
-                .container {
-                    max-width: 960px;
-                    margin: 0 auto;
-                    padding: 0 1rem;
-                }
+  // import { sp, PermissionKind } from '@pnp/sp';
+
+  // ...
 
 
-                #loader {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(255, 255, 255, 0.7);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 9999;
-                }
-            </style>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-            <script>
-                const url = '${url}';
-
-                function renderPDF() {
-                    const loader = document.getElementById("loaderPDF");
-                    loader.style.display = "block";
-
-                    const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-                    loadingTask.promise.then(function (pdf) {
-                        const numPages = pdf.numPages;
-                        const container = document.getElementById("documentViewer");
-
-                        function renderPage(pageNumber) {
-                            pdf.getPage(pageNumber).then(function (page) {
-                                const viewport = page.getViewport({ scale: 5.3 });
-                                const canvas = document.createElement("canvas");
-                                const context = canvas.getContext("2d");
-                                canvas.width = viewport.width;
-                                canvas.height = viewport.height;
-
-                                canvas.style.width = "100%";
-                                canvas.style.height = "auto";
-                                container.appendChild(canvas);
-
-                                page.render({ canvasContext: context, viewport: viewport }).promise.then(function () {
-                                    if (pageNumber < numPages) {
-                                        renderPage(pageNumber + 1); // Render the next page
-                                    } else {
-                                        loader.style.display = "none"; // Hide the loader when rendering is complete
-                                    }
-                                });
-                            });
-                        }
-
-                        renderPage(1);
-                    });
-                }
-
-                window.addEventListener("DOMContentLoaded", function () {
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-                    pdfRenderOptions = {
-                        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                        cMapPacked: true
-                    };
-
-                    renderPDF();
-                });
-
-                document.addEventListener("contextmenu", function (event) {
-                  event.preventDefault();
-               }); 
-
-
-            </script>
-        </head>
-        <body>
-        <div class="container">
-    
-            <div class="row">
-                <div id="header" style="
-                /* position: fixed; */
-                display: none;
-            " >
-    
-                    <a href="/">
-                        <img src="C:\Users\MusharafG\Downloads\logoGed-removebg-preview (1).png" alt=""/>
-                    </a>
-    
-        
-                </div>
-            </div>
-    
-            <div class="row">
-                <div id="content">
-                    <div id="main">
-    
-                        <!-- Viewer-->
-                        <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                            <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-    
-                            <div id="documentViewer" style="
-                            /* position: fixed; */
-                            top: 0;
-                            left: 0;
-                            width: 100%; /* Adjust the width to your preference */
-                            height: 100%; /* Adjust the height to your preference */
-                            overflow: auto;
-                        ">
-
-                        <div id="loaderPDF">Loading...</div>
-
-    
-    
-                            </div>
-                            
-                            
-                            </div>
-    
-    
-    
-                        </div>
-    
-                    </div>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>`;
-
-    const newTab = window.open("", "_blank");
-    newTab.document.open();
-    newTab.document.write(htmlContent);
-    newTab.document.close();
-  }
-
-  private async createWebpageInNewTab2(url) {
-    const htmlContent = `<html>
-      <head>
-        <title>MyGed PDF Viewer</title>
-        <style>
-          /* CSS styles */
-  
-          body {
-            margin: 0;
-          }
-  
-          #loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-          }
-  
-          .container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 0 1rem;
-          }
-        </style>
-      </head>
-      <body>
-        <div id="loader"></div>
-        <div class="container">
-          <iframe id="documentViewer" style="width: 100%; height: 100%; border: none;"></iframe>
-        </div>
-        <script>
-          const url = '${url}#toolbar=0';
-  
-          function renderPDF() {
-            const loader = document.getElementById("loader");
-            const documentViewer = document.getElementById("documentViewer");
-            loader.style.display = "block";
-  
-            documentViewer.src = url;
-  
-            documentViewer.onload = function () {
-              loader.style.display = "none"; // Hide the loader when rendering is complete
-            };
-  
-            documentViewer.contentWindow.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-          }
-  
-          window.addEventListener("DOMContentLoaded", function () {
-            renderPDF();
-          });
-        </script>
-      </body>
-    </html>`;
-  
-    const newTab = window.open("", "_blank");
-    newTab.document.open();
-    newTab.document.write(htmlContent);
-    newTab.document.close();
-  }
-
-  
-  
 
   private async getGroupsByName(graphClient: MSGraphClient, displayNameStartsWith: string): Promise<Group[]> {
     const allGroups: Group[] = [];
@@ -599,7 +352,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       const dateDownload = Date();
 
       // const textWatermark = 'UNCONTROLLED COPY - Downloaded on ' + dateDownload + ' .';
-     // const textWatermark = filigraneText + dateDownload + ' .';
+      // const textWatermark = filigraneText + dateDownload + ' .';
 
 
       const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
@@ -651,577 +404,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async createWebpageInIframe(url) {
-    // Create an iframe element
-    var iframe = document.createElement('iframe');
-
-    // Set attributes for the iframe
-    iframe.setAttribute('src', 'about:blank');
-    iframe.setAttribute('width', '35%');
-    iframe.setAttribute('height', '75%');
-
-    // Append the iframe to the document body
-    document.body.appendChild(iframe);
-
-    // Get the document object of the iframe
-    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-    // Create an HTML content for the webpage
-    var htmlContent = '<html><head><title>Dynamic Webpage</title>';
-
-    // Add pdf.js viewer CSS styles
-    htmlContent += '<style>body { margin: 0; } canvas { display: block; }</style>';
-
-    // Add pdf.js viewer script
-    //htmlContent += '<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>';
-    htmlContent += '<script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>';
-
-
-
-    // Add PDF rendering script
-    htmlContent += '<script>';
-    htmlContent += 'window.addEventListener("DOMContentLoaded", function() {';
-    htmlContent += `  var url = '${url}';`;
-    htmlContent += "pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';";
-
-
-    // Replace with the URL of your PDF file
-    htmlContent += '  pdfjsLib.getDocument(url).promise.then(function(pdf) {';
-    htmlContent += '    pdf.getPage(1).then(function(page) {';
-    htmlContent += '      var viewport = page.getViewport({ scale: 1.5 });';
-    htmlContent += '      var canvas = document.createElement("canvas");';
-    htmlContent += '      var context = canvas.getContext("2d");';
-    htmlContent += '      canvas.width = viewport.width;';
-    htmlContent += '      canvas.height = viewport.height;';
-    htmlContent += '      page.render({ canvasContext: context, viewport: viewport });';
-    htmlContent += '      document.body.appendChild(canvas);';
-    htmlContent += '    });';
-    htmlContent += '  });';
-    htmlContent += '});';
-    htmlContent += '</script>';
-
-    htmlContent += '</head><body></body></html>';
-
-    // Write the HTML content to the iframe document
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
-  }
-
-  private async createWebpageInIframe2(url) {
-
-    const pdfBytes = await this.generatePdfBytes2(url);
-    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    `;
-
-    const closeButton = document.createElement('button');
-    closeButton.textContent = 'Close';
-    closeButton.style.cssText = `
-      position: absolute;
-      top: 87px;
-      right: 130px;
-      padding: 5px 10px;
-      background-color: white;
-      border: none;
-      cursor: pointer;
-      font-size: large;
-    `;
-
-    overlay.appendChild(closeButton);
-
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = `
-      width: 50%;
-      height: 98%;
-    `;
-    iframe.src = 'about:blank';
-
-    overlay.appendChild(iframe);
-    document.body.appendChild(overlay);
-
-    closeButton.addEventListener('click', function () {
-      document.body.removeChild(overlay);
-    });
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-    // const htmlContent = `
-    //   <html>
-    //     <head>
-    //       <title>Dynamic Webpage</title>
-    //       <style>body { margin: 0; } canvas { display: block; width: 100%; }</style>
-    //       <script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>
-    //       <script>
-    //         window.addEventListener("DOMContentLoaded", function() {
-    //           pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
-    //           const url = '${url}';
-    //           pdfjsLib.getDocument(url).promise.then(function(pdf) {
-    //             const numPages = pdf.numPages;
-
-    //             for (let pageNumber = 1; pageNumber <= numPages; pageNumber++) {
-    //               pdf.getPage(pageNumber).then(function(page) {
-    //                 const viewport = page.getViewport({ scale: 5 });
-    //                 const canvas = document.createElement("canvas");
-    //                 const context = canvas.getContext("2d");
-    //                 canvas.width = viewport.width;
-    //                 canvas.height = viewport.height;
-    //                 canvas.style.width = "100%";
-    //                 canvas.style.height = "100%";
-    //                 page.render({ canvasContext: context, viewport: viewport });
-    //                 document.body.appendChild(canvas);
-    //               });
-    //             }
-    //           });
-
-    //           document.addEventListener("contextmenu", function(event) {
-    //             event.preventDefault();
-    //           });
-    //         });
-    //       </script>
-    //     </head>
-    //     <body></body>
-    //   </html>
-    // `;
-
-    //     const htmlContent = `
-    // <html>
-    //   <head>
-    //     <title>Dynamic Webpage</title>
-    //     <style>body { margin: 0; }</style>
-    //     <script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>
-    //     <script>
-    //       window.addEventListener("DOMContentLoaded", function() {
-    //         pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
-    //         const url = '${url}';
-    //         const container = document.createElement("div");
-    //         container.style.width = "100%";
-    //         container.style.height = "100%";
-    //         document.body.appendChild(container);
-
-    //         pdfjsLib.getDocument(url).promise.then(function(pdf) {
-    //           const numPages = pdf.numPages;
-
-    //           for (let pageNumber = 1; pageNumber <= numPages; pageNumber++) {
-    //             pdf.getPage(pageNumber).then(function(page) {
-    //               const viewport = page.getViewport({ scale: 1 });
-    //               const canvas = document.createElement("canvas");
-    //               const context = canvas.getContext("2d");
-    //               container.appendChild(canvas);
-
-    //               page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
-    //                 canvas.style.display = "block";
-    //                 canvas.style.margin = "0 auto";
-    //               });
-    //             });
-    //           }
-    //         });
-
-    //         document.addEventListener("contextmenu", function(event) {
-    //           event.preventDefault();
-    //         });
-    //       });
-    //     </script>
-    //   </head>
-    //   <body></body>
-    // </html>
-    // `;
-
-    // const htmlContent = `
-    // <html>
-    //   <head>
-    //     <title>Dynamic Webpage</title>
-    //     <style>
-    //       body { margin: 0; }
-    //       canvas { display: block; }
-    //     </style>
-    //     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
-    //     <script>
-    //       const url = '${url}';
-
-    //       function renderPDF() {
-    //         const loadingTask = pdfjsLib.getDocument(url);
-    //         loadingTask.promise.then(function(pdf) {
-    //           const numPages = pdf.numPages;
-    //           const container = document.createElement("div");
-    //           document.body.appendChild(container);
-
-    //           for (let pageNumber = 1; pageNumber <= numPages; pageNumber++) {
-    //             pdf.getPage(pageNumber).then(function(page) {
-    //               const viewport = page.getViewport({ scale: 3 });
-    //               const canvas = document.createElement("canvas");
-    //               const context = canvas.getContext("2d");
-    //               canvas.width = viewport.width;
-    //               canvas.height = viewport.height;
-    //               container.appendChild(canvas);
-
-    //               page.render({ canvasContext: context, viewport: viewport });
-    //             });
-    //           }
-    //         });
-    //       }
-
-    //       window.addEventListener("DOMContentLoaded", renderPDF);
-    //       document.addEventListener("contextmenu", function(event) {
-    //         event.preventDefault();
-    //       });
-    //     </script>
-    //   </head>
-    //   <body></body>
-    // </html>
-    // `;
-
-    //     const htmlContent = `
-    // <html>
-    //   <head>
-    //     <title>Dynamic Webpage</title>
-    //     <style>
-    //       body { margin: 0; }
-    //       canvas { display: block; }
-    //     </style>
-    //     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
-    //     <script>
-    //       const url = '${pdfUrl}';
-
-    //       function renderPDF() {
-    //         const loadingTask = pdfjsLib.getDocument(url);
-    //         loadingTask.promise.then(function(pdf) {
-    //           const numPages = pdf.numPages;
-    //           const container = document.createElement("div");
-    //           document.body.appendChild(container);
-
-    //           function renderPage(pageNumber) {
-    //             pdf.getPage(pageNumber).then(function(page) {
-    //               const viewport = page.getViewport({ scale: 4 });
-    //               const canvas = document.createElement("canvas");
-    //               const context = canvas.getContext("2d");
-    //               canvas.width = viewport.width;
-    //               canvas.height = viewport.height;
-    //               container.appendChild(canvas);
-
-    //               page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
-    //                 if (pageNumber < numPages) {
-    //                   renderPage(pageNumber + 1); // Render the next page
-    //                 }
-    //               });
-    //             });
-    //           }
-
-    //           renderPage(1); // Start rendering from the first page
-    //         });
-    //       }
-
-    //       window.addEventListener("DOMContentLoaded", function() {
-    //         pdfjsLib.getDocument(url).promise.then(renderPDF);
-    //       });
-
-    //       document.addEventListener("contextmenu", function(event) {
-    //         event.preventDefault();
-    //       });
-    //     </script>
-    //   </head>
-    //   <body></body>
-    // </html>
-    // `;
-
-
-    const htmlContent = `
-<html>
-  <head>
-    <title>Dynamic Webpage</title>
-    <style>
-      body { margin: 0; }
-      canvas { display: block; }
-      .pdfjs-toolbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: #f2f2f2;
-        padding: 8px;
-        z-index: 9999;
-      }
-
-      #loader {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: #f2f2f2;
-        padding: 16px;
-        border-radius: 4px;
-      }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.js"></script>
-    <script>
-
-
-      const url = '${url}';
-
-      function renderPDF() {
-
-        const loader = document.getElementById("loader");
-  loader.style.display = "block";
-
-        const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-        loadingTask.promise.then(function(pdf) {
-          const numPages = pdf.numPages;
-          const container = document.createElement("div");
-          document.body.appendChild(container);
-
-        
-
-          function renderPage(pageNumber) {
-            pdf.getPage(pageNumber).then(function(page) {
-              const viewport = page.getViewport({ scale: 5.3});
-              const canvas = document.createElement("canvas");
-              const context = canvas.getContext("2d");
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-
-              canvas.style.width = "100%"; 
-              canvas.style.height = "auto";
-              container.appendChild(canvas);
-
-              page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
-                if (pageNumber < numPages) {
-                  renderPage(pageNumber + 1); // Render the next page
-                }
-              });
-            });
-          }
-
-          renderPage(1);
-          loader.style.display = "none"; // Start rendering from the first page
-        });
-      }
-
-
-
-      window.addEventListener("DOMContentLoaded", function() {
-
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/build/pdf.worker.min.js";
-        pdfRenderOptions = {
-          // where cmaps are downloaded from
-          cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.12.313/cmaps/',
-          // The cmaps are compressed in the case
-          cMapPacked: true,
-          // any other options for pdfjsLib.getDocument.
-          // params: {}
-        }
-
-
-      //  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-        pdfjsLib.getDocument(url).promise.then(renderPDF);
-      });
-
-
-
-      document.addEventListener("contextmenu", function(event) {
-        event.preventDefault();
-      });
-    </script>
-  </head>
-  <body>
-  <div id="loader">Loading...</div>
-  
-  </body>
-</html>
-`;
-
-
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
-  }
-
-  // private async createWebpageInIframe3(url) {
-  //   const pdfBytes = await this.generatePdfBytes2(url);
-  //   const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-
-  //   const overlay = document.createElement('div');
-  //   overlay.style.cssText = `
-  //     position: fixed;
-  //     top: 0;
-  //     left: 0;
-  //     width: 100%;
-  //     height: 100%;
-  //     background-color: rgba(0, 0, 0, 0.5);
-  //     display: flex;
-  //     justify-content: center;
-  //     align-items: center;
-  //   `;
-
-  //   const closeButton = document.createElement('button');
-  //   closeButton.textContent = 'Close';
-  //   closeButton.style.cssText = `
-  //     position: absolute;
-  //     top: 87px;
-  //     right: 130px;
-  //     padding: 5px 10px;
-  //     background-color: white;
-  //     border: none;
-  //     cursor: pointer;
-  //     font-size: large;
-  //   `;
-
-  //   overlay.appendChild(closeButton);
-
-  //   const iframe = document.createElement('iframe');
-  //   iframe.style.cssText = `
-  //     width: 100%;
-  //     height: 100%;
-  //     border: none;
-  //   `;
-  //   iframe.src = 'about:blank';
-
-  //   overlay.appendChild(iframe);
-  //   document.body.appendChild(overlay);
-
-  //   closeButton.addEventListener('click', function () {
-  //     document.body.removeChild(overlay);
-  //   });
-
-  //   const iframeWindow = iframe.contentWindow || iframe.contentDocument.defaultView;
-  //   const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-  //   iframeWindow.addEventListener('DOMContentLoaded', function () {
-  //     const renderPDF = function () {
-  //       const loadingTask = pdfjsLib.getDocument(pdfUrl);
-  //       loadingTask.promise.then(function (pdf) {
-  //         const numPages = pdf.numPages;
-  //         const container = iframeDoc.createElement('div');
-  //         iframeDoc.body.appendChild(container);
-
-  //         function renderPage(pageNumber) {
-  //           pdf.getPage(pageNumber).then(function (page) {
-  //             const viewport = page.getViewport({ scale: 1 });
-  //             const canvas = iframeDoc.createElement('canvas');
-  //             const context = canvas.getContext('2d');
-  //             canvas.width = viewport.width;
-  //             canvas.height = viewport.height;
-  //             container.appendChild(canvas);
-
-  //             page.render({ canvasContext: context, viewport: viewport }).promise.then(function () {
-  //               if (pageNumber < numPages) {
-  //                 renderPage(pageNumber + 1); // Render the next page
-  //               }
-  //             });
-  //           });
-  //         }
-
-  //         renderPage(1); // Start rendering from the first page
-  //       });
-  //     };
-
-  //     iframeDoc.addEventListener('contextmenu', function (event) {
-  //       event.preventDefault();
-  //     });
-
-  //     const script = iframeDoc.createElement('script');
-  //     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js';
-  //     script.onload = function () {
-  //       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
-  //       renderPDF();
-  //     };
-
-  //     iframeDoc.head.appendChild(script);
-  //   });
-  // }
-
-
-  private async openPDFInIframe(url: string, filigraneText: string) {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    `;
-
-    const loader = document.createElement('div');
-    loader.style.cssText = `
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-    `;
-
-    const loaderText = document.createElement('div');
-    loaderText.style.cssText = `
-      font-size: 24px;
-      color: #fff;
-    `;
-    loaderText.innerText = 'Loading...';
-    loader.appendChild(loaderText);
-
-    overlay.appendChild(loader);
-
-    // const pdfBytes = await this.generatePdfBytes(url, filigraneText);
-    // const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-
-    const iframe = document.createElement('iframe');
-    iframe.src = `${url}#toolbar=0`;
-    iframe.style.cssText = `
-      border: none;
-      width: 100%;
-      height: 100%;
-      max-width: 1000px;
-      max-height: 90vh;
-    `;
-    // iframe.setAttribute('sandbox', 'allow-same-origin allow-popups allow-scripts');
-
-    iframe.addEventListener('load', () => {
-      loader.style.display = 'none';
-    });
-
-    iframe.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-    });
-
-    const closeButton = document.createElement('button');
-    closeButton.innerText = 'Close';
-    closeButton.style.cssText = `
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background-color: #fff;
-      border: none;
-      padding: 10px;
-      cursor: pointer;
-      font-size: 16px;
-    `;
-
-    closeButton.addEventListener('click', () => {
-      document.body.removeChild(overlay);
-    });
-
-    overlay.appendChild(iframe);
-    overlay.appendChild(closeButton);
-    document.body.appendChild(overlay);
-  }
 
   private async generatePdfBytes(fileUrl: string, filigraneText: string): Promise<Uint8Array> {
     try {
@@ -1266,25 +448,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       console.error('Failed to generate PDF bytes:', e);
       throw e;
     }
-  }
-
-
-  private async getChildrenById(id, items) {
-
-    const children = await sp.web.lists.getByTitle("Documents").items
-      .select("ID, Title, ParentID, inheriting")
-      .filter(`ParentID eq '${id}'`)
-      .get();
-
-    let result = [];
-
-    for (const child of children) {
-      result.push(child);
-      const subChildren = await this.getChildrenById(child.ID, items);
-      result = [...result, ...subChildren];
-    }
-
-    return result;
   }
 
   public async generateTable(groups: any, x) {
@@ -1500,51 +663,100 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
+
+
+  private differentiatePermissionLevels(highValue, lowValue) {
+    const permissionLevels = {
+      "Full Control": 4294967295,
+      "Design": 126,
+      "Edit": 124,
+      "Contribute": 104,
+      "Read": 1,
+      "Limited Access": 65,
+      "None": 0
+    };
+
+    const matchedLevels = [];
+    for (const level in permissionLevels) {
+      if ((highValue & permissionLevels[level]) === permissionLevels[level]) {
+        matchedLevels.push(level);
+      }
+    }
+
+    return matchedLevels;
+  }
+
+
+
+  public async getBasePermissions(listId: any, docId: any): Promise<any> {
+    try {
+      const requestUrl = `https://ncaircalin.sharepoint.com/sites/TestMyGed/_api/web/lists('${listId}')/items(${docId})/effectiveBasePermissions`;
+      const response = await this.context.spHttpClient.get(requestUrl, SPHttpClient.configurations.v1);
+
+      if (response.ok) {
+        const responseJSON = await response.json();
+
+        if (responseJSON != null && responseJSON.value != null) {
+          console.log("Effective Base Permissions:", responseJSON.value);
+          return responseJSON.value;
+        }
+      } else {
+        console.error("Error retrieving base permissions. Status:", response.status);
+      }
+    } catch (error) {
+      console.error("An error occurred:", error);
+    }
+
+    return null; // Return null in case of an error or when no permissions are found
+  }
+
+  public async getBasePermTest(siteUrl, listId, docId) {
+    try {
+      const url = `https://ncaircalin.sharepoint.com/sites/TestMyGed/_api/web/lists('${listId}')/items(${docId})/effectiveBasePermissions`;
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json;odata=verbose',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+
+      //  console.log("All Site Permissions:", permissions);
+
+      return data.value;
+    } catch (err) {
+      console.error(err);
+      return err.message;
+    }
+  }
+
+  public async getBasePermTest2(listId, docId) {
+    try {
+      // Configure the SharePoint context using the site URL
+
+
+      // Retrieve the effective base permissions for the specific item
+      const item = await sp.web.lists.getById(listId).items.getById(docId).effectiveBasePermissions.get();
+
+      const high = item.High;
+      const low = item.Low;
+
+      return { high, low };
+    } catch (err) {
+      console.error(err);
+      return err.message;
+    }
+  }
+
+
+
   public async render(): Promise<void> {
-
-    Promise.all([
-      this.requireLibraries(),
-      SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
-      SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
-      SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
-      SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'),
-    ]);
-
-    // Promise.all([
-    //   this.requireLibraries(),
-    //   new Promise((resolve, reject) => {
-    //     const script = document.createElement('script');
-    //     script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js';
-    //     script.onload = resolve;
-    //     script.onerror = reject;
-    //     document.head.appendChild(script);
-    //   }),
-    //   new Promise((resolve, reject) => {
-    //     const script = document.createElement('script');
-    //     script.src = 'https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js';
-    //     script.onload = resolve;
-    //     script.onerror = reject;
-    //     document.head.appendChild(script);
-    //   }),
-    //   new Promise((resolve, reject) => {
-    //     const script = document.createElement('script');
-    //     script.src = 'https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js';
-    //     script.onload = resolve;
-    //     script.onerror = reject;
-    //     document.head.appendChild(script);
-    //   }),
-    //   new Promise((resolve, reject) => {
-    //     const script = document.createElement('script');
-    //     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js';
-    //     script.onload = resolve;
-    //     script.onerror = reject;
-    //     document.head.appendChild(script);
-    //   }),
-    // ]);
-    
-    
-    
-    
 
     this.domElement.innerHTML = `
 
@@ -2003,7 +1215,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     </div>
     `;
 
-     this.requireLibraries();
+    Promise.all([
+      //   this.requireLibraries(),
+      SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
+      SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
+      SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
+      SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'),
+    ]);
+
+    // this.requireLibraries();
 
     const starIcon = document.querySelector(".star-icon") as HTMLElement;
 
@@ -2039,62 +1259,133 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       .filter(`FolderID eq '${docId}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
       .get();
 
-    {
-      try {
-        const isAdmin = await this.checkIfUserIsAdmin(this.graphClient);
-        const isRefUser = isAdmin || await this.checkIfUserIsRefUser(this.graphClient);
-        const isGuestUser = isAdmin || await this.checkIfUserIsGuestUser(this.graphClient);
+    // const basePermissions = await this.getCurrentUserPermissionsForItem(items[0].ID, 'cf8c4d1b-7b53-4dfe-b602-998604e58b0f');
+    // console.log("High", basePermissions.High);
+    // console.log("Low", basePermissions.Low);
 
-        if (isAdmin) {
-          console.log('User is an administrator.');
-          $("#input_number, #input_type_doc").prop('disabled', false);
+    // const x = await this.getBasePermissions('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', items[0].ID);
 
-          // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    await this.getBasePermTest2('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', items[0].ID)
+      .then(async result => {
+        // Handle the result
+        console.log('High Value:', result.high);
+        console.log('Low Value:', result.low);
 
-          // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+        const high = result.high;
+        const low = result.low;
+
+        //        full control -> high : 2147483647
+        //                 low : 4294967295
+
+        // edit -> high: 432
+        //         low : 1011030767
+
+        // read --> high: 176
+        //          low: 138612833
+
+
+
+        if (high == 2147483647 && low == 4294967295) { //full control
+          console.log("You have full control!");
           const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
           await this.generateTable(permissions, Number(docId));
           console.log("PERMISSIONS ON ITEM", permissions);
 
-        } else if (isRefUser) {
-          console.log('User is a MYGED_REF user.');
-          $("#access").css('display', "none");
+          if (items.length > 0 && items[0] && items[0].inheriting && items[0].inheriting !== "NO") {
 
+            $("#inherit").css("display", "block");
+          }
 
-        } else if (isGuestUser) {
-          console.log('User is a MYGED_GUEST user.');
-          $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
+          try {
+            await this.getSiteGroups(),
+              await this.getSiteGroups_notif(),
+              await this.getSiteUsers();
+          }
+          catch (err) {
+            console.log(err.message);
 
-          $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
-
-
-        } else {
-
-          $("#input_number, #input_type_doc").prop('disabled', false);
-
-          console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
-
-          // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-          const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-
-          await this.generateTable(permissions, Number(docId));
-          console.log("PERMISSIONS ON ITEM", permissions);
+          }
 
         }
-      } catch (error) {
-        console.log('An error occurred while checking user permissions:', error);
-      }
+        else if (high == 432 && low == 1011030767) { //edit
+
+          $("#access").css('display', "none");
+
+          await this.getSiteUsers();
+          await this.getSiteGroups_notif()
+        }
+        else if (high == 176 && low == 138612833) { //read
+          $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
+
+          $("#input_description, #input_keywords, #input_revision, #file_ammendment_update, #check1, #check2").prop('disabled', true);
+
+        }
+
+        else {
+
+        }
+      })
+      .catch(error => {
+        // Handle any errors
+        console.error('Error:', error);
+      });
+
+    //  console.log("RIGHTS", x);
+
+    // {
+    //   try {
+    //     const isAdmin = await this.checkIfUserIsAdmin(this.graphClient);
+    //     const isRefUser = isAdmin || await this.checkIfUserIsRefUser(this.graphClient);
+    //     const isGuestUser = isAdmin || await this.checkIfUserIsGuestUser(this.graphClient);
+
+    //     if (isAdmin) {
+    //       console.log('User is an administrator.');
+    //       $("#input_number, #input_type_doc").prop('disabled', false);
+
+    //       // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+    //       // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //       const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+    //       await this.generateTable(permissions, Number(docId));
+    //       console.log("PERMISSIONS ON ITEM", permissions);
+
+    //     } else if (isRefUser) {
+    //       console.log('User is a MYGED_REF user.');
+    //       $("#access").css('display', "none");
+
+
+    //     } else if (isGuestUser) {
+    //       console.log('User is a MYGED_GUEST user.');
+    //       $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
+
+    //       $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
+
+
+    //     } else {
+
+    //       $("#input_number, #input_type_doc").prop('disabled', false);
+
+    //       console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
+
+    //       // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //       const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+    //       await this.generateTable(permissions, Number(docId));
+    //       console.log("PERMISSIONS ON ITEM", permissions);
+
+    //     }
+    //   } catch (error) {
+    //     console.log('An error occurred while checking user permissions:', error);
+    //   }
 
 
 
-    }
+    // }
 
 
-    if (items.length > 0 && items[0] && items[0].inheriting && items[0].inheriting !== "NO") {
 
-      $("#inherit").css("display", "block");
-    }
 
 
     const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
@@ -2171,15 +1462,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
 
-    try {
-      await this.getSiteGroups(),
-        await this.getSiteGroups_notif(),
-        await this.getSiteUsers();
-    }
-    catch (err) {
-      console.log(err.message);
 
-    }
     //update document
 
 
@@ -3176,22 +2459,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           });
       });
 
-      var checkbox_fili = document.getElementById("check1") as HTMLInputElement;
-      var checkbox_download = document.getElementById("check2") as HTMLInputElement;
+    var checkbox_fili = document.getElementById("check1") as HTMLInputElement;
+    var checkbox_download = document.getElementById("check2") as HTMLInputElement;
 
-      if(itemDoc[0].IsFiligrane == "YES"){
-        checkbox_fili.checked = true;
-      }
-      else{
-        checkbox_fili.checked = false;
-      }
+    if (itemDoc[0].IsFiligrane == "YES") {
+      checkbox_fili.checked = true;
+    }
+    else {
+      checkbox_fili.checked = false;
+    }
 
-      if(itemDoc[0].IsDownloadable == "YES"){
-        checkbox_download.checked = true;
-      }
-      else{
-        checkbox_download.checked = false;
-      }
+    if (itemDoc[0].IsDownloadable == "YES") {
+      checkbox_download.checked = true;
+    }
+    else {
+      checkbox_download.checked = false;
+    }
 
 
 
@@ -3251,7 +2534,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       else {
 
 
-       // create a div element to blur the screen
+        // create a div element to blur the screen
         const blurDiv = document.createElement('div');
         blurDiv.classList.add('blur');
         document.body.appendChild(blurDiv);
@@ -3263,11 +2546,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
         try {
           //await this.openPDFInIframe(url, 'UNCONTROLLED COPY - Downloaded on: ');
-         // window.open(`${url}`, '_blank');
+          // window.open(`${url}`, '_blank');
 
           await this.createWebpageInNewTab(url, itemDoc[0].filename);
-         // await this.createWebpageInIframe2(url);
-         // await this.createWebpageInNewTab2(url);
+          // await this.createWebpageInIframe2(url);
+          // await this.createWebpageInNewTab2(url);
 
         } finally {
           // remove the loader and the blur elements
@@ -3336,7 +2619,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     // Download the attachment
     $("#download_doc").click(async (e) => {
       const user = await sp.web.currentUser();
-      if(itemDoc[0].IsFiligrane === "NO"){
+      if (itemDoc[0].IsFiligrane === "NO") {
         await this.downloadDocWithoutFili(url, pdfNameDownload, itemDoc[0].FolderID);
       }
 
@@ -3510,20 +2793,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       color: white;
       `;
 
-  //     const mediaQuery = window.matchMedia('(max-width: 600px)');
-  //     if (mediaQuery.matches) {
-  //       closeButton.style.cssText += `
-  //       position: absolute;
-  //       bottom: 3px;
-  //       right: 19px;
-  //       padding: 5px 10px;
-  //       background-color: darkblue;
-  //       border: none;
-  //       cursor: pointer;
-  //       font-size: smaller;
-  //       color: white;
-  // `;
-  //     }
+      //     const mediaQuery = window.matchMedia('(max-width: 600px)');
+      //     if (mediaQuery.matches) {
+      //       closeButton.style.cssText += `
+      //       position: absolute;
+      //       bottom: 3px;
+      //       right: 19px;
+      //       padding: 5px 10px;
+      //       background-color: darkblue;
+      //       border: none;
+      //       cursor: pointer;
+      //       font-size: smaller;
+      //       color: white;
+      // `;
+      //     }
 
       overlay.appendChild(closeButton);
 
@@ -3699,16 +2982,16 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     var checkbox_fili = document.getElementById("check1") as HTMLInputElement;
     var filivalue = "NO";
-    
+
     var checkbox_download = document.getElementById("check2") as HTMLInputElement;
     var download_value = "NO";
-    
+
     if (checkbox_fili.checked === true) {
       filivalue = "YES";
     } else {
       filivalue = "NO";
     }
-    
+
     if (checkbox_download.checked === true) {
       download_value = "YES";
     } else {
@@ -4080,10 +3363,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         $('#tbl_doc_versions tbody').on('click', '.btn_download_doc', async (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
 
-          if(data[7] === "NO"){
+          if (data[7] === "NO") {
             await this.downloadDocWithoutFili(data[2], data[5], data[6]);
           }
-          else{
+          else {
             await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
           }
         });
@@ -4093,6 +3376,28 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
 
   }
+
+  private async getCurrentUserPermissionsForItem(itemId, listName) {
+    try {
+      // Get the item and its effective permissions for the current user
+      const item = await sp.web.lists.getByTitle(listName).items.getById(itemId).select('EffectiveBasePermissions').get();
+
+      // Extract permission values from XML using regular expressions
+
+
+      // Check if permission values were found
+
+      // Return the permissions values as an object
+      return item[0].EffectiveBasePermissions;
+
+
+    } catch (error) {
+      console.error('Error getting user permissions:', error);
+      return null;
+    }
+  }
+
+
 
   public async checkIfUserIsAdmin(graphClient: MSGraphClient): Promise<boolean> {
     try {
@@ -4235,7 +3540,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     // const allNotif: any[] = await sp.web.lists.getByTitle('Notifications').items.select("ID, Title, group_person, revisionDate, toNotify, webLink, description, FolderID, LoginName").filter("FolderID eq '" + folderID.toString() + "'").getAll();
     const allNotif: any[] = await sp.web.lists.getByTitle('toNotify').items.select("ID, Title, groupe_name").filter("Title eq '" + docTitle.toString() + "'").getAll();
 
-    
+
     await Promise.all(allNotif.map(async (notif) => {
 
       html += `
@@ -4318,7 +3623,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       if (result.UserPrincipalName != null) {
 
-        console.log("USER", result.Id, result.Email);
+        //   console.log("USER", result.Id, result.Email);
         // if(result.IsFolder == "TRUE"){
         // console.log("SELECT_FOLDERS", result.Title);
         var opt = document.createElement('option');

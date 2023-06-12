@@ -223,6 +223,24 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   }
 
 
+  public async getBasePermTest2(listId, docId) {
+    try {
+      // Configure the SharePoint context using the site URL
+
+
+      // Retrieve the effective base permissions for the specific item
+      const item = await sp.web.lists.getById(listId).items.getById(docId).effectiveBasePermissions.get();
+
+      const high = item.High;
+      const low = item.Low;
+
+      return { high, low };
+    } catch (err) {
+      console.error(err);
+      return err.message;
+    }
+  }
+
   private async _getLinks3(sp) {
     // Retrieve all items from the "Documents" list with the "IsFolder" field set to "TRUE"
     const allItems: any[] = await sp.web.lists.getByTitle('Documents').items
@@ -603,13 +621,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   async componentDidMount() {
 
-   // var graphClient: MSGraphClient;
+    // var graphClient: MSGraphClient;
 
-   this.props.context.msGraphClientFactory
-   .getClient()
-   .then((client: MSGraphClient) => {
-     this.graphClient = client;
-   });
+    this.props.context.msGraphClientFactory
+      .getClient()
+      .then((client: MSGraphClient) => {
+        this.graphClient = client;
+      });
 
     var x = this.getItemId();
 
@@ -664,54 +682,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     document.head.appendChild(style);
 
 
-
-    // const loader = document.createElement("div");
-    // loader.id = "loader_else";
-    // loader.style.display = "none";
-    // loader.style.position = "fixed";
-    // loader.style.top = '0';
-    // loader.style.left = '0';
-    // loader.style.width = "100%";
-    // loader.style.height = "100%";
-    // loader.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-    // loader.style.zIndex = "9999";
-
-    // // Create the spinner element
-    // const image = document.createElement("img");
-    // // image.src = "https://ncaircalin.sharepoint.com/:i:/r/sites/TestMyGed/SiteAssets/images/flower.png?csf=1&web=1&e=hGMN6k";
-    // image.src = "https://ncaircalin.sharepoint.com/:i:/r/sites/TestMyGed/SiteAssets/images/logoGed.png?csf=1&web=1&e=CTrOpq";
-
-    // image.alt = "Loading...";
-    // image.style.position = "absolute";
-    // image.style.top = "50%";
-    // image.style.left = "50%";
-    // image.style.transform = "translate(-50%, -50%)";
-    // loader.appendChild(image);
-
-    // // // Create the loading text element
-    // // const loadingText = document.createElement("p");
-    // // loadingText.innerText = "Loading...";
-    // // loadingText.style.marginTop = "1em";
-    // // loadingText.style.color = "white";
-    // // loader.appendChild(loadingText);
-
-    // // Create the blur element
-    // const blur = document.createElement("div");
-    // blur.id = "blur";
-    // blur.style.position = "fixed";
-    // blur.style.top = "0";
-    // blur.style.left = "0";
-    // blur.style.width = "100%";
-    // blur.style.height = "100%";
-    // blur.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
-    // blur.style.zIndex = "9998";
-    // // blur.style.backdropFilter = "blur(4px)";
-
-    // // Display the loader and blur elements
-    // document.body.appendChild(blur);
-    // document.body.appendChild(loader);
-    // loader.style.display = "flex";
-
     var value2 = 'TRUE';
 
     const folderInfo = await sp.web.lists.getByTitle('Documents').items
@@ -722,43 +692,75 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     console.log("LOADED");
 
-    try {
-      const isAdmin = await this.checkIfUserIsAdmin(this.graphClient);
-      const isRefUser = isAdmin || await checkIfUserIsRefUser(this.graphClient);
-      const isGuestUser = isAdmin || await checkIfUserIsGuestUser(this.graphClient);
+    await this.getBasePermTest2('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', folderInfo[0].ID)
+      .then(async result => {
+        // Handle the result
+        console.log('High Value:', result.high);
+        console.log('Low Value:', result.low);
 
-      if (isAdmin) {
-        console.log('User is an administrator.');
-        // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+        const high = result.high;
+        const low = result.low;
 
-        const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+        if (high == 2147483647 && low == 4294967295) { //full control
+          console.log("You have full control!");
+          const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+          await this.generateTable(permissions, Number(x));
+       
+        }
+        else if (high == 432 && low == 1011030767) { //edit
+          $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder").css("display", "none");
+        }
+        else if (high == 176 && low == 138612833) { //read
+          $("#nav").css("display", "none");
+        }
 
-        await this.generateTable(permissions, Number(x));
-        console.log("PERMISSIONS ON ITEM", permissions);
+        else {
 
-      } else if (isRefUser) {
-        console.log('User is a MYGED_REF user.');
-        $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder").css("display", "none");
-
-
-      } else if (isGuestUser) {
-        console.log('User is a MYGED_GUEST user.');
-        $("#nav").css("display", "none");
+        }
+      })
+      .catch(error => {
+        // Handle any errors
+        console.error('Error:', error);
+      });
 
 
-      } else {
+    // try {
+    //   const isAdmin = await this.checkIfUserIsAdmin(this.graphClient);
+    //   const isRefUser = isAdmin || await checkIfUserIsRefUser(this.graphClient);
+    //   const isGuestUser = isAdmin || await checkIfUserIsGuestUser(this.graphClient);
 
-        console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
-        $("#nav").css("display", "block");
+    //   if (isAdmin) {
+    //     console.log('User is an administrator.');
+    //     // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
-        const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-        await this.generateTable(permissions, Number(x));
-        console.log("PERMISSIONS ON ITEM", permissions);
+    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
-      }
-    } catch (error) {
-      console.log('An error occurred while checking user permissions:', error);
-    }
+    //     await this.generateTable(permissions, Number(x));
+    //     console.log("PERMISSIONS ON ITEM", permissions);
+
+    //   } else if (isRefUser) {
+    //     console.log('User is a MYGED_REF user.');
+    //     $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder").css("display", "none");
+
+
+    //   } else if (isGuestUser) {
+    //     console.log('User is a MYGED_GUEST user.');
+    //     $("#nav").css("display", "none");
+
+
+    //   } else {
+
+    //     console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
+    //     $("#nav").css("display", "block");
+
+    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //     await this.generateTable(permissions, Number(x));
+    //     console.log("PERMISSIONS ON ITEM", permissions);
+
+    //   }
+    // } catch (error) {
+    //   console.log('An error occurred while checking user permissions:', error);
+    // }
 
     async function checkIfUserIsRefUser(graphClient: MSGraphClient): Promise<boolean> {
       try {
@@ -807,12 +809,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
       loader.style.display = "none";
 
-
-
-
-      //var y = this.getUserGroups(this.graphClient);
-
-      // console.log("AD GROUP DNS KI MO ETER", y);
     }
 
     else {
@@ -868,24 +864,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async add_permission_group2(group_name: string, permission: any, id: any, foldertitle: any, folderid: any, inherit: any, principleIdOfGroup: any) {
 
-    //add permission user
 
-    // const group: any = await sp.web.siteGroups.getByName(group_name);
-
-    // console.log("GROUP TESTER SA", group);
-
-    // const groups1: any = await sp.web.siteGroups.get();
-    // const filteredGroups: ISiteGroupInfo[] = groups1.filter(group => group.LoginName === group_name);
-
-
-    // // console.log("USERS FOR PERMISSION", group_name);
 
     try {
 
       var x = await this.getChildrenById(id, []);
 
-      // await Promise.all(group_name.map(async (email) => {
-      //  const user: any = await sp.web.siteUsers.getByEmail(email)();
       await sp.web.lists.getByTitle("AccessRights").items.add({
         Title: foldertitle.toString(),
         groupName: group_name,
@@ -935,7 +919,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     for (const child of children) {
       result.push(child);
-      //  const subChildren = await this.getChildrenById(child.ID, items);
       const subChildren = await this.getChildrenById(child.FolderID, items);
 
       result = [...result, ...subChildren];
@@ -2277,7 +2260,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     }
   }
 
-
   private async createWebpageInIframe2(url, filename: any) {
 
     // const encodedUrl = encodeURIComponent("https://ncaircalin.sharepoint.com/sites/TestMyGed/Lists/Documents/Attachments/27935/MANUEL%20ENTREPRISE%20-%20Edt7%20-%20Amdt8%20-%20COMPLET.pdf");
@@ -2412,7 +2394,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     newTab.document.write(htmlContent);
     newTab.document.close();
   }
-
 
   private async createWebpageInNewTab3(url) {
     const htmlContent = `<html>
@@ -3340,7 +3321,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   <nav aria-label="breadcrumb" id='nav'>
                     <ul className="breadcrumb" id="folder_nav">
                       <li className="breadcrumb-item" id="editFolder"><a style={{ color: '#0d6efd' }} title="Mettre à jour le dossier" role="button" onClick={async (event: React.MouseEvent<HTMLElement>) => { await this.load_folders(); $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "block"); $("#doc_details_add").css("display", "none"); }}><FontAwesomeIcon icon={faEdit} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
-                      <li className="breadcrumb-item"><a style={{ color: '#0d6efd' }} title="Créer un document" role="button" id='add_document' onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "block"); }}><FontAwesomeIcon icon={faFile} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
+                      <li className="breadcrumb-item" id="ajouteDoc"><a style={{ color: '#0d6efd' }} title="Créer un document" role="button" id='add_document' onClick={(event: React.MouseEvent<HTMLElement>) => { $("#access_rights_form").css("display", "none"); $("#alert_0_doc").css("display", "none"); $("#subfolders_form").css("display", "none"); $("#edit_details").css("display", "none"); $("#doc_details_add").css("display", "block"); }}><FontAwesomeIcon icon={faFile} className="fa-icon fa-2x"></FontAwesomeIcon></a></li>
                       <li className="breadcrumb-item" id="accesFolder"><a style={{ color: '#0d6efd' }} title="Autorisation sur le dossier" role="button"
                         onClick={async (event: React.MouseEvent<HTMLElement>) => {
 
@@ -3853,26 +3834,19 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
     var value1 = "TRUE";
-
     var drp_folders = document.getElementById("select_folders");
 
     // const allItems: any = await sp.web.lists.getByTitle('Documents').items.getAll(),
 
     const all_folders: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
 
-
-    // console.log("ALL FOLDERS", all_folders.length);
-
     folders = all_folders;
 
     folders.forEach((result: any) => {
-      // if(result.IsFolder == "TRUE"){
-      // console.log("SELECT_FOLDERS", result.Title);
       var opt = document.createElement('option');
       opt.appendChild(document.createTextNode(result.Title));
       opt.value = result.FolderID + "_" + result.Title;
       drp_folders.appendChild(opt);
-      // }
 
     });
 
@@ -3887,20 +3861,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     const users1: any = await sp.web.siteUsers();
 
     users = users1;
-    //console.log('SITEUSERSSSS ++++>', users1);
 
     users.forEach((result: ISiteUserInfo) => {
 
       if (result.UserPrincipalName != null) {
 
         console.log("USER", result.Id, result.Email);
-        // if(result.IsFolder == "TRUE"){
-        // console.log("SELECT_FOLDERS", result.Title);
         var opt = document.createElement('option');
         opt.appendChild(document.createTextNode(result.Email));
         opt.value = result.Email;
         drp_users.appendChild(opt);
-        // }
       }
 
     });
@@ -3984,7 +3954,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     }
 
   }
-
 
   private async addSubfolders(item: ITreeItem) {
 
@@ -4140,25 +4109,43 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   private renderCustomTreeItem(item: ITreeItem): JSX.Element {
 
 
-    const checkifUserIsAdmin = async (graphClient: MSGraphClient): Promise<string[]> => {
 
-      if (!graphClient) {
-        return Promise.resolve([]);
+    const checkIfUserIsAdmin = async (graphClient: MSGraphClient): Promise<boolean> => {
+      try {
+        const groups = await graphClient.api('/me/transitiveMemberOf/microsoft.graph.group?$count=true&$top=999').get();
+        const groupList = groups.value;
+        const isAdmin = groupList.some(group => group.displayName === 'MYGED_ADMIN');
+        const isRefUser = groupList.some(group => group.displayName.startsWith('MYGED_REF'));
+        const isGuestUser = groupList.some(group => group.displayName.startsWith('MYGED_GUEST'));
+        return isAdmin || isRefUser || isGuestUser;
+      } catch (error) {
+        console.log(error);
+        return false;
       }
+    }
 
-      return new Promise<string[]>((resolve, reject) => {
-        graphClient.api(`/me/transitiveMemberOf/microsoft.graph.group?$count=true&$top=999`).get((errorGroup, groups: any, rawResponseGroup?: any) => {
-          if (errorGroup) {
-            console.log(errorGroup);
-            return reject(errorGroup);
-          }
+    const checkIfUserIsRefUser = async (graphClient: MSGraphClient): Promise<boolean> => {
+      try {
+        const groups = await graphClient.api('/me/transitiveMemberOf/microsoft.graph.group?$count=true&$top=999').get();
+        const groupList = groups.value;
+        const isRefUser = groupList.some(group => group.displayName.startsWith('MYGED_REF'));
+        return isRefUser;
+      } catch (error) {
+        console.log(error);
+        return false;
+      }
+    }
 
-          const groupList = groups.value;
-          console.log("ALL THE AD GROUPS", groupList);
-
-          resolve(groupList);
-        });
-      });
+    const checkIfUserIsGuestUser = async (graphClient: MSGraphClient): Promise<boolean> => {
+      try {
+        const groups = await graphClient.api('/me/transitiveMemberOf/microsoft.graph.group?$count=true&$top=999').get();
+        const groupList = groups.value;
+        const isGuestUser = groupList.some(group => group.displayName.startsWith('MYGED_GUEST'));
+        return isGuestUser;
+      } catch (error) {
+        console.log(error);
+        return false;
+      }
     }
 
     const generatePdfBytes = async (fileUrl: string, filigraneText: string): Promise<Uint8Array> => {
@@ -5408,2383 +5395,30 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       }
     }
 
-    const getAllGroups = async (siteUrl) => {
-      const queryUrl = `${siteUrl}/_api/web/siteusers?$expand=groups&$select=Id,LoginName,Title,Email,IsSiteAdmin,Groups/Id,Groups/Title&$filter=PrincipalType%20eq%204`;
+    const getBasePermTest2 = async (listId, docId) => {
       try {
-        const response = await fetch(queryUrl, { method: "GET", headers: { "Accept": "application/json;odata=verbose" } });
-        const data = await response.json();
-        const siteGroups = data.d.results.filter((user: any) => {
-          return user.Groups.results.some((group: any) => {
-            return group.Title.startsWith('MYGED_');
-          });
-        });
-        return siteGroups;
-      } catch (error) {
-        console.log(`Error occurred while fetching site groups: ${error}`);
-        return [];
+        // Configure the SharePoint context using the site URL
+
+        // Retrieve the effective base permissions for the specific item
+        const item = await sp.web.lists.getById(listId).items.getById(docId).effectiveBasePermissions.get();
+
+        const high = item.High;
+        const low = item.Low;
+
+        return { high, low };
+      } catch (err) {
+        console.error(err);
+        return err.message;
       }
-
     }
-
-    const createWebpageInNewTab2222 = async (url) => {
-      // const pdfBytes = await this.generatePdfBytes2(url);
-      // const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-
-      const htmlContent = `
-        <html>
-          <head>
-            <title>Dynamic Webpage</title>
-            <style>
-              body { margin: 0; }
-              canvas { display: block; }
-              .pdfjs-toolbar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background-color: #f2f2f2;
-                padding: 8px;
-                z-index: 9999;
-              }
-    
-              #loader {
-                display: none;
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background-color: #f2f2f2;
-                padding: 16px;
-                border-radius: 4px;
-              }
-            </style>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-            <script>
-              const url = '${url}';
-    
-              function renderPDF() {
-                const loader = document.getElementById("loader");
-                loader.style.display = "block";
-    
-                const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-                loadingTask.promise.then(function(pdf) {
-                  const numPages = pdf.numPages;
-                  const container = document.createElement("div");
-                  document.body.appendChild(container);
-    
-                  function renderPage(pageNumber) {
-                    pdf.getPage(pageNumber).then(function(page) {
-                      const viewport = page.getViewport({ scale: 5.3 });
-                      const canvas = document.createElement("canvas");
-                      const context = canvas.getContext("2d");
-                      canvas.width = viewport.width;
-                      canvas.height = viewport.height;
-    
-                      canvas.style.width = "100%"; 
-                      canvas.style.height = "auto";
-                      container.appendChild(canvas);
-    
-                      page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
-                        if (pageNumber < numPages) {
-                          renderPage(pageNumber + 1); // Render the next page
-                        }
-                      });
-                    });
-                  }
-    
-                  renderPage(1);
-                  loader.style.display = "none"; // Start rendering from the first page
-                });
-              }
-    
-              window.addEventListener("DOMContentLoaded", function() {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-                pdfRenderOptions = {
-                  cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                  cMapPacked: true
-                };
-    
-                pdfjsLib.getDocument(url).promise.then(renderPDF);
-              });
-    
-              document.addEventListener("contextmenu", function(event) {
-                event.preventDefault();
-              });
-            </script>
-          </head>
-          <body>
-            <div id="loader">Loading...</div>
-          </body>
-        </html>
-      `;
-
-      const newTab = window.open('', '_blank');
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab3 = async (url) => {
-      const htmlContent = `
-
-      <html>
-      
-      <head>
-          <title>MyGed Viewer</title>
-          <style>
-              body {
-                  margin: 0;
-              }
-      
-              #header {
-                  height: 105px;
-                  overflow: hidden;
-                  padding-top: 10px;
-                  padding-left: 10px;
-                  background-color: #14789057;
-                  position: relative;
-              }
-      
-              canvas {
-                  display: block;
-              }
-      
-              .pdfjs-toolbar {
-                  position: fixed;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  background-color: #f2f2f2;
-                  padding: 8px;
-                  z-index: 9999;
-              }
-      
-              .jumbotron {
-                  background-image: url('https://ncaircalin.sharepoint.com/:i:/r/sites/TestMyGed/SiteAssets/images/logoGed.png?csf=1&web=1&e=XFFLUD');
-                  background-size: cover;
-                  background-position: center;
-                  padding: 2rem;
-                  margin-bottom: 2rem;
-                  border-radius: 0.3rem;
-                  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                  color: #fff;
-              }
-      
-              #loader {
-                  display: none;
-                  position: fixed;
-                  top: 50%;
-                  left: 50%;
-                  transform: translate(-50%, -50%);
-                  background-color: #f2f2f2;
-                  padding: 16px;
-                  border-radius: 4px;
-              }
-      
-              .container {
-                  max-width: 960px;
-                  margin: 0 auto;
-                  padding: 0 1rem;
-              }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-          const url = '${url}';
-      
-              function renderPDF() {
-                            const loader = document.getElementById("loader");
-                            loader.style.display = "block";
-        
-                            const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-                            loadingTask.promise.then(function (pdf) {
-                                const numPages = pdf.numPages;
-                                const container = document.getElementById("documentViewer");
-        
-                                function renderPage(pageNumber) {
-                                    pdf.getPage(pageNumber).then(function (page) {
-                                        const viewport = page.getViewport({ scale: 4.5 });
-                                        const canvas = document.createElement("canvas");
-                                        const context = canvas.getContext("2d");
-                                        canvas.width = viewport.width;
-                                        canvas.height = viewport.height;
-        
-                                        canvas.style.width = "100%";
-                                        canvas.style.height = "auto";
-                                        container.appendChild(canvas);
-        
-                                        page.render({ canvasContext: context, viewport: viewport }).promise.then(function () {
-                                            if (pageNumber < numPages) {
-                                                renderPage(pageNumber + 1); // Render the next page
-                                            }
-                                        });
-                                    });
-                                }
-        
-                                renderPage(1);
-                                loader.style.display = "none"; // Start rendering from the first page
-                            });
-                        }
-      
-      
-              window.addEventListener("DOMContentLoaded", function () {
-                  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-                  pdfRenderOptions = {
-                      cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                      cMapPacked: true
-                  };
-      
-                  pdfjsLib.getDocument(url).promise.then(renderPDF);
-              });
-      
-            document.addEventListener("contextmenu", function(event) {
-              event.preventDefault();
-            });
-          </script>
-      </head>
-      
-      <body>
-          <div id="loader">Loading...</div>
-          <div class="container">
-      
-              <div class="row">
-                  <div id="header" style="
-                  /* position: fixed; */
-                  display: none;
-              " >
-      
-                      <a href="/">
-                          <img src="C:\Users\MusharafG\Downloads\logoGed-removebg-preview (1).png" alt=""/>
-                      </a>
-      
-          
-                  </div>
-              </div>
-      
-              <div class="row">
-                  <div id="content">
-                      <div id="main">
-      
-                          <!-- Viewer-->
-                          <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                              <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-      
-                              <div id="documentViewer" style="
-                              /* position: fixed; */
-                              top: 0;
-                              left: 0;
-                              width: 100%; /* Adjust the width to your preference */
-                              height: 100%; /* Adjust the height to your preference */
-                              overflow: auto;
-                          ">
-      
-      
-                              </div>
-                              
-                              
-                              </div>
-      
-      
-      
-                          </div>
-      
-                      </div>
-                  </div>
-              </div>
-          </div>
-      </body>
-      
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab4 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Dynamic Webpage</title>
-          <style>
-            /* CSS styles */
-    
-            body {
-              margin: 0;
-            }
-    
-            #header {
-              height: 105px;
-              overflow: hidden;
-              padding-top: 10px;
-              padding-left: 10px;
-              background-color: #14789057;
-              position: relative;
-            }
-    
-            canvas {
-              display: block;
-            }
-    
-            .pdfjs-toolbar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              background-color: #f2f2f2;
-              padding: 8px;
-              z-index: 9999;
-            }
-    
-            .jumbotron {
-              background-image: url('path/to/background-image.jpg');
-              background-size: cover;
-              background-position: center;
-              padding: 2rem;
-              margin-bottom: 2rem;
-              border-radius: 0.3rem;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              color: #fff;
-            }
-    
-            #loader {
-              display: none;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background-color: #f2f2f2;
-              padding: 16px;
-              border-radius: 4px;
-            }
-    
-            .container {
-              max-width: 960px;
-              margin: 0 auto;
-              padding: 0 1rem;
-            }
-    
-    
-            #loader {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.7);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const BATCH_SIZE = 4; // Number of pages to render at a time
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-    
-            function renderPDF() {
-              const loader = document.getElementById("loaderPDF");
-              loader.style.display = "block";
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                const numPages = pdf.numPages;
-                const container = document.getElementById("documentViewer");
-    
-                function renderPage(pageNumber) {
-                  const pagesToRender = Math.min(BATCH_SIZE, numPages - pageNumber + 1);
-                  const renderPromises = [];
-    
-                  for (let i = 0; i < pagesToRender; i++) {
-                    const pageIndex = pageNumber + i;
-                    renderPromises.push(
-                      pdf.getPage(pageIndex).then(function (page) {
-                        const viewport = page.getViewport({
-                          scale: isMobileDevice() ? MOBILE_SCALE : 1.5, // Adjust scale for mobile devices
-                        });
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-    
-                        canvas.style.width = "100%";
-                        canvas.style.height = "auto";
-                        container.appendChild(canvas);
-    
-                        return page.render({ canvasContext: context, viewport: viewport });
-                      })
-                    );
-                  }
-    
-                  Promise.all(renderPromises).then(function () {
-                    if (pageNumber + BATCH_SIZE <= numPages) {
-                      renderPage(pageNumber + BATCH_SIZE); // Render the next batch of pages
-                    } else {
-                      loader.style.display = "none"; // Hide the loader when rendering is complete
-                    }
-                  });
-                }
-    
-                renderPage(1);
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              renderPDF();
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header" style="
-                /* position: fixed; */
-                display: none;
-              ">
-                <a href="/">
-                  <img src="path/to/logo.png" alt=""/>
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                      <div id="documentViewer" style="
-                        /* position: fixed; */
-                        top: 0;
-                        left: 0;
-                        width: 100%; /* Adjust the width to your preference */
-                        height: 100%; /* Adjust the height to your preference */
-                        overflow: auto;
-                      ">
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab6 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Dynamic Webpage</title>
-          <style>
-            /* CSS styles */
-    
-            body {
-              margin: 0;
-            }
-    
-            #header {
-              height: 105px;
-              overflow: hidden;
-              padding-top: 10px;
-              padding-left: 10px;
-              background-color: #14789057;
-              position: relative;
-            }
-    
-            canvas {
-              display: block;
-            }
-    
-            .pdfjs-toolbar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              background-color: #f2f2f2;
-              padding: 8px;
-              z-index: 9999;
-            }
-    
-            .jumbotron {
-              background-image: url('path/to/background-image.jpg');
-              background-size: cover;
-              background-position: center;
-              padding: 2rem;
-              margin-bottom: 2rem;
-              border-radius: 0.3rem;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              color: #fff;
-            }
-    
-            #loader {
-              display: none;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background-color: #f2f2f2;
-              padding: 16px;
-              border-radius: 4px;
-            }
-    
-            .container {
-              max-width: 960px;
-              margin: 0 auto;
-              padding: 0 1rem;
-            }
-    
-    
-            #loader {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.7);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const BATCH_SIZE = 4; // Number of pages to render at a time
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-    
-            function renderPDF() {
-              const loader = document.getElementById("loaderPDF");
-              loader.style.display = "block";
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                const numPages = pdf.numPages;
-                const container = document.getElementById("documentViewer");
-    
-                function renderPage(pageNumber) {
-                  const pagesToRender = Math.min(BATCH_SIZE, numPages - pageNumber + 1);
-                  const renderPromises = [];
-    
-                  for (let i = 0; i < pagesToRender; i++) {
-                    const pageIndex = pageNumber + i;
-                    renderPromises.push(
-                      pdf.getPage(pageIndex).then(function (page) {
-                        const viewport = page.getViewport({
-                          scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE, // Adjust scale for mobile devices and PC screens
-                        });
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-    
-                        canvas.style.width = "100%";
-                        canvas.style.height = "auto";
-                        container.appendChild(canvas);
-    
-                        return page.render({ canvasContext: context, viewport: viewport });
-                      })
-                    );
-                  }
-    
-                  Promise.all(renderPromises).then(function () {
-                    if (pageNumber + BATCH_SIZE <= numPages) {
-                      renderPage(pageNumber + BATCH_SIZE); // Render the next batch of pages
-                    } else {
-                      loader.style.display = "none"; // Hide the loader when rendering is complete
-                    }
-                  });
-                }
-    
-                renderPage(1);
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              renderPDF();
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header" style="
-                /* position: fixed; */
-                display: none;
-              ">
-                <a href="/">
-                  <img src="path/to/logo.png" alt=""/>
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                      <div id="documentViewer" style="
-                        /* position: fixed; */
-                        top: 0;
-                        left: 0;
-                        width: 100%; /* Adjust the width to your preference */
-                        height: 100%; /* Adjust the height to your preference */
-                        overflow: auto;
-                      ">
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab7 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Dynamic Webpage</title>
-          <style>
-            /* CSS styles */
-    
-            body {
-              margin: 0;
-            }
-    
-            #header {
-              height: 105px;
-              overflow: hidden;
-              padding-top: 10px;
-              padding-left: 10px;
-              background-color: #14789057;
-              position: relative;
-            }
-    
-            canvas {
-              display: block;
-            }
-    
-            .pdfjs-toolbar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              background-color: #f2f2f2;
-              padding: 8px;
-              z-index: 9999;
-            }
-    
-            .jumbotron {
-              background-image: url('path/to/background-image.jpg');
-              background-size: cover;
-              background-position: center;
-              padding: 2rem;
-              margin-bottom: 2rem;
-              border-radius: 0.3rem;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              color: #fff;
-            }
-    
-            #loader {
-              display: none;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background-color: #f2f2f2;
-              padding: 16px;
-              border-radius: 4px;
-            }
-    
-            .container {
-              max-width: 960px;
-              margin: 0 auto;
-              padding: 0 1rem;
-            }
-    
-    
-            #loader {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.7);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const BATCH_SIZE = 4; // Number of pages to render at a time
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-    
-            function renderPDF() {
-              const loader = document.getElementById("loaderPDF");
-              loader.style.display = "block";
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                const numPages = pdf.numPages;
-                const container = document.getElementById("documentViewer");
-    
-                let currentPage = 1;
-    
-                function renderNextPage() {
-                  if (currentPage > numPages) {
-                    loader.style.display = "none";
-                    return;
-                  }
-    
-                  const renderPromises = [];
-                  const pagesToRender = Math.min(BATCH_SIZE, numPages - currentPage + 1);
-    
-                  for (let i = 0; i < pagesToRender; i++) {
-                    const pageIndex = currentPage + i;
-                    renderPromises.push(
-                      pdf.getPage(pageIndex).then(function (page) {
-                        const viewport = page.getViewport({
-                          scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                        });
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-    
-                        canvas.style.width = "100%";
-                        canvas.style.height = "auto";
-                        container.appendChild(canvas);
-    
-                        return page.render({ canvasContext: context, viewport: viewport });
-                      })
-                    );
-                  }
-    
-                  Promise.all(renderPromises).then(function () {
-                    currentPage += BATCH_SIZE;
-                    renderNextPage();
-                  });
-                }
-    
-                renderNextPage();
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              renderPDF();
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header" style="
-                /* position: fixed; */
-                display: none;
-              ">
-                <a href="/">
-                  <img src="path/to/logo.png" alt=""/>
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                      <div id="documentViewer" style="
-                        /* position: fixed; */
-                        top: 0;
-                        left: 0;
-                        width: 100%; /* Adjust the width to your preference */
-                        height: 100%; /* Adjust the height to your preference */
-                        overflow: auto;
-                      ">
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab8 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Dynamic Webpage</title>
-          <style>
-            /* CSS styles */
-    
-            body {
-              margin: 0;
-            }
-    
-            #header {
-              height: 105px;
-              overflow: hidden;
-              padding-top: 10px;
-              padding-left: 10px;
-              background-color: #14789057;
-              position: relative;
-            }
-    
-            canvas {
-              display: block;
-            }
-    
-            .pdfjs-toolbar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              background-color: #f2f2f2;
-              padding: 8px;
-              z-index: 9999;
-            }
-    
-            .jumbotron {
-              background-image: url('path/to/background-image.jpg');
-              background-size: cover;
-              background-position: center;
-              padding: 2rem;
-              margin-bottom: 2rem;
-              border-radius: 0.3rem;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              color: #fff;
-            }
-    
-            #loader {
-              display: none;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background-color: #f2f2f2;
-              padding: 16px;
-              border-radius: 4px;
-            }
-    
-            .container {
-              max-width: 960px;
-              margin: 0 auto;
-              padding: 0 1rem;
-            }
-    
-    
-            #loader {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.7);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const BATCH_SIZE = 4; // Number of pages to render at a time
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-            let currentPage = 1;
-            let numPages = 0;
-    
-            function renderPDF() {
-              const loader = document.getElementById("loaderPDF");
-              loader.style.display = "block";
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                numPages = pdf.numPages;
-                const container = document.getElementById("documentViewer");
-    
-                function renderNextPage() {
-                  if (currentPage > numPages) {
-                    loader.style.display = "none";
-                    return;
-                  }
-    
-                  const renderPromises = [];
-    
-                  for (let i = 0; i < BATCH_SIZE; i++) {
-                    const pageIndex = currentPage + i;
-    
-                    if (pageIndex > numPages) {
-                      break;
-                    }
-    
-                    renderPromises.push(
-                      pdf.getPage(pageIndex).then(function (page) {
-                        const viewport = page.getViewport({
-                          scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                        });
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-    
-                        canvas.style.width = "100%";
-                        canvas.style.height = "auto";
-                        container.appendChild(canvas);
-    
-                        return page.render({ canvasContext: context, viewport: viewport });
-                      })
-                    );
-                  }
-    
-                  Promise.all(renderPromises).then(function () {
-                    currentPage += BATCH_SIZE;
-                    setTimeout(renderNextPage, 0); // Render the next batch of pages asynchronously
-                  });
-                }
-    
-                renderNextPage();
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              renderPDF();
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header" style="
-                /* position: fixed; */
-                display: none;
-              ">
-                <a href="/">
-                  <img src="path/to/logo.png" alt=""/>
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                      <div id="documentViewer" style="
-                        /* position: fixed; */
-                        top: 0;
-                        left: 0;
-                        width: 100%; /* Adjust the width to your preference */
-                        height: 100%; /* Adjust the height to your preference */
-                        overflow: auto;
-                      ">
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="toolbar" class="pdfjs-toolbar">
-                    <span id="currentPage"></span>/<span id="totalPages"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <script>
-            const toolbar = document.getElementById("toolbar");
-            const currentPageSpan = document.getElementById("currentPage");
-            const totalPagesSpan = document.getElementById("totalPages");
-    
-            function updatePageNumbers() {
-              currentPageSpan.textContent = currentPage.toString();
-              totalPagesSpan.textContent = numPages.toString();
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              updatePageNumbers();
-            });
-          </script>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab9 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Dynamic Webpage</title>
-          <style>
-            /* CSS styles */
-    
-            body {
-              margin: 0;
-            }
-    
-            #header {
-              height: 105px;
-              overflow: hidden;
-              padding-top: 10px;
-              padding-left: 10px;
-              background-color: #14789057;
-              position: relative;
-            }
-    
-            canvas {
-              display: block;
-            }
-    
-            .pdfjs-toolbar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              background-color: #f2f2f2;
-              padding: 8px;
-              z-index: 9999;
-            }
-    
-            .jumbotron {
-              background-image: url('path/to/background-image.jpg');
-              background-size: cover;
-              background-position: center;
-              padding: 2rem;
-              margin-bottom: 2rem;
-              border-radius: 0.3rem;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              color: #fff;
-            }
-    
-            #loader {
-              display: none;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background-color: #f2f2f2;
-              padding: 16px;
-              border-radius: 4px;
-            }
-    
-            .container {
-              max-width: 960px;
-              margin: 0 auto;
-              padding: 0 1rem;
-            }
-    
-    
-            #loader {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.7);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const BATCH_SIZE = 4; // Number of pages to render at a time
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-            let currentPage = 1;
-            let numPages = 0;
-    
-            function renderPDF() {
-              const loader = document.getElementById("loaderPDF");
-              loader.style.display = "block";
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                numPages = pdf.numPages;
-                const container = document.getElementById("documentViewer");
-    
-                function renderNextPage() {
-                  if (currentPage > numPages) {
-                    loader.style.display = "none";
-                    return;
-                  }
-    
-                  const renderPromises = [];
-    
-                  for (let i = 0; i < BATCH_SIZE; i++) {
-                    const pageIndex = currentPage + i;
-    
-                    if (pageIndex > numPages) {
-                      break;
-                    }
-    
-                    renderPromises.push(
-                      pdf.getPage(pageIndex).then(function (page) {
-                        const viewport = page.getViewport({
-                          scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                        });
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-    
-                        canvas.style.width = "100%";
-                        canvas.style.height = "auto";
-                        container.appendChild(canvas);
-    
-                        return page.render({ canvasContext: context, viewport: viewport });
-                      })
-                    );
-                  }
-    
-                  Promise.all(renderPromises).then(function () {
-                    currentPage += BATCH_SIZE;
-                    setTimeout(renderNextPage, 0); // Render the next batch of pages asynchronously
-                    updatePageNumbers();
-                  });
-                }
-    
-                renderNextPage();
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            function updatePageNumbers() {
-              const currentPageSpan = document.getElementById("currentPage");
-              const totalPagesSpan = document.getElementById("totalPages");
-              currentPageSpan.textContent = currentPage.toString();
-              totalPagesSpan.textContent = numPages.toString();
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              renderPDF();
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header" style="
-                /* position: fixed; */
-                display: none;
-              ">
-                <a href="/">
-                  <img src="path/to/logo.png" alt=""/>
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                      <div id="documentViewer" style="
-                        /* position: fixed; */
-                        top: 0;
-                        left: 0;
-                        width: 100%; /* Adjust the width to your preference */
-                        height: 100%; /* Adjust the height to your preference */
-                        overflow: auto;
-                      ">
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="toolbar" class="pdfjs-toolbar">
-                    Page <span id="currentPage"></span> of <span id="totalPages"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab11 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Dynamic Webpage</title>
-          <style>
-            /* CSS styles */
-    
-            body {
-              margin: 0;
-            }
-    
-            #header {
-              height: 105px;
-              overflow: hidden;
-              padding-top: 10px;
-              padding-left: 10px;
-              background-color: #14789057;
-              position: relative;
-            }
-    
-            canvas {
-              display: block;
-            }
-    
-            .pdfjs-toolbar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              background-color: #f2f2f2;
-              padding: 8px;
-              z-index: 9999;
-            }
-    
-            .jumbotron {
-              background-image: url('path/to/background-image.jpg');
-              background-size: cover;
-              background-position: center;
-              padding: 2rem;
-              margin-bottom: 2rem;
-              border-radius: 0.3rem;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              color: #fff;
-            }
-    
-            #loader {
-              display: none;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background-color: #f2f2f2;
-              padding: 16px;
-              border-radius: 4px;
-            }
-    
-            .container {
-              max-width: 960px;
-              margin: 0 auto;
-              padding: 0 1rem;
-            }
-    
-    
-            #loader {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.7);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const BATCH_SIZE = 4; // Number of pages to render at a time
-            const RENDER_DELAY = 500; // Delay between each batch rendering in milliseconds
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-            let currentPage = 1;
-            let numPages = 0;
-            let renderTimeout;
-    
-            function renderPDF() {
-              const loader = document.getElementById("loaderPDF");
-              loader.style.display = "block";
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                numPages = pdf.numPages;
-                const container = document.getElementById("documentViewer");
-    
-                function renderNextBatch() {
-                  const renderPromises = [];
-    
-                  for (let i = 0; i < BATCH_SIZE; i++) {
-                    const pageIndex = currentPage + i;
-    
-                    if (pageIndex > numPages) {
-                      break;
-                    }
-    
-                    renderPromises.push(
-                      pdf.getPage(pageIndex).then(function (page) {
-                        const viewport = page.getViewport({
-                          scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE, // Adjust scale for mobile devices and PC screens
-                        });
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-    
-                        canvas.style.width = "100%";
-                        canvas.style.height = "auto";
-                        container.appendChild(canvas);
-    
-                        return page.render({ canvasContext: context, viewport: viewport });
-                      })
-                    );
-                  }
-    
-                  Promise.all(renderPromises).then(function () {
-                    currentPage += BATCH_SIZE;
-    
-                    if (currentPage <= numPages) {
-                      renderTimeout = setTimeout(renderNextBatch, RENDER_DELAY); // Render the next batch of pages after a delay
-                      updatePageNumbers();
-                    } else {
-                      loader.style.display = "none"; // Hide the loader when rendering is complete
-                    }
-                  });
-                }
-    
-                renderNextBatch();
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            function updatePageNumbers() {
-              const currentPageSpan = document.getElementById("currentPage");
-              const totalPagesSpan = document.getElementById("totalPages");
-              currentPageSpan.textContent = currentPage.toString();
-              totalPagesSpan.textContent = numPages.toString();
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              renderPDF();
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-    
-            // Stop rendering on window close
-            window.addEventListener("beforeunload", function () {
-              clearTimeout(renderTimeout);
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header" style="
-                /* position: fixed; */
-                display: none;
-              ">
-                <a href="/">
-                  <img src="path/to/logo.png" alt=""/>
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                      <div id="documentViewer" style="
-                        /* position: fixed; */
-                        top: 0;
-                        left: 0;
-                        width: 100%; /* Adjust the width to your preference */
-                        height: 100%; /* Adjust the height to your preference */
-                        overflow: auto;
-                      ">
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="toolbar" class="pdfjs-toolbar">
-                    Page <span id="currentPage"></span> of <span id="totalPages"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    }
-
-    const createWebpageInNewTab12 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Dynamic Webpage</title>
-          <style>
-            /* CSS styles */
-    
-            body {
-              margin: 0;
-            }
-    
-            #header {
-              height: 105px;
-              overflow: hidden;
-              padding-top: 10px;
-              padding-left: 10px;
-              background-color: #14789057;
-              position: relative;
-            }
-    
-            canvas {
-              display: block;
-            }
-    
-            .pdfjs-toolbar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              background-color: #f2f2f2;
-              padding: 8px;
-              z-index: 9999;
-            }
-    
-            .jumbotron {
-              background-image: url('path/to/background-image.jpg');
-              background-size: cover;
-              background-position: center;
-              padding: 2rem;
-              margin-bottom: 2rem;
-              border-radius: 0.3rem;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              color: #fff;
-            }
-    
-            #loader {
-              display: none;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background-color: #f2f2f2;
-              padding: 16px;
-              border-radius: 4px;
-            }
-    
-            .container {
-              max-width: 960px;
-              margin: 0 auto;
-              padding: 0 1rem;
-            }
-    
-            #loader {
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.7);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 9999;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const PAGES_PER_BATCH = 5; // Number of pages to load per batch
-            const RENDER_DELAY = 500; // Delay between each batch rendering in milliseconds
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-            let currentPage = 1;
-            let numPages = 0;
-            let renderTimeout;
-    
-            function renderPDF() {
-              const loader = document.getElementById("loaderPDF");
-              loader.style.display = "block";
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                numPages = pdf.numPages;
-    
-                function renderBatch(startPage) {
-                  const renderPromises = [];
-                  const endPage = Math.min(startPage + PAGES_PER_BATCH - 1, numPages);
-    
-                  for (let i = startPage; i <= endPage; i++) {
-                    renderPromises.push(
-                      pdf.getPage(i).then(function (page) {
-                        const container = document.getElementById("documentViewer");
-                        const viewport = page.getViewport({
-                          scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                        });
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-    
-                        canvas.style.width = "100%";
-                        canvas.style.height = "auto";
-                        container.appendChild(canvas);
-    
-                        return page.render({ canvasContext: context, viewport: viewport });
-                      })
-                    );
-                  }
-    
-                  Promise.all(renderPromises).then(function () {
-                    currentPage += PAGES_PER_BATCH;
-    
-                    if (currentPage <= numPages) {
-                      renderTimeout = setTimeout(function () {
-                        renderBatch(currentPage);
-                      }, RENDER_DELAY);
-                    } else {
-                      loader.style.display = "none";
-                    }
-                  });
-                }
-    
-                renderBatch(currentPage);
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              renderPDF();
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-    
-            // Stop rendering on window close
-            window.addEventListener("beforeunload", function () {
-              clearTimeout(renderTimeout);
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header" style="
-                /* position: fixed; */
-                display: none;
-              ">
-                <a href="/">
-                  <img src="path/to/logo.png" alt=""/>
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                      <div id="documentViewer" style="
-                        /* position: fixed; */
-                        top: 0;
-                        left: 0;
-                        width: 100%; /* Adjust the width to your preference */
-                        height: 100%; /* Adjust the height to your preference */
-                        overflow: auto;
-                      ">
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="toolbar" class="pdfjs-toolbar">
-                    Page <span id="currentPage"></span> of <span id="totalPages"></span>
-                  </div>
-                  <button id="loadButton" style="margin-top: 10px;">Load Next 5 Pages</button>
-                </div>
-              </div>
-            </div>
-          </div>
-    
-          <script>
-            document.getElementById("loadButton").addEventListener("click", function () {
-              clearTimeout(renderTimeout);
-              renderBatch(currentPage);
-            });
-          </script>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    };
-
-    const createWebpageInNewTab13 = async (url) => {
-      const htmlContent = `
-        <html>
-          <head>
-            <title>Dynamic Webpage</title>
-            <style>
-              /* CSS styles */
-      
-              body {
-                margin: 0;
-              }
-      
-              #header {
-                height: 105px;
-                overflow: hidden;
-                padding-top: 10px;
-                padding-left: 10px;
-                background-color: #14789057;
-                position: relative;
-              }
-      
-              canvas {
-                display: block;
-              }
-      
-              .pdfjs-toolbar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background-color: #f2f2f2;
-                padding: 8px;
-                z-index: 9999;
-              }
-      
-              .jumbotron {
-                background-image: url('path/to/background-image.jpg');
-                background-size: cover;
-                background-position: center;
-                padding: 2rem;
-                margin-bottom: 2rem;
-                border-radius: 0.3rem;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                color: #fff;
-              }
-      
-              #loader {
-                display: none;
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background-color: #f2f2f2;
-                padding: 16px;
-                border-radius: 4px;
-              }
-      
-              .container {
-                max-width: 960px;
-                margin: 0 auto;
-                padding: 0 1rem;
-              }
-      
-              #loader {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(255, 255, 255, 0.7);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 9999;
-              }
-            </style>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-            <script>
-              const url = '${url}';
-              const PAGES_PER_BATCH = 5; // Number of pages to load per batch
-              const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-              const PC_SCALE = 5.2; // Scale factor for PC screens
-              let currentPage = 1;
-              let numPages = 0;
-              let renderRequestId;
-      
-              function renderPDF() {
-                const loader = document.getElementById("loaderPDF");
-                loader.style.display = "block";
-      
-                const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-                loadingTask.promise.then(function (pdf) {
-                  numPages = pdf.numPages;
-      
-                  function renderBatch(startPage) {
-                    const renderPromises = [];
-                    const endPage = Math.min(startPage + PAGES_PER_BATCH - 1, numPages);
-      
-                    for (let i = startPage; i <= endPage; i++) {
-                      renderPromises.push(
-                        pdf.getPage(i).then(function (page) {
-                          const container = document.getElementById("documentViewer");
-                          const viewport = page.getViewport({
-                            scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                          });
-                          const canvas = document.createElement("canvas");
-                          const context = canvas.getContext("2d");
-                          canvas.width = viewport.width;
-                          canvas.height = viewport.height;
-      
-                          canvas.style.width = "100%";
-                          canvas.style.height = "auto";
-                          container.appendChild(canvas);
-      
-                          return page.render({ canvasContext: context, viewport: viewport });
-                        })
-                      );
-                    }
-      
-                    Promise.all(renderPromises).then(function () {
-                      currentPage += PAGES_PER_BATCH;
-      
-                      if (currentPage <= numPages) {
-                        renderRequestId = requestAnimationFrame(function () {
-                          renderBatch(currentPage);
-                        });
-                      } else {
-                        loader.style.display = "none";
-                      }
-                    });
-                  }
-      
-                  renderBatch(currentPage);
-                });
-              }
-      
-              function isMobileDevice() {
-                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-              }
-      
-              window.addEventListener("DOMContentLoaded", function () {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-                pdfRenderOptions = {
-                  cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                  cMapPacked: true
-                };
-      
-                renderPDF();
-              });
-      
-              window.addEventListener("contextmenu", function (event) {
-                event.preventDefault();
-              });
-      
-              // Stop rendering on window close
-              window.addEventListener("beforeunload", function () {
-                cancelAnimationFrame(renderRequestId);
-              });
-            </script>
-          </head>
-          <body>
-            <div class="container">
-              <div class="row">
-                <div id="header" style="
-                  /* position: fixed; */
-                  display: none;
-                ">
-                  <a href="/">
-                    <img src="path/to/logo.png" alt=""/>
-                  </a>
-                </div>
-              </div>
-              <div class="row">
-                <div id="content">
-                  <div id="main">
-                    <!-- Viewer-->
-                    <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                      <div style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;" class="flexpaper_viewer_container">
-                        <div id="documentViewer" style="
-                          /* position: fixed; */
-                          top: 0;
-                          left: 0;
-                          width: 100%; /* Adjust the width to your preference */
-                          height: 100%; /* Adjust the height to your preference */
-                          overflow: auto;
-                        ">
-                          <div id="loaderPDF">Loading...</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div id="toolbar" class="pdfjs-toolbar">
-                      Page <span id="currentPage"></span> of <span id="totalPages"></span>
-                    </div>
-                    <button id="loadButton" style="margin-top: 10px;">Load More Pages</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-      
-            <script>
-              document.getElementById("loadButton").addEventListener("click", function () {
-                cancelAnimationFrame(renderRequestId);
-                renderBatch(currentPage);
-              });
-            </script>
-          </body>
-        </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    };
-
-    const createWebpageInNewTab14 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Lazy Loading PDF</title>
-          <style>
-            /* CSS styles */
-    
-            /* ... (existing CSS styles) ... */
-    
-            .hidden {
-              display: none;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const PAGES_PER_BATCH = 5; // Number of pages to load per batch
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-            let currentPage = 1;
-            let numPages = 0;
-            let renderTimeout;
-    
-            function renderBatch(startPage) {
-              const renderPromises = [];
-              const endPage = Math.min(startPage + PAGES_PER_BATCH - 1, numPages);
-    
-              for (let i = startPage; i <= endPage; i++) {
-                renderPromises.push(
-                  pdf.getPage(i).then(function (page) {
-                    const container = document.getElementById("documentViewer");
-                    const viewport = page.getViewport({
-                      scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                    });
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-    
-                    canvas.style.width = "100%";
-                    canvas.style.height = "auto";
-                    container.appendChild(canvas);
-    
-                    return page.render({ canvasContext: context, viewport: viewport });
-                  })
-                );
-              }
-    
-              Promise.all(renderPromises).then(function () {
-                currentPage += PAGES_PER_BATCH;
-    
-                if (currentPage <= numPages) {
-                  renderTimeout = setTimeout(function () {
-                    renderBatch(currentPage);
-                  }, 0); // Delay the next batch rendering
-                } else {
-                  const loader = document.getElementById("loaderPDF");
-                  loader.style.display = "none";
-                }
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (pdf) {
-                numPages = pdf.numPages;
-                renderBatch(currentPage);
-              });
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-    
-            // Stop rendering on window close
-            window.addEventListener("beforeunload", function () {
-              clearTimeout(renderTimeout);
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <!-- ... (existing HTML structure) ... -->
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%; border: 1px solid;">
-                    <div
-                      style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;"
-                      class="flexpaper_viewer_container"
-                    >
-                      <div
-                        id="documentViewer"
-                        style="top: 0; left: 0; width: 100%; height: 100%; overflow: auto;"
-                      ></div>
-                    </div>
-                  </div>
-                  <div id="toolbar" class="pdfjs-toolbar">
-                    Page <span id="currentPage"></span> of <span id="totalPages"></span>
-                  </div>
-                  <button id="loadButton" style="margin-top: 10px;">Load Next 5 Pages</button>
-                </div>
-              </div>
-            </div>
-          </div>
-    
-          <script>
-            document.getElementById("loadButton").addEventListener("click", function () {
-              clearTimeout(renderTimeout);
-              renderBatch(currentPage);
-            });
-          </script>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    };
-
-    const createWebpageInNewTab15 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Lazy Loading PDF</title>
-          <style>
-            /* CSS styles */
-    
-            /* ... (existing CSS styles) ... */
-    
-            .hidden {
-              display: none;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const PAGES_PER_BATCH = 5; // Number of pages to load per batch
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-            let currentPage = 1;
-            let numPages = 0;
-            let renderTimeout;
-            let pdf; // Declare the pdf variable
-    
-            function renderBatch(startPage) {
-              const renderPromises = [];
-              const endPage = Math.min(startPage + PAGES_PER_BATCH - 1, numPages);
-    
-              for (let i = startPage; i <= endPage; i++) {
-                renderPromises.push(
-                  pdf.getPage(i).then(function (page) {
-                    const container = document.getElementById("documentViewer");
-                    const viewport = page.getViewport({
-                      scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                    });
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-    
-                    canvas.style.width = "100%";
-                    canvas.style.height = "auto";
-                    container.appendChild(canvas);
-    
-                    return page.render({ canvasContext: context, viewport: viewport });
-                  })
-                );
-              }
-    
-              Promise.all(renderPromises).then(function () {
-                currentPage += PAGES_PER_BATCH;
-    
-                if (currentPage <= numPages) {
-                  renderTimeout = setTimeout(function () {
-                    renderBatch(currentPage);
-                  }, 0); // Delay the next batch rendering
-                } else {
-                  const loader = document.getElementById("loaderPDF");
-                  loader.style.display = "none";
-                }
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (loadedPdf) {
-                pdf = loadedPdf; // Assign the loaded pdf to the global variable
-                numPages = pdf.numPages;
-                renderBatch(currentPage);
-              });
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-    
-            // Stop rendering on window close
-            window.addEventListener("beforeunload", function () {
-              clearTimeout(renderTimeout);
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header">
-                <a href="/">
-                  <img src="path/to/logo.png" alt="" />
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div
-                      style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;"
-                      class="flexpaper_viewer_container"
-                    >
-                      <div
-                        id="documentViewer"
-                        style="top: 0; left: 0; width: 100%; height: 100%; overflow: auto;"
-                      ></div>
-                    </div>
-                  </div>
-                  <div id="toolbar" class="pdfjs-toolbar">
-                    Page <span id="currentPage"></span> of <span id="totalPages"></span>
-                  </div>
-                  <button id="loadButton" style="margin-top: 10px;">Load Next More Pages</button>
-                </div>
-              </div>
-            </div>
-          </div>
-    
-          <script>
-            document.getElementById("loadButton").addEventListener("click", function () {
-              clearTimeout(renderTimeout);
-              renderBatch(currentPage);
-            });
-          </script>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    };
-
-    const createWebpageInNewTab16 = async (url) => {
-      const htmlContent = `<html>
-        <head>
-          <title>Lazy Loading PDF</title>
-          <style>
-            /* CSS styles */
-    
-            /* ... (existing CSS styles) ... */
-    
-            .hidden {
-              display: none;
-            }
-          </style>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
-          <script>
-            const url = '${url}';
-            const PAGES_PER_BATCH = 5; // Number of pages to load per batch
-            const MOBILE_SCALE = 2.5; // Scale factor for mobile devices
-            const PC_SCALE = 5.2; // Scale factor for PC screens
-            const BATCH_RENDER_DELAY = 1000; // Delay between each batch rendering in milliseconds
-            let currentPage = 1;
-            let numPages = 0;
-            let renderTimeout;
-            let pdf; // Declare the pdf variable
-    
-            function renderBatch(startPage) {
-              const renderPromises = [];
-              const endPage = Math.min(startPage + PAGES_PER_BATCH - 1, numPages);
-    
-              for (let i = startPage; i <= endPage; i++) {
-                renderPromises.push(
-                  pdf.getPage(i).then(function (page) {
-                    const container = document.getElementById("documentViewer");
-                    const viewport = page.getViewport({
-                      scale: isMobileDevice() ? MOBILE_SCALE : PC_SCALE,
-                    });
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-    
-                    canvas.style.width = "100%";
-                    canvas.style.height = "auto";
-                    container.appendChild(canvas);
-    
-                    return page.render({ canvasContext: context, viewport: viewport }).promise;
-                  })
-                );
-              }
-    
-              Promise.all(renderPromises).then(function () {
-                currentPage += PAGES_PER_BATCH;
-    
-                if (currentPage <= numPages) {
-                  renderTimeout = setTimeout(function () {
-                    requestAnimationFrame(function () {
-                      renderBatch(currentPage);
-                    });
-                  }, BATCH_RENDER_DELAY);
-                } else {
-                  const loader = document.getElementById("loaderPDF");
-                  loader.style.display = "none";
-                }
-              });
-            }
-    
-            function isMobileDevice() {
-              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-    
-            window.addEventListener("DOMContentLoaded", function () {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
-              pdfRenderOptions = {
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/cmaps/',
-                cMapPacked: true
-              };
-    
-              const loadingTask = pdfjsLib.getDocument({ url, enableToolbar: true });
-              loadingTask.promise.then(function (loadedPdf) {
-                pdf = loadedPdf; // Assign the loaded pdf to the global variable
-                numPages = pdf.numPages;
-                renderBatch(currentPage);
-              });
-            });
-    
-            window.addEventListener("contextmenu", function (event) {
-              event.preventDefault();
-            });
-    
-            // Stop rendering on window close
-            window.addEventListener("beforeunload", function () {
-              clearTimeout(renderTimeout);
-            });
-          </script>
-        </head>
-        <body>
-          <div class="container">
-            <div class="row">
-              <div id="header">
-                <a href="/">
-                  <img src="path/to/logo.png" alt="" />
-                </a>
-              </div>
-            </div>
-            <div class="row">
-              <div id="content">
-                <div id="main">
-                  <!-- Viewer-->
-                  <div id="flexcontainer" style="height: 95%;border: 1px solid;">
-                    <div
-                      style="position: relative; overflow: hidden; background: -webkit-linear-gradient(top, rgb(179, 179, 179), rgb(220, 220, 220)); min-height: 600px;"
-                      class="flexpaper_viewer_container"
-                    >
-                      <div
-                        id="documentViewer"
-                        style="top: 0; left: 0; width: 100%; height: 100%; overflow: auto;"
-                      >
-                        <div id="loaderPDF">Loading...</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="toolbar" class="pdfjs-toolbar">
-                    Page <span id="currentPage"></span> of <span id="totalPages"></span>
-                  </div>
-                  <button id="loadButton" style="margin-top: 10px;">Load Next More Pages</button>
-                </div>
-              </div>
-            </div>
-          </div>
-    
-          <script>
-            document.getElementById("loadButton").addEventListener("click", function () {
-              clearTimeout(renderTimeout);
-              requestAnimationFrame(function () {
-                renderBatch(currentPage);
-              });
-            });
-          </script>
-        </body>
-      </html>`;
-
-      const newTab = window.open("", "_blank");
-      newTab.document.open();
-      newTab.document.write(htmlContent);
-      newTab.document.close();
-    };
-
-
-
 
     // Function to load the next batch of pages manually
-
-
 
     return (
       <span
 
         onClick={async (event: React.MouseEvent<HTMLInputElement>) => {
+
 
           const divElement = event.currentTarget;
 
@@ -7836,28 +5470,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               permission_container.removeChild(permission_container.firstChild);
             }
 
-            const { permissions } = await getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-
-
-            console.log("All the ad groups on this site", permissions);
-
-            var yuhj = checkifUserIsAdmin(this.graphClient);
-
-            console.log("TEST AD GROUPS", yuhj)
-
-
-            var items = await sp.web.lists.getByTitle("Documents").items
-              .select("ID, Title, ParentID, inheriting")
-              .filter(`FolderID eq '${item.key}' and IsFolder eq 'TRUE'`)
-              .get();
-
-            if (items[0].inheriting === "YES") {
-              $("#inheritparagraph").css("display", "block");
-            }
-            else {
-              $("#inheritparagraph").css("display", "none");
-            }
-
             item.selectable = true;
 
             const checkbox_fili = document.querySelector('input[name="checkFiligrane"]') as HTMLInputElement;
@@ -7881,9 +5493,126 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               await handleBookmark();
               await handleDept();
 
-              const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              
 
-              await generateTable(permissions, Number(x));
+              await getBasePermTest2('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', item.id)
+                .then(async result => {
+                  // Handle the result
+                  console.log('High Value:', result.high);
+                  console.log('Low Value:', result.low);
+
+                  const high = result.high;
+                  const low = result.low;
+
+                  if (high == 2147483647 && low == 4294967295) { //full control
+                    console.log("You have full control!");
+                    $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder, #ajouteDoc, #bouton_bookmark").css("display", "block");
+
+                    const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+                    await generateTable(permissions, Number(x));
+                    console.log("PERMISSIONS ON ITEM", permissions);
+
+                    var items = await sp.web.lists.getByTitle("Documents").items
+                      .select("ID, Title, ParentID, inheriting")
+                      .filter(`FolderID eq '${item.key}' and IsFolder eq 'TRUE'`)
+                      .get();
+
+                    if (items[0].inheriting === "YES") {
+                      $("#inheritparagraph").css("display", "block");
+                    }
+                    else {
+                      $("#inheritparagraph").css("display", "none");
+                    }
+
+                  }
+                  else if (high == 432 && low == 1011030767) { //edit
+                    console.log("You can edit!");
+                    $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder").css("display", "none");
+                    $("#ajouteDoc, #bouton_bookmark").css("display", "block");
+                  }
+                  else if (high == 176 && low == 138612833) { //read
+                    console.log("You can only read!");
+                    $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder, #ajouteDoc, #bouton_bookmark").css("display", "none");
+                  }
+
+                  else {
+
+                  }
+                })
+                .catch(error => {
+                  // Handle any errors
+                  console.error('Error:', error);
+                });
+
+              //  const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+
+
+
+
+              // try {
+              //   const isAdmin = await checkIfUserIsAdmin(this.graphClient);
+              //   const isRefUser = isAdmin || await checkIfUserIsRefUser(this.graphClient);
+              //   const isGuestUser = isAdmin || await checkIfUserIsGuestUser(this.graphClient);
+
+              //   if (isAdmin) {
+              //     console.log('User is an administrator.');
+
+
+
+              //     //  const { permissions } = await getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+
+              //     // console.log("All the ad groups on this site", permissions);
+
+              //   } else if (isRefUser) {
+              //     console.log('User is a MYGED_REF user.');
+              //     $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder").css("display", "none");
+
+
+              //   } else if (isGuestUser) {
+              //     console.log('User is a MYGED_GUEST user.');
+              //     $("#nav").css("display", "none");
+
+
+              //   } else {
+
+              //     console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
+              //     $("#nav").css("display", "block");
+
+              //     const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              //     await generateTable(permissions, Number(x));
+              //     console.log("PERMISSIONS ON ITEM", permissions);
+
+              //     var items = await sp.web.lists.getByTitle("Documents").items
+              //       .select("ID, Title, ParentID, inheriting")
+              //       .filter(`FolderID eq '${item.key}' and IsFolder eq 'TRUE'`)
+              //       .get();
+
+              //     if (items[0].inheriting === "YES") {
+              //       $("#inheritparagraph").css("display", "block");
+              //     }
+              //     else {
+              //       $("#inheritparagraph").css("display", "none");
+              //     }
+
+              //     // const { permissions } = await getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+
+              //     // console.log("All the ad groups on this site", permissions);
+
+              //   }
+              // } catch (error) {
+              //   console.log('An error occurred while checking user permissions:', error);
+              // }
+
+
+
+
+              // const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+              // await generateTable(permissions, Number(x));
               // console.log("PERMISSIONS ON ITEM", permissions);
 
               // Remove the loader element once the function has finished executing

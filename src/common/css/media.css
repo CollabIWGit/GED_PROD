@@ -524,9 +524,10 @@
 @media screen and (min-width: 1024px) {
     .a_c_50a7110f:not(.b_c_50a7110f) .k_c_50a7110f {
         display: flex;
-        max-width: none;
+        max-width: none !important;
     }
 }
+
 
 .a_a_50a7110f:not(.b_a_50a7110f) {
     padding: 0;

@@ -81,9 +81,9 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
 
     Promise.all([
       this.require_libraries(),
-      SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
-      SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
-      SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
+      // SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
+      // SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
+      // SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
 
     ]).then(() => {
       ReactDom.render(element, this.domElement);
