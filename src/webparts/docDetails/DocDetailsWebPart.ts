@@ -48,14 +48,17 @@ require('./../../common/css/minBootstrap.css');
 require('./../../common/css/responsive.css');
 
 
+
+
+
 SPComponentLoader.loadCss('https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css');
 // SPComponentLoader.loadScript('//cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js');
-SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js');
-SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js');
-SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js');
-SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js');
-SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js');
-SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js');
+// SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js');
+// SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js');
+// SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js');
+// SPComponentLoader.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js');
+// SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js');
+// SPComponentLoader.loadScript('https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js');
 
 
 
@@ -510,9 +513,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
           </tr>
           `;
-
         //  }
-
       }
 
       html += `</tbody>
@@ -528,17 +529,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           }]
         });
 
-        // var table = $('#tbl_permission').DataTable({
-        //   order: [0, 'desc'],
-        //   columnDefs: [{
-        //     targets: [8],
-        //     orderable: false,
-        //   },
-        //   {
-        //     targets: [0],
-        //     visible: false,
-        //   }]
-        // });
 
         $('#tbl_permission tbody').on('click', '.buttoncss', async (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
@@ -554,7 +544,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
               permission: "NONE",
               FolderID: folderInfo[0].ID.toString(),
               PrincipleID: data[0]
-              //  RoleDefID: permission
+              // RoleDefID: permission
             })
               .then(async () => {
                 alert("Autorisation supprimée avec succès.");
@@ -653,44 +643,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private requireLibraries() {
-    // Load JavaScript dependencies
-    require('./../../common/js/jquery.min');
-    require('./../../common/js/popper');
-    require('./../../common/jqueryui/jquery-ui');
-    require('./../../common/js/bootstrap.min');
-    require('./../../common/js/main');
-
-  }
-
-
-
-  private differentiatePermissionLevels(highValue, lowValue) {
-    const permissionLevels = {
-      "Full Control": 4294967295,
-      "Design": 126,
-      "Edit": 124,
-      "Contribute": 104,
-      "Read": 1,
-      "Limited Access": 65,
-      "None": 0
-    };
-
-    const matchedLevels = [];
-    for (const level in permissionLevels) {
-      if ((highValue & permissionLevels[level]) === permissionLevels[level]) {
-        matchedLevels.push(level);
-      }
-    }
-
-    return matchedLevels;
-  }
-
-
 
   public async getBasePermissions(listId: any, docId: any): Promise<any> {
     try {
-      const requestUrl = `https://ncaircalin.sharepoint.com/sites/TestMyGed/_api/web/lists('${listId}')/items(${docId})/effectiveBasePermissions`;
+      const requestUrl = `https://ncaircalin.sharepoint.com/sites/MyGed/_api/web/lists('${listId}')/items(${docId})/effectiveBasePermissions`;
       const response = await this.context.spHttpClient.get(requestUrl, SPHttpClient.configurations.v1);
 
       if (response.ok) {
@@ -712,7 +668,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   public async getBasePermTest(siteUrl, listId, docId) {
     try {
-      const url = `https://ncaircalin.sharepoint.com/sites/TestMyGed/_api/web/lists('${listId}')/items(${docId})/effectiveBasePermissions`;
+      const url = `https://ncaircalin.sharepoint.com/sites/MyGed/_api/web/lists('${listId}')/items(${docId})/effectiveBasePermissions`;
 
       const response = await fetch(url, {
         headers: {
@@ -992,7 +948,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
     
                 <div id="versions" class="tab-pane fade">
-                    <h3>Toute Versions</h3>
+                    <h3>Toutes Versions</h3>
     
                     <div id="splistDocVersions"
                         style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
@@ -1216,12 +1172,19 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     `;
 
     Promise.all([
-      //   this.requireLibraries(),
-      SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
-      SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
-      SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
-      SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'),
-    ]);
+      SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js'), // jQuery
+      SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'), // Popper.js
+      SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js'), // Bootstrap
+      SPComponentLoader.loadScript("https://code.jquery.com/ui/1.12.1/jquery-ui.js"), // jQuery UI
+      // SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'), // DataTables
+    ]).then(function() {
+      console.log("Scripts loaded successfully");
+      // All scripts have been loaded successfully
+    }).catch(function(error) {
+      // An error occurred while loading the scripts
+      console.error("Error loading scripts: "+error);
+    });
+    
 
     // this.requireLibraries();
 
@@ -1259,13 +1222,13 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       .filter(`FolderID eq '${docId}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
       .get();
 
-    // const basePermissions = await this.getCurrentUserPermissionsForItem(items[0].ID, 'cf8c4d1b-7b53-4dfe-b602-998604e58b0f');
+    // const basePermissions = await this.getCurrentUserPermissionsForItem(items[0].ID, 'df095fdf-9978-44f8-941c-23b6c095751a');
     // console.log("High", basePermissions.High);
     // console.log("Low", basePermissions.Low);
 
-    // const x = await this.getBasePermissions('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', items[0].ID);
+    // const x = await this.getBasePermissions('df095fdf-9978-44f8-941c-23b6c095751a', items[0].ID);
 
-    await this.getBasePermTest2('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', items[0].ID)
+    await this.getBasePermTest2('df095fdf-9978-44f8-941c-23b6c095751a', items[0].ID)
       .then(async result => {
         // Handle the result
         console.log('High Value:', result.high);
@@ -1284,8 +1247,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         //          low: 138612833
 
 
-
-        if (high == 2147483647 && low == 4294967295) { //full control
+        if ((high == 2147483647 && low == 4294967295) || (high == 2147483647 && low == 4294705151) ) { //full control
           console.log("You have full control!");
           const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
@@ -1293,7 +1255,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           console.log("PERMISSIONS ON ITEM", permissions);
 
           if (items.length > 0 && items[0] && items[0].inheriting && items[0].inheriting !== "NO") {
-
             $("#inherit").css("display", "block");
           }
 
@@ -1317,9 +1278,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         }
         else if (high == 176 && low == 138612833) { //read
           $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
-
           $("#input_description, #input_keywords, #input_revision, #file_ammendment_update, #check1, #check2").prop('disabled', true);
-
         }
 
         else {
@@ -1384,15 +1343,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     // }
 
-
-
-
-
     const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
-
     const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;
     const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;
-
 
 
     try {
@@ -1682,7 +1635,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
             return { title, folderId_link }
           })
           .then(({ title, folderId_link }) => {
-            // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
+            // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${title}&documentId=${folderId_link}`;
 
             alert("Détails mis à jour avec succès");
             return { title, folderId_link };
@@ -2321,7 +2274,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     listDoc.forEach((item) => {
 
       if (item.parentTitle_doc !== undefined) {
-        html += `<li><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=${item.parentId_doc}">${item.parentTitle_doc}</a></li>`;
+        html += `<li><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/documentation.aspx?folder=${item.parentId_doc}">${item.parentTitle_doc}</a></li>`;
       }
     });
 
@@ -2525,7 +2478,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       //   url = "https://ncaircalin.sharepoint.com" + url;
 
-      if (this.getFileExtensionFromUrl(url) !== "pdf" || itemDoc[0].IsFiligrane === "NO") {
+      if (this.getFileExtensionFromUrl(url) !== "pdf") {
 
         //  if (itemDoc[0].IsFiligrane === "NO") {
         window.open(`${url}`, '_blank');
@@ -2584,7 +2537,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           await this.moveAllRevisionsToArchive(itemDoc[0].Title, itemDoc[0].FolderID);
           // await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc[0].Id)).recycle();
           // alert("Document deleted successfully.");
-          // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${itemDoc[0].ParentID}`;
+          // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${itemDoc[0].ParentID}`;
         } catch (err) {
           alert(err.message);
         }
@@ -2620,11 +2573,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     $("#download_doc").click(async (e) => {
       const user = await sp.web.currentUser();
       if (itemDoc[0].IsFiligrane === "NO") {
-        await this.downloadDocWithoutFili(url, pdfNameDownload, itemDoc[0].FolderID);
+        await this.downloadDocWithoutFili(url, itemDoc[0].Title, itemDoc[0].FolderID);
       }
 
       else {
-        await this.downloadDoc(url, pdfNameDownload, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
+        await this.downloadDoc(url, itemDoc[0].Title, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
       }
     });
 
@@ -2725,7 +2678,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     $("#edit_cancel_doc").click(async (e) => {
 
-      window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=${itemFolder[0].FolderID}`;
+      window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/documentation.aspx?folder=${itemFolder[0].FolderID}`;
 
     });
 
@@ -2942,11 +2895,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     try {
       if (isChecked) {
         await this.addBookmark(Number(doc_id), title);
-        alert("You have set this document as favorite.");
+        alert("Vous avez ajouté ce document comme favori.");
         window.location.reload();
       } else {
         await this.removeBookmark(doc_id);
-        alert("You have removed this document from favorites.");
+        alert("Vous avez supprimé ce document des favoris.");
         window.location.reload();
       }
     } catch (error) {
@@ -3325,7 +3278,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
 
-          if (this.getFileExtensionFromUrl(data[2]) !== "pdf" || data[7] === "NO") {
+          if (this.getFileExtensionFromUrl(data[2]) !== "pdf") {
             // alert("FILIGRANE = NO");
             window.open(`${data[2]}`, '_blank');
           }

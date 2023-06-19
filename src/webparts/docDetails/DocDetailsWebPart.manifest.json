@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "e588b8a5-576b-41b0-9c09-de1645ce6bcc",
+  "id": "e588b8a5-576b-41b0-9c09-de1645ce6bcd",
   "alias": "DocDetailsWebPart",
   "componentType": "WebPart",
 
@@ -15,7 +15,7 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", 
     "group": { "default": "Other" },
-    "title": { "default": "docDetails" },
+    "title": { "default": "docDetails_prod" },
     "description": { "default": "docDetails description" },
     "officeFabricIconFontName": "Page",
     "properties": {

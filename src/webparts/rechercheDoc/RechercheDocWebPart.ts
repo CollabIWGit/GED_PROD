@@ -216,7 +216,7 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
        ${url}          
         </td>
 
-        <td class="text-left"><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=${element_version.ParentID}" target="_blank" data-interception="off">${titleFolder}</a></td>
+        <td class="text-left"><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/documentation.aspx?folder=${element_version.ParentID}" target="_blank" data-interception="off">${titleFolder}</a></td>
 
         <td class="text-left"> 
         ${element_version.description}          

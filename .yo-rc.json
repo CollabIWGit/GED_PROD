@@ -2,9 +2,9 @@
   "@microsoft/generator-sharepoint": {
     "plusBeta": false,
     "isCreatingSolution": false,
-    "version": "1.14.0",
+    "version": "1.14.1",
     "libraryName": "my-ged-tree-view",
-    "libraryId": "78349869-20e2-45d5-aa47-0fc90431c636",
+    "libraryId": "78349869-20e2-45d5-aa47-0fc90431c630",
     "environment": "spo",
     "packageManager": "npm",
     "solutionName": "myGedTreeView",

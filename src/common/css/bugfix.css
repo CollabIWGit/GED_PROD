@@ -35,9 +35,9 @@
     padding: 0 0;
 }  */
 
-#SuiteNavWrapper{
+/* #SuiteNavWrapper {
     display: none !important;
-}
+} */
 
 .spAppAndPropertyPanelContainer .sp-appBar {
     background: #f3f2f1;
@@ -46,9 +46,13 @@
     display: none;
 }
 
-.webPartContainer{
+.webPartContainer {
     display: none;
 }
 
-
+.kl_al_ada2ac09 {
+    display: none;
+    flex-grow: 1;
+    flex-shrink: 0;
+}
 

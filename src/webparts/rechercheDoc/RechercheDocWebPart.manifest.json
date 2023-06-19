@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "057bf1d9-2a33-4856-b118-bbb8812b925d",
+  "id": "057bf1d9-2a33-4856-b118-bbb8812b925e",
   "alias": "RechercheDocWebPart",
   "componentType": "WebPart",
 
@@ -14,7 +14,7 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", 
     "group": { "default": "Other" },
-    "title": { "default": "rechercheDoc" },
+    "title": { "default": "rechercheDoc_prod" },
     "description": { "default": "rechercheDoc description" },
     "officeFabricIconFontName": "Page",
     "properties": {

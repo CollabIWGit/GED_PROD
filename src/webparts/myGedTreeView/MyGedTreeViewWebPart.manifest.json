@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "e4f4bf92-cd9f-4ca1-afba-7da73fa186ae",
+  "id": "e4f4bf92-cd9f-4ca1-afba-7da73fa186af",
   "alias": "MyGedTreeViewWebPart",
   "componentType": "WebPart",
 
@@ -15,7 +15,7 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", 
     "group": { "default": "Other" },
-    "title": { "default": "myGedTreeView" },
+    "title": { "default": "myGedTreeView_prod" },
     "description": { "default": "myGedTreeView description" },
     "officeFabricIconFontName": "Page",
     "properties": {

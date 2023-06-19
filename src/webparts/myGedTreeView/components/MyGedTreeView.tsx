@@ -5,7 +5,7 @@ import { TreeView, ITreeItem, TreeViewSelectionMode, TreeItemActionsDisplayMode 
 // import 'bootstrap/dist/css/bootstrap.min.css';
 import $, { event } from 'jquery';
 import Popper from 'popper.js';
-import 'bootstrap/dist/js/bootstrap.bundle.min';
+// import 'bootstrap/dist/js/bootstrap.bundle.min';
 import { BaseClientSideWebPart, WebPartContext } from '@microsoft/sp-webpart-base';
 import { sp, List, IItemAddResult, UserCustomActionScope, Items, ITerm, ISiteGroup, ISiteGroupInfo, SPRest, RoleAssignment, Item, RoleDefinition } from "@pnp/sp/presets/all";
 
@@ -98,8 +98,6 @@ import { max } from 'lodash';
 import { Client } from '@microsoft/microsoft-graph-client';
 
 
-
-
 // import Form from 'react-bootstrap/Form';
 // import Button from 'react-bootstrap/Button';
 
@@ -110,7 +108,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 // require('./../../../common/css/pagecontent.css');
 // require('./../../../common/css/spinner.css');
 // require('./../../../common/css/responsive.css');
-require('./../../../common/js/jquery.min');
+// require('./../../../common/js/jquery.min');
 
 import 'datatables.net';
 import * as moment from 'moment';
@@ -165,20 +163,20 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     var x = this.getDossierID();
     var y = this.getDossierTitle();
 
-    var url = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${x}`;
+    var url = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${x}`;
 
 
     try {
 
       if (!this.state.isToggledOn) {
         await this.addBookmark(x, y);
-        alert("You have set this document as favorite.");
+        alert("Vous avez ajouté ce document comme favori.");
         window.location.href = url;
 
       }
       else {
         await this.removeBookmark(x);
-        alert("You have removed this document from favorite.");
+        alert("Vous avez supprimé ce document des favoris.");
         window.location.href = url;
 
       }
@@ -197,8 +195,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     var x = this.getDossierID();
     var y = this.getDossierTitle();
 
-    var url = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${x}`;
-    // var url = `${this.context.pageContext.web.absoluteUrl}/SitePages/Home.aspx?folder=${x}`;
+    var url = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${x}`;
+    // var url = `${this.context.pageContext.web.absoluteUrl}/SitePages/documentation.aspx?folder=${x}`;
 
     try {
 
@@ -547,7 +545,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       //           alert("Autorisation supprimer à ce dossier avec succès.");
       //         })
       //         .then(() => {
-      //           window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+      //           window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
       //         });
       //     }
 
@@ -654,7 +652,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     loader.style.alignItems = "center";
 
     const image = document.createElement("img");
-    image.src = "https://ncaircalin.sharepoint.com/:i:/r/sites/TestMyGed/SiteAssets/images/logoGed.png?csf=1&web=1&e=CTrOpq";
+    image.src = "https://ncaircalin.sharepoint.com/:i:/r/sites/MyGed/SiteAssets/images/logoGed.png?csf=1&web=1&e=CTrOpq";
     image.alt = "Loading...";
     image.style.transform = "scale(1)";
     image.style.animation = "pulsate 1.5s ease-in-out infinite";
@@ -692,7 +690,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     console.log("LOADED");
 
-    await this.getBasePermTest2('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', folderInfo[0].ID)
+    await this.getBasePermTest2('df095fdf-9978-44f8-941c-23b6c095751a', folderInfo[0].ID)
       .then(async result => {
         // Handle the result
         console.log('High Value:', result.high);
@@ -701,9 +699,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         const high = result.high;
         const low = result.low;
 
-        if (high == 2147483647 && low == 4294967295) { //full control
+        if ((high == 2147483647 && low == 4294967295)  || (high == 2147483647 && low == 4294705151)) { //full control
           console.log("You have full control!");
-          const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+          const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
           await this.generateTable(permissions, Number(x));
        
         }
@@ -731,9 +729,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     //   if (isAdmin) {
     //     console.log('User is an administrator.');
-    //     // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //     // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
-    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
     //     await this.generateTable(permissions, Number(x));
     //     console.log("PERMISSIONS ON ITEM", permissions);
@@ -753,7 +751,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     //     console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
     //     $("#nav").css("display", "block");
 
-    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
     //     await this.generateTable(permissions, Number(x));
     //     console.log("PERMISSIONS ON ITEM", permissions);
 
@@ -900,7 +898,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
       alert("Autorisation ajoutée avec succès..");
-      window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${id}`;
+      window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${id}`;
     }
     catch (e) {
       alert("Error: " + e.message);
@@ -1051,8 +1049,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   alert("Dossier archivé avec succès.");
                 })
                 .then(() => {
-                  window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
-                  // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].ParentID}`;
+                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                  // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
                 });
 
 
@@ -1061,9 +1059,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               //     alert("Dossier supprimé avec succès.");
               //   })
               //   .then(() => {
-              //     window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
+              //     window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
 
-              //     // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].ParentID}`;
+              //     // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
               //   });
             }
             catch (err) {
@@ -1118,7 +1116,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   alert("Détails mis à jour avec succès");
                 })
                 .then(() => {
-                  window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`, "blank");
+                  window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, "blank");
                 });
 
             }
@@ -1249,7 +1247,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     })
                     .then(() => {
                       alert("Document creer avec succès");
-                      window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`;
+                      window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
                     });
 
                 }
@@ -1326,14 +1324,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     .then(() => {
 
                       if (folderInfo[0].FolderID !== 1) {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`;
+                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
 
                       }
 
                       else {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
+                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
                       }
-                      // window.open("https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=" + subId)
+                      // window.open("https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=" + subId)
                     });
 
                 });
@@ -1521,7 +1519,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 //   });
                 // })
                 .then(() => {
-                  window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`;
+                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
                 });
 
             }
@@ -1640,7 +1638,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               });
 
             alert("Parent permissions added.");
-            window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`;
+            window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
 
           }
           catch (e) {
@@ -1715,13 +1713,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         try {
           await sp.web.lists.getByTitle("Marque_Pages").items.add({
             Title: folderInfo[0].Title,
-            url: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`,
+            url: `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`,
             user: user_current.Title,
             FolderID: folderInfo[0].FolderID
           })
             .then(() => {
               alert("Ajoutee dans Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`;
+              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
             });
 
         }
@@ -1748,7 +1746,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             .delete()
             .then(() => {
               alert("Retiree depuis Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`;
+              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
             });
 
         }
@@ -1799,13 +1797,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           await sp.web.lists.getByTitle("Department").items.add({
             Title: folderInfo[0].Title,
-            url: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`,
+            url: `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`,
             // user: user_current.Title,
             FolderID: folderInfo[0].FolderID
           })
             .then(() => {
-              alert('Folder added to Department list.');
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].FolderID}`;
+              alert('Dossier ajouté à la liste des départements.');
+              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
 
             });
 
@@ -1834,7 +1832,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           // Delete the item from the Favourites list
           await sp.web.lists.getByTitle("Department").items.getById(items[0].ID).delete();
 
-          alert('Folder removed from Department list.');
+          alert('Dossier supprimé de la liste des services.');
+          window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+
         }
 
         catch (e) {
@@ -1899,8 +1899,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             <td class="text-left">${element.Title}</td>
   
             <td class="text-left" style="
-            padding-left: 6rem;
-        "> 
+            padding-left: 6rem;"> 
             ${element.description}          
             </td>
   
@@ -1954,7 +1953,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   if (externalFileUrl == undefined || externalFileUrl == null || externalFileUrl == "") {
 
-                    if (this.getFileExtensionFromUrl(urlFile) !== "pdf" || element.IsFiligrane === "NO") {
+                    if (this.getFileExtensionFromUrl(urlFile) !== "pdf") {
 
                       // if (element.IsFiligrane == "NO") {
                       window.open(`${urlFile}`, '_blank');
@@ -1997,8 +1996,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 });
 
                 //view details_doc
+                // await btn_view_doc_details?.addEventListener('click', async () => {
+                //   window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                // });
+
                 await btn_view_doc_details?.addEventListener('click', async () => {
-                  window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`;
                 });
 
                 $("#edit_cancel").click(() => {
@@ -2262,7 +2265,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async createWebpageInIframe2(url, filename: any) {
 
-    // const encodedUrl = encodeURIComponent("https://ncaircalin.sharepoint.com/sites/TestMyGed/Lists/Documents/Attachments/27935/MANUEL%20ENTREPRISE%20-%20Edt7%20-%20Amdt8%20-%20COMPLET.pdf");
+    // const encodedUrl = encodeURIComponent("https://ncaircalin.sharepoint.com/sites/MyGed/Lists/Documents/Attachments/27935/MANUEL%20ENTREPRISE%20-%20Edt7%20-%20Amdt8%20-%20COMPLET.pdf");
     const pdfBytes = await this.generatePdfBytes2(url);
     const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
 
@@ -3116,7 +3119,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async addBookmark(docID: any, title: any) {
     // Get the current page URL and title
-    var url = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${docID}`;
+    var url = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${docID}`;
     //  var title = document.title;
     let user_current = await sp.web.currentUser();
 
@@ -3154,7 +3157,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async addDept(docID: any, title: any) {
     // Get the current page URL and title
-    var url = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${docID}`;
+    var url = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${docID}`;
     //  var title = document.title;
     let user_current = await sp.web.currentUser();
 
@@ -3231,7 +3234,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               alignItems: "center",
             }}
           >
-            <img src="https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/loader.gif" alt="Loading..." />
+            <img src="https://ncaircalin.sharepoint.com/sites/MyGed/SiteAssets/images/loader.gif" alt="Loading..." />
           </div>
         );
       }
@@ -3309,7 +3312,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 <div className="dossier_headers">
                   <div className="container1">
                     <div className="image">
-                      <img src='https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/flower.png' />
+                      <img src='https://ncaircalin.sharepoint.com/sites/MyGed/SiteAssets/images/flower.png' />
                       <h2 id='h2_folderName'>
                         Gestion Documentaire
                       </h2>
@@ -3933,7 +3936,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     try {
 
-      const { permissions } = await this.getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+      const { permissions } = await this.getSitePermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
       console.log("groups", permissions);
 
@@ -4045,7 +4048,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           alert("Autorisation supprimer à ce dossier avec succès.");
         })
         .then(() => {
-          window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${key}`;
+          window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${key}`;
         });
     }
 
@@ -4467,7 +4470,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         // }));
 
         alert("Authorization added successfully.");
-        window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
       }
       catch (e) {
         alert("Error: " + e.message);
@@ -4621,7 +4624,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                     if (externalFileUrl == undefined || externalFileUrl == null || externalFileUrl == "") {
 
-                      if (getFileExtensionFromUrl(urlFile) !== "pdf" || element.IsFiligrane === "NO") {
+                      if (getFileExtensionFromUrl(urlFile) !== "pdf") {
                         // if (element.IsFiligrane == "NO") {
                         window.open(`${urlFile}`, '_blank');
                       }
@@ -4672,8 +4675,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   });
 
                   //view details_doc
+                  // await btn_view_doc_details?.addEventListener('click', async () => {
+                  //   window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                  // });
+
                   await btn_view_doc_details?.addEventListener('click', async () => {
-                    window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
+                    window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`;
                   });
 
                   $("#edit_cancel").click(() => {
@@ -4926,7 +4933,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         //         alert("Dossier supprimé avec succès.");
         //       })
         //       .then(() => {
-        //         window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
+        //         window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
         //       });
         //   }
         //   catch (err) {
@@ -4951,8 +4958,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 alert("Dossier archivé avec succès.");
               })
               .then(() => {
-                window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
-                // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].ParentID}`;
+                window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
               });
 
 
@@ -4961,9 +4968,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             //     alert("Dossier supprimé avec succès.");
             //   })
             //   .then(() => {
-            //     window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
+            //     window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
 
-            //     // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].ParentID}`;
+            //     // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
             //   });
           }
           catch (err) {
@@ -5039,13 +5046,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         try {
           await sp.web.lists.getByTitle("Marque_Pages").items.add({
             Title: item.label,
-            url: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`,
+            url: `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`,
             user: user_current.Title,
             FolderID: item.key
           })
             .then(() => {
               alert("Ajoutee dans Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
             });
 
         }
@@ -5072,7 +5079,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             .delete()
             .then(() => {
               alert("Retiree depuis Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
             });
 
         }
@@ -5125,13 +5132,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           await sp.web.lists.getByTitle("Department").items.add({
             Title: item.label,
-            url: `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`,
+            url: `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`,
             // user: user_current.Title,
             FolderID: item.key
           })
             .then(() => {
-              alert('Folder added to Department list.');
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+              alert('Dossier ajouté à la liste des départements.');
+              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
 
             });
 
@@ -5160,7 +5167,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           // Delete the item from the Favourites list
           await sp.web.lists.getByTitle("Department").items.getById(items[0].ID).delete();
 
-          alert('Folder removed from Department list.');
+          alert('Dossier supprimé de la liste des services.');
+          window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
         }
 
         catch (e) {
@@ -5495,7 +5504,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               
 
-              await getBasePermTest2('cf8c4d1b-7b53-4dfe-b602-998604e58b0f', item.id)
+              await getBasePermTest2('df095fdf-9978-44f8-941c-23b6c095751a', item.id)
                 .then(async result => {
                   // Handle the result
                   console.log('High Value:', result.high);
@@ -5504,11 +5513,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   const high = result.high;
                   const low = result.low;
 
-                  if (high == 2147483647 && low == 4294967295) { //full control
+                  if ((high == 2147483647 && low == 4294967295) || (high == 2147483647 && low == 4294705151)) { //full control
                     console.log("You have full control!");
                     $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder, #ajouteDoc, #bouton_bookmark").css("display", "block");
 
-                    const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+                    const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
                     await generateTable(permissions, Number(x));
                     console.log("PERMISSIONS ON ITEM", permissions);
@@ -5545,7 +5554,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   console.error('Error:', error);
                 });
 
-              //  const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              //  const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
 
 
@@ -5561,7 +5570,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
 
-              //     //  const { permissions } = await getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              //     //  const { permissions } = await getSitePermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
 
               //     // console.log("All the ad groups on this site", permissions);
@@ -5581,7 +5590,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               //     console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
               //     $("#nav").css("display", "block");
 
-              //     const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              //     const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
               //     await generateTable(permissions, Number(x));
               //     console.log("PERMISSIONS ON ITEM", permissions);
 
@@ -5597,7 +5606,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               //       $("#inheritparagraph").css("display", "none");
               //     }
 
-              //     // const { permissions } = await getSitePermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              //     // const { permissions } = await getSitePermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
 
               //     // console.log("All the ad groups on this site", permissions);
@@ -5610,7 +5619,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
 
-              // const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              // const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
               // await generateTable(permissions, Number(x));
               // console.log("PERMISSIONS ON ITEM", permissions);
@@ -5680,8 +5689,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                         alert("Dossier archivé avec succès.");
                       })
                       .then(() => {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
-                        // window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${folderInfo[0].ParentID}`;
+                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                        // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
                       });
                   }
                   catch (err) {
@@ -5736,7 +5745,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                         alert("Détails mis à jour avec succès");
                       })
                       .then(() => {
-                        window.open(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`, "blank");
+                        window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, "blank");
                       });
 
                   }
@@ -5863,7 +5872,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                           })
                           .then(({ item_id, item_title }) => {
                             alert("Document creer avec succès");
-                            window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Document.aspx?document=${item_title}&documentId=${item_id}`;
+                            window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${item_title}&documentId=${item_id}`;
                           });
 
                       }
@@ -5944,11 +5953,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                           })
                           .then(() => {
                             if (item.key !== 1) {
-                              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+                              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
                             }
 
                             else {
-                              window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx`;
+                              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
                             }
                           });
 
@@ -6124,7 +6133,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       //   });
                       // })
                       .then(() => {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
                       });
 
                   }
@@ -6250,7 +6259,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     });
 
                   alert("Parent permissions added.");
-                  window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/Home.aspx?folder=${item.key}`;
+                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
 
                 }
                 catch (e) {
