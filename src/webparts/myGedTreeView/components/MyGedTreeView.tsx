@@ -113,6 +113,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import 'datatables.net';
 import * as moment from 'moment';
 import 'downloadjs';
+import { Navigation } from 'spfx-navigation';
 
 
 var department;
@@ -171,13 +172,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       if (!this.state.isToggledOn) {
         await this.addBookmark(x, y);
         alert("Vous avez ajouté ce document comme favori.");
-        window.location.href = url;
+        //window.location.href = url;
+        Navigation.navigate(url, true);
+
 
       }
       else {
         await this.removeBookmark(x);
         alert("Vous avez supprimé ce document des favoris.");
-        window.location.href = url;
+        Navigation.navigate(url, true);
+        // window.location.href = url;
 
       }
     } catch (error) {
@@ -203,12 +207,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       if (!this.state.isToggleOnDept) {
         await this.addDept(x, y);
         alert("You have entered this folder in department list.");
-        window.location.href = url;
+        // window.location.href = url;
+        Navigation.navigate(url, true);
       }
       else {
         await this.removeDept(x);
         alert("You have removed this folder in department list.");
-        window.location.href = url;
+        // window.location.href = url;
+        Navigation.navigate(url, true);
       }
     } catch (error) {
       alert("Failed to update list: " + error);
@@ -240,14 +246,15 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   }
 
   private async _getLinks3(sp) {
-    // Retrieve all items from the "Documents" list with the "IsFolder" field set to "TRUE"
-    const allItems: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("ID,ParentID,FolderID,Title,IsFolder,description")
+    // Retrieve all items from the "Documents1" list with the "IsFolder" field set to "TRUE"
+    const allItems: any[] = await sp.web.lists.getByTitle('Documents1').items
+      .select("ID,ParentID,FolderID,Title,IsFolder,description, FileDirRef")
       .filter("IsFolder eq 'TRUE'")
       .getAll();
 
     // Create a flat map of all items
     const itemsMap = new Map<number, ITreeItem>();
+
     allItems.forEach(item => {
       const treeItem: ITreeItem = {
         id: item.ID,
@@ -259,7 +266,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         revision: "",
         file: "No",
         description: item.description,
-        parentID: item.ParentID
+        parentID: item.ParentID,
+        path: item.FileDirRef
       };
       itemsMap.set(treeItem.key, treeItem);
     });
@@ -275,7 +283,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         const parentItem = itemsMap.get(item.parentID);
         if (parentItem) {
           parentItem.children.push(item);
-       //   parentItem.children.sort((a, b) => a.label.substr(0, 3).localeCompare(b.label.substr(0, 3))); // Sort children alphabetically by label
+          //   parentItem.children.sort((a, b) => a.label.substr(0, 3).localeCompare(b.label.substr(0, 3))); // Sort children alphabetically by label
           parentItem.children.sort((a, b) => a.label.localeCompare(b.label)); // Sort children alphabetically by label
         } else {
           rootItems.push(item); // Add item to root if parent not found
@@ -297,7 +305,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       }
       return tree;
     }).sort((a, b) => a.label.localeCompare(b.label));
-    
+
 
 
 
@@ -325,18 +333,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   //   }
   // }
 
-  private async getAllGroups(graphClient: MSGraphClient): Promise<Group[]> {
-    const allGroups: Group[] = [];
 
-    let nextPageUrl = '/groups';
-    while (nextPageUrl) {
-      const response = await graphClient.api(nextPageUrl).version('v1.0').get();
-      allGroups.push(...response.value);
-      nextPageUrl = response["@odata.nextLink"] ?? null;
-    }
-
-    return allGroups;
-  }
 
   private async getAllGroups2(graphClient: MSGraphClient): Promise<Group[]> {
     const groupIds = ["20", "17", "12"]; // Specify the group IDs to retrieve
@@ -380,31 +377,54 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     }
   }
 
+  // public async doesRoleAssignmentExist(item, roleAssignmentId) {
+  //   try {
+  //     // Try to get the role assignment by ID
+  //     await item.roleAssignments.getById(roleAssignmentId).get();
+  //     return true; // Role assignment exists
+  //   } catch (error) {
+  //     if (error && error.statusCode === 404) {
+  //       return false; // Role assignment does not exist
+  //     }
+  //     throw error; // Unexpected error occurred
+  //   }
+  // }
+
+  public async doesRoleAssignmentExist(item, roleAssignmentId) {
+    try {
+      // Try to get the role assignment by ID
+      await item.roleAssignments.getById(roleAssignmentId).get();
+      return true; // Role assignment exists
+    } catch (error) {
+      if (error && error.statusCode === 404) {
+        return false; // Role assignment does not exist
+      }
+      return false; // Any other error is treated as non-existent role assignment
+    }
+  };
+
+
   public async generateTable(groups: any, x) {
     {
 
       var value2 = 'TRUE';
 
-      const folderInfo = await sp.web.lists.getByTitle('Documents').items
-        .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, inheriting")
+      const folderInfo = await sp.web.lists.getByTitle('Documents1').items
+        .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable")
         .top(5000)
         .filter(`FolderID eq '${x}' and IsFolder eq '${value2}'`)
         .getAll();
 
       var permission_container: Element = document.getElementById("spListPermissions");
-
+      let user_current = await sp.web.currentUser();
       // while (permission_container.firstChild) {
       //   permission_container.removeChild(permission_container.firstChild);
       // }
-
-
       // permission_container.innerHTML = "";
-
       // var response = null;
-      let html: string = `<table id='tbl_permission' className='table table-striped' style="width: 100%;">`;
 
+      let html: string = `<table id='tbl_permission' className='table table-striped' style="width: 100%;">`;
       html += `<thead>
-  
       <tr>
       <th class="text-left">Id</th>
         <th class="text-left">Nom</th>
@@ -415,34 +435,30 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         <tbody id="tbl_permission_bdy">
         `;
 
-
       for (const element1 of groups) {
 
-        //  if (element1.role !== "NONE") {
-        html += `
-          <tr>
-          <td class="text-left" id="${element1.id}">${element1.id}</td>
+        // if (element1.title !== "Musharaf GOLAPKHAN" || element1.Title !== user_current.Title) {
+        if (element1.role !== "Limited Access" && element1.role !== "Accès limité") {
 
-          <td class="text-left" id="${element1.id}_personName">${element1.title}</td>
-          
-          <td class="text-center" id="${element1.id}_permission_value"> ${element1.role} </td>
-
-          <td class="text-center">
-          <a id="btn${element1.id}_edit" class='buttoncss' role="button">
-          
-          <svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="trash-can" class="svg-inline--fa fa-trash-can fa-icon fa-2x" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                    <path fill="currentColor" d="M160 400C160 408.8 152.8 416 144 416C135.2 416 128 408.8 128 400V192C128 183.2 135.2 176 144 176C152.8 176 160 183.2 160 192V400zM240 400C240 408.8 232.8 416 224 416C215.2 416 208 408.8 208 400V192C208 183.2 215.2 176 224 176C232.8 176 240 183.2 240 192V400zM320 400C320 408.8 312.8 416 304 416C295.2 416 288 408.8 288 400V192C288 183.2 295.2 176 304 176C312.8 176 320 183.2 320 192V400zM317.5 24.94L354.2 80H424C437.3 80 448 90.75 448 104C448 117.3 437.3 128 424 128H416V432C416 476.2 380.2 512 336 512H112C67.82 512 32 476.2 32 432V128H24C10.75 128 0 117.3 0 104C0 90.75 10.75 80 24 80H93.82L130.5 24.94C140.9 9.357 158.4 0 177.1 0H270.9C289.6 0 307.1 9.358 317.5 24.94H317.5zM151.5 80H296.5L277.5 51.56C276 49.34 273.5 48 270.9 48H177.1C174.5 48 171.1 49.34 170.5 51.56L151.5 80zM80 432C80 449.7 94.33 464 112 464H336C353.7 464 368 449.7 368 432V128H80V432z">
-                    </path></svg>
-          
-          </a>
-        </td>
-          
-
-          </tr>
-          `;
-
-        //  }
-
+          //  if (element1.role !== "NONE") {
+          html += `
+            <tr>
+            <td class="text-left" id="${element1.id}">${element1.id}</td>
+  
+            <td class="text-left" id="${element1.id}_personName">${element1.title}</td>
+            
+            <td class="text-center" id="${element1.id}_permission_value"> ${element1.role} </td>
+  
+            <td class="text-center">
+            <a id="btn${element1.id}_edit" class='buttoncss' role="button" title="Suppression">
+            <svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="trash-can" class="svg-inline--fa fa-trash-can fa-icon fa-2x" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                      <path fill="currentColor" d="M160 400C160 408.8 152.8 416 144 416C135.2 416 128 408.8 128 400V192C128 183.2 135.2 176 144 176C152.8 176 160 183.2 160 192V400zM240 400C240 408.8 232.8 416 224 416C215.2 416 208 408.8 208 400V192C208 183.2 215.2 176 224 176C232.8 176 240 183.2 240 192V400zM320 400C320 408.8 312.8 416 304 416C295.2 416 288 408.8 288 400V192C288 183.2 295.2 176 304 176C312.8 176 320 183.2 320 192V400zM317.5 24.94L354.2 80H424C437.3 80 448 90.75 448 104C448 117.3 437.3 128 424 128H416V432C416 476.2 380.2 512 336 512H112C67.82 512 32 476.2 32 432V128H24C10.75 128 0 117.3 0 104C0 90.75 10.75 80 24 80H93.82L130.5 24.94C140.9 9.357 158.4 0 177.1 0H270.9C289.6 0 307.1 9.358 317.5 24.94H317.5zM151.5 80H296.5L277.5 51.56C276 49.34 273.5 48 270.9 48H177.1C174.5 48 171.1 49.34 170.5 51.56L151.5 80zM80 432C80 449.7 94.33 464 112 464H336C353.7 464 368 449.7 368 432V128H80V432z">
+                      </path></svg>
+            </a>
+          </td>
+            </tr>
+            `;
+        }
       }
 
       html += `</tbody>
@@ -472,51 +488,44 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         $('#tbl_permission tbody').on('click', '.buttoncss', async (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
-          alert("Remove permission with people id" + data[0]);
 
-          try {
+          if (confirm(`Voulez-vous vraiment supprimer '${data[1]}' de ce dossier ?\nATTENTION : l'héritage des droits pour ce dossier sera rompu.`)) {
+            try {
 
-            console.log("KEY", folderInfo[0].FolderID);
+              const loader = document.createElement("div");
+              loader.id = "loader2";
+              loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations sont en cours de suppression.</div>"; // Add the text here
+              document.body.appendChild(loader);
 
-            var x = await this.getChildrenById(folderInfo[0].FolderID, []);
+              try {
+                console.log("KEY", folderInfo[0].FolderID);
 
+                const list = sp.web.lists.getByTitle("Documents1");
+                const _item = await list.items.getById(folderInfo[0].ID);
 
-            await sp.web.lists.getByTitle("AccessRights").items.add({
-              Title: folderInfo[0].Title.toString(),
-              groupName: $("#users_name").val(),
-              permission: "NONE",
-              FolderID: folderInfo[0].ID.toString(),
-              PrincipleID: data[0]
-              //  RoleDefID: permission
-            })
-              .then(async () => {
-                await Promise.all(x.map(async (item_group) => {
-                  await sp.web.lists.getByTitle("AccessRights").items.add({
-                    Title: item_group.Title.toString(),
-                    groupName: $("#users_name").val(),
-                    permission: "NONE",
-                    FolderID: item_group.ID,
-                    PrincipleID: data[0]
-                  });
-                }));
+                // Break inheritance for the main folder
+                await _item.breakRoleInheritance(true, false);
+                await _item.roleAssignments.getById(data[0]).delete();
 
-              })
-              .then(async () => {
+                // Update the main folder's 'inheriting' property
+
+                // Process child items in batches to reduce API calls
+                document.body.removeChild(loader);
                 alert("Autorisation supprimée avec succès.");
-                await sp.web.lists.getByTitle("Documents").items.getById(folderInfo[0].ID).update({
-                  inheriting: "NO"
-                }).then(result => {
-                  console.log("Item updated successfully");
-                }).catch(error => {
-                  console.log("Error updating item: ", error);
-                });
 
-                window.location.reload();
+                // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+                Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
 
-              });
-          }
-          catch (e) {
-            console.log(e.message);
+              } catch (e) {
+                console.log(e.message);
+                alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+                document.body.removeChild(loader);
+              }
+
+
+            } catch (err) {
+              alert(err.message);
+            }
           }
 
           // await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
@@ -566,7 +575,63 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
       // }));
+    }
+  }
 
+  public async removePermissionsOnItem(listTitle, itemId) {
+    const list = sp.web.lists.getByTitle(listTitle);
+    const item = await list.items.getById(itemId);
+
+    // Break inheritance on the item
+    await item.breakRoleInheritance(true, false);
+
+    const roleAssignments = await item.roleAssignments();
+
+    console.log("PERMISSIONS TO B REMOVED", roleAssignments);
+
+    // Delete each role assignment
+    for (const roleAssignment of roleAssignments) {
+      await item.roleAssignments.getById(roleAssignment.PrincipalId).delete();
+      // await item.roleAssignments.remove(roleAssignment.PrincipalId, roleAssignment.);
+    }
+
+    console.log('User permissions removed successfully.');
+  }
+
+  public async setPermissionsOnItem(listTitle, itemId, permissions) {
+    try {
+      const list = sp.web.lists.getByTitle(listTitle);
+      const item = await list.items.getById(itemId);
+
+      for (const permission of permissions) {
+
+        if (permission.role === "Read") {
+          const roleAssignments = item.roleAssignments;
+          await roleAssignments.add(permission.id, 1073741826);
+        }
+
+        else if (permission.role === "Full Control") {
+          const roleAssignments = item.roleAssignments;
+          await roleAssignments.add(permission.id, 1073741829);
+        }
+
+        else if (permission.role === "Edit") {
+          const roleAssignments = item.roleAssignments;
+          await roleAssignments.add(permission.id, 1073741830);
+        }
+
+        else {
+
+        }
+        // Updated line
+      }
+
+      console.log('Permissions set successfully.');
+
+      return true;
+    } catch (error) {
+      console.error('Error setting permissions:', error);
+      return false;
     }
   }
 
@@ -641,7 +706,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     // this.loadPdfJs();
 
 
-
     if (x == null || x == undefined || x == "") {
       x = "1";
     }
@@ -691,39 +755,70 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var value2 = 'TRUE';
 
-    const folderInfo = await sp.web.lists.getByTitle('Documents').items
-      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, inheriting")
+    const folderInfo = await sp.web.lists.getByTitle('Documents1').items
+      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable")
       .top(5000)
       .filter(`FolderID eq '${x}' and IsFolder eq '${value2}'`)
       .getAll();
 
     console.log("LOADED");
 
-    await this.getBasePermTest2('df095fdf-9978-44f8-941c-23b6c095751a', folderInfo[0].ID)
+    await this.getBasePermTest2('be040ad0-c2e1-45bf-9a2d-3503043fb77b', folderInfo[0].ID)
       .then(async result => {
         // Handle the result
         console.log('High Value:', result.high);
         console.log('Low Value:', result.low);
 
+        let user_current = await sp.web.currentUser();
+
         const high = result.high;
         const low = result.low;
 
-        if ((high == 2147483647 && low == 4294967295)  || (high == 2147483647 && low == 4294705151)) { //full control
+        if ((high == 2147483647 && low == 4294967295) || (high == 2147483647 && low == 4294705151)) { //full control
           console.log("You have full control!");
-          const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-          await this.generateTable(permissions, Number(x));
-       
+          $("#heriter_input").val(folderInfo[0].inheriting);
+          const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+          const excludedItems = permissions.filter(item => item.title !== user_current.Title);
+
+          if (excludedItems.length === 0) {
+
+
+            await this.generateTable([{ type: 'member', id: '', role: 'Full Control', title: 'MYGED_ADMIN' }], Number(x));
+
+
+          } else {
+            await this.generateTable(excludedItems, Number(x));
+          }
+
+          // await this.generateTable(excludedItems, Number(x));
+
         }
+        // else if (high == 432 && low == 1011030767) { //edit
+        //   $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder").css("display", "none");
+        // }
+        // else if (high == 176 && low == 138612833) { //read
+        //   $("#nav").css("display", "none");
+        // }
+
+        // else {
+
+        // }
+
         else if (high == 432 && low == 1011030767) { //edit
+          console.log("You can edit!");
           $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder").css("display", "none");
+          $("#ajouteDoc, #bouton_bookmark").css("display", "block");
         }
         else if (high == 176 && low == 138612833) { //read
-          $("#nav").css("display", "none");
+          console.log("You can only read!");
+          $("#bouton_bookmark").css("display", "block");
+          $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder, #ajouteDoc").css("display", "none");
         }
 
         else {
 
         }
+
       })
       .catch(error => {
         // Handle any errors
@@ -738,9 +833,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     //   if (isAdmin) {
     //     console.log('User is an administrator.');
-    //     // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //     // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
-    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
     //     await this.generateTable(permissions, Number(x));
     //     console.log("PERMISSIONS ON ITEM", permissions);
@@ -760,7 +855,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     //     console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
     //     $("#nav").css("display", "block");
 
-    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+    //     const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", folderInfo[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
     //     await this.generateTable(permissions, Number(x));
     //     console.log("PERMISSIONS ON ITEM", permissions);
 
@@ -869,13 +964,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   }
 
-  private async add_permission_group2(group_name: string, permission: any, id: any, foldertitle: any, folderid: any, inherit: any, principleIdOfGroup: any) {
-
-
+  private async add_permission_group2(group_name: string, permission: any, id: any, foldertitle: any, folderid: any, inherit: any, principleIdOfGroup: any, gedID) {
 
     try {
 
-      var x = await this.getChildrenById(id, []);
+      var x = await this.getChildrenById2(id, []);
+      console.log("CHILD", x);
 
       await sp.web.lists.getByTitle("AccessRights").items.add({
         Title: foldertitle.toString(),
@@ -884,30 +978,32 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         FolderID: folderid,
         PrincipleID: principleIdOfGroup,
         groupTitle: group_name,
-        RoleDefID: permission
-      })
+        RoleDefID: permission,
+        ged_ID: gedID,
+        ChildIds: folderid + "," + x
+      });
 
-        .then(async () => {
+      // .then(async () => {
 
-          await Promise.all(x.map(async (item_group) => {
+      //   await Promise.all(x.map(async (item_group) => {
 
-            await sp.web.lists.getByTitle("AccessRights").items.add({
-              Title: item_group.Title.toString(),
-              groupName: group_name,
-              permission: $("#permissions_group option:selected").val(),
-              FolderID: item_group.ID,
-              PrincipleID: principleIdOfGroup,
-              groupTitle: group_name,
-              RoleDefID: permission
-            });
+      //     await sp.web.lists.getByTitle("AccessRights").items.add({
+      //       Title: item_group.Title.toString(),
+      //       groupName: group_name,
+      //       permission: $("#permissions_group option:selected").val(),
+      //       FolderID: item_group.ID,
+      //       PrincipleID: principleIdOfGroup,
+      //       groupTitle: group_name,
+      //       RoleDefID: permission
+      //     });
 
-          }));
+      //   }));
 
-        });
+      // });
 
 
       alert("Autorisation ajoutée avec succès..");
-      window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${id}`;
+      // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${id}`;
     }
     catch (e) {
       alert("Error: " + e.message);
@@ -917,22 +1013,119 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async getChildrenById(id, items) {
 
-    const children = await sp.web.lists.getByTitle("Documents").items
-      .select("ID, Title, ParentID, inheriting, FolderID")
+    const children = await sp.web.lists.getByTitle("Documents1").items
+      .select("ID, Title, ParentID, FolderID")
       .filter(`ParentID eq '${id}'`)
       .get();
 
     let result = [];
 
     for (const child of children) {
-      result.push(child);
-      const subChildren = await this.getChildrenById(child.FolderID, items);
+      if (child.inheriting === "YES") {
+        result.push(child);
+        const subChildren = await this.getChildrenById(child.FolderID, items);
 
-      result = [...result, ...subChildren];
+        result = [...result, ...subChildren];
+      }
     }
+
+    console.log("CHILDS", result);
 
     return result;
   }
+
+  private async getChildrenById2(id, items) {
+
+    const children = await sp.web.lists.getByTitle("Documents1").items
+      .select("ID, Title, ParentID, FolderID")
+      .filter(`ParentID eq '${id}'`)
+      .get();
+
+    let result = [];
+
+    for (const child of children) {
+
+      if (child.inheriting === "YES") {
+        result.push(child.ID);
+        const subChildren = await this.getChildrenById2(child.FolderID, items);
+        result = result.concat(subChildren);
+      }
+
+      //  const subChildren = await getChildrenById(child.ID, items);
+      //  ine fr changement
+
+    }
+
+    const filteredResult = result.filter(Boolean); // Remove empty values
+
+    console.log("CHILDS", result);
+    return filteredResult.join(",");
+  }
+
+  public async downloadFile(url, filename, folderID) {
+
+    try {
+
+      const message = document.createElement('div');
+      message.textContent = 'Downloading file...';
+      message.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #f54630;
+        color: white;
+        text-align: center;
+        font-size: 24px;
+        padding: 10px 0;
+      `;
+
+      document.body.appendChild(message);
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const a = document.createElement("a");
+      const downloadUrl = URL.createObjectURL(blob);
+      a.href = downloadUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(downloadUrl);
+
+
+      document.body.removeChild(message);
+    }
+
+    catch (e) {
+      alert("Cannot download this file for the following reason: " + e);
+
+      // Remove the message from the DOM in case of an error
+      const message = document.querySelector('div');
+      if (message) {
+        document.body.removeChild(message);
+      }
+
+      window.location.reload();
+    }
+
+  }
+
+  private async getChildrenById3(id, items) {
+    const children = await sp.web.lists.getByTitle("Documents1").items
+      .select("ID, Title, ParentID, FolderID, FileDirRef")
+      .filter(`ParentID eq '${id}' and IsFolder eq 'TRUE'`)
+      .get();
+
+    let result = [];
+
+    for (const child of children) {
+      result.push(child); // Push the entire object into the array
+      const subChildren = await this.getChildrenById3(child.FolderID, items);
+      result = result.concat(subChildren);
+    }
+
+    console.log("CHILDREN", result);
+    const filteredResult = result.filter(Boolean); // Remove empty values
+    return filteredResult;
+  };
 
   private async fetchDocuments(itemKey: number): Promise<void> {
 
@@ -942,19 +1135,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     let html_document = '';
     let value1 = "FALSE";
     let value2 = "TRUE";
-    let value3 = "";
     let principleIdOfGroup = "";
 
     let pdfName = '';
 
     console.log("ITEM KEY", itemKey);
 
-    const folderInfo = await sp.web.lists.getByTitle('Documents').items
-      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, inheriting")
+    const folderInfo = await sp.web.lists.getByTitle('Documents1').items
+      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, HasUniqueRoleAssignments, FileDirRef")
       .top(5000)
       .filter(`FolderID eq '${itemKey}' and IsFolder eq '${value2}'`)
       .getAll();
-
 
     {
       {
@@ -986,8 +1177,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         var istrue = "TRUE";
 
         if (folderInfo[0].ParentID !== null) {
-          const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("FolderID eq '" + folderInfo[0].ParentID + "' and IsFolder eq '" + istrue + "'").getAll();
+          const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents1').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description,FileDirRef").filter("FolderID eq '" + folderInfo[0].ParentID + "' and IsFolder eq '" + istrue + "'").getAll();
           $("#parent_folder").val(allItemsFolder[0].FolderID + "_" + allItemsFolder[0].Title);
+          $('#parent_path').val(`${allItemsFolder[0].FileDirRef}`);
+
 
         }
         else {
@@ -999,6 +1192,19 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         $("#folder_name1").val(folderInfo[0].Title);
         $("#folder_desc").val(folderInfo[0].description);
       }
+
+      $("#parent_folder").bind('input', () => {
+        const shownVal = $("#parent_folder").val(); // Get the input value
+
+        const selectedOption = $("#folders option[value='" + shownVal + "']"); // Find the selected option
+        const fileDirRef = selectedOption.data("filedirref"); // Access the data attribute
+
+        console.log(fileDirRef);
+
+        // Do something with the fileDirRef value
+        // For example, set the value of another element with the ID "created_by"
+        $("#parent_path").val(fileDirRef);
+      });
 
       //check checkboxes
 
@@ -1049,21 +1255,96 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             try {
 
-              const list = sp.web.lists.getByTitle("Documents");
+              const list = sp.web.lists.getByTitle("Documents1");
 
               const i = await list.items.getById(folderInfo[0].ID).update({
+                Title: folderInfo[0].Title,
                 ParentID: 791,
+                FileLeafRef: `1_.000/303_.000/${folderInfo[0].ID}_.000`
               })
+
+                .then(async () => {
+
+                  const i = await list.items.getById(folderInfo[0].ID).update({
+                    Title: folderInfo[0].Title,
+                    Current: `Gestion Documentaire/ARCHIVES`
+                  });
+
+                })
+                .then(async () => {
+                  const list = sp.web.lists.getByTitle('Documents1');
+
+                  var childs = await this.getChildrenById3(folderInfo[0].FolderID, []);
+
+                  if (childs.length > 0) {
+
+                    const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                      .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                      .filter(`IsFolder eq 'TRUE'`)
+                      .getAll();
+
+                    for (const item_ of childs) {
+
+                      try {
+
+                        const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                        // const _item = allFolders.find(folder => folder.ID === item_);
+
+                        // console.log("_ITEM", _item);
+
+                        const fileDir = item_.FileDirRef;
+
+                        console.log("_ITEM_FILEDIR", item_.FileDirRef);
+
+                        const modifiedFileDir = fileDir.replace(listUri, '');
+
+                        const parts = modifiedFileDir.split('/');
+
+                        const reconstructedPath = parts
+                          .map(part => {
+                            const id = parseInt(part.split('_')[0]);
+                            const folder = allFolders.find(folder => folder.ID === id);
+                            return folder ? folder.Title : '';
+                          })
+                          .join('/');
+
+                        console.log({ "Title ": item_.Title, "Path": reconstructedPath })
+
+
+                        const i = await list.items.getById(Number(item_.ID)).update({
+                          Current: reconstructedPath
+                        });
+                      }
+                      catch (e) {
+
+                        console.log(e.message);
+
+                      }
+
+                      // const rootFolder = await list.items.up({
+                      //   Title: item_.Title,
+                      //   FolderID: item_.FolderID,
+                      //   ParentID: item_.ParentID,
+                      //   IsFolder: "TRUE",
+                      //   description: item_.description,
+                      //   FileSystemObjectType: 1,
+                      //   ContentTypeId: '0x0120'
+                      // });
+                    }
+                  }
+                })
                 .then(() => {
                   alert("Dossier archivé avec succès.");
                 })
                 .then(() => {
-                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                  // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                  Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`, true);
                   // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
                 });
 
 
-              // var res = await sp.web.lists.getByTitle('Documents').items.getById(parseInt(folderInfo[0].ID)).delete()
+              // var res = await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(folderInfo[0].ID)).delete()
               //   .then(() => {
               //     alert("Dossier supprimé avec succès.");
               //   })
@@ -1104,10 +1385,36 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         const btn_edit_dossier = document.getElementById(folderInfo[0].ID + '_update_details');
 
+
         await btn_edit_dossier?.addEventListener('click', async () => {
+
+          const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+            .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+            .filter(`IsFolder eq 'TRUE'`)
+            .getAll();
 
 
           let text = $("#parent_folder").val();
+          let path = $("#parent_path").val().toString();
+
+          var splitResult = path.split('/');
+
+          if (splitResult.length >= 6) {
+            var desiredSubstring = splitResult.slice(5).join('/');
+            // var path = splitResult
+          }
+
+          const parts = desiredSubstring.split('/');
+
+          const reconstructedPath = parts
+            .map(part => {
+              const id = parseInt(part.split('_')[0]);
+              const folder = allFolders.find(folder => folder.ID === id);
+              return folder ? folder.Title : '';
+            })
+            .join('/');
+
+
           const myArray = text.toString().split("_");
           let parentId = myArray[0];
 
@@ -1115,18 +1422,136 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             try {
 
-              const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(folderInfo[0].ID)).update({
+              const i = await await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(folderInfo[0].ID)).update({
                 Title: $("#folder_name1").val(),
                 description: $("#folder_desc").val(),
-                ParentID: parseInt(parentId)
+                ParentID: parseInt(parentId),
+                FileLeafRef: `${desiredSubstring}/${folderInfo[0].ID}_.000`,
+                Current: reconstructedPath
 
               })
-                .then(() => {
-                  alert("Détails mis à jour avec succès");
+                .then(async () => {
+
+
+                  const _item: any[] = await sp.web.lists.getByTitle('Documents1').items
+                    .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                    .filter(`IsFolder eq 'TRUE' and ID eq '${folderInfo[0].ID}'`)
+                    .getAll();
+
+                  const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                    .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                    .filter(`IsFolder eq 'TRUE'`)
+                    .getAll();
+
+                  const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                  const fileDir = _item[0].FileDirRef;
+
+                  console.log("_ITEM_FILEDIR", _item[0].FileDirRef);
+
+                  const modifiedFileDir = fileDir.replace(listUri, '');
+
+                  const parts = modifiedFileDir.split('/');
+
+                  const reconstructedPath = parts
+                    .map(part => {
+                      const id = parseInt(part.split('_')[0]);
+                      const folder = allFolders.find(folder => folder.ID === id);
+                      return folder ? folder.Title : '';
+                    })
+                    .join('/');
+
+                  console.log({ "Title ": _item[0].Title, "Path": reconstructedPath })
+
+                  const i = await await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(folderInfo[0].ID)).update({
+                    Current: reconstructedPath
+
+                  })
+
+                })
+                .then(async () => {
+                  const list = sp.web.lists.getByTitle('Documents1');
+
+
+                  var childs = await this.getChildrenById3(folderInfo[0].FolderID, []);
+
+                  if (childs.length > 0) {
+
+                    const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                      .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                      .filter(`IsFolder eq 'TRUE'`)
+                      .getAll();
+
+                    for (const item_ of childs) {
+
+                      try {
+
+                        const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                        // const _item = allFolders.find(folder => folder.ID === item_);
+
+                        // console.log("_ITEM", _item);
+
+                        const fileDir = item_.FileDirRef;
+
+                        console.log("_ITEM_FILEDIR", item_.FileDirRef);
+
+                        const modifiedFileDir = fileDir.replace(listUri, '');
+
+                        const parts = modifiedFileDir.split('/');
+
+                        const reconstructedPath = parts
+                          .map(part => {
+                            const id = parseInt(part.split('_')[0]);
+                            const folder = allFolders.find(folder => folder.ID === id);
+                            return folder ? folder.Title : '';
+                          })
+                          .join('/');
+
+                        console.log({ "Title ": item_.Title, "Path": reconstructedPath })
+
+
+                        const i = await list.items.getById(Number(item_.ID)).update({
+
+                          Current: reconstructedPath
+
+                        });
+                      }
+                      catch (e) {
+
+                        console.log(e.message);
+
+                      }
+
+
+
+
+                      // const rootFolder = await list.items.up({
+                      //   Title: item_.Title,
+                      //   FolderID: item_.FolderID,
+                      //   ParentID: item_.ParentID,
+                      //   IsFolder: "TRUE",
+                      //   description: item_.description,
+                      //   FileSystemObjectType: 1,
+                      //   ContentTypeId: '0x0120'
+                      // });
+                    }
+                  }
+
+
+
+
+
+
+
                 })
                 .then(() => {
-                  window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, "blank");
+
+
+                  alert("Détails mis à jour avec succès");
+                  window.location.reload();
                 });
+
 
             }
             catch (err) {
@@ -1158,6 +1583,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           if ($("#input_revision_add").val() == "") {
             alert("Veuillez mettre une révision avant de continuer.")
+          }
+
+          if ($("#input_doc_number_add").val() == "") {
+            alert("Veuillez mettre le nom du document avant de continuer.")
           }
 
           else {
@@ -1194,19 +1623,24 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               if (confirm(`Etes-vous sûr de vouloir creer un document ?`)) {
 
+                const currentDate = new Date();
+                const formattedDate = currentDate.toISOString().split('T')[0];
+                // console.log(formattedDate);
+
 
                 try {
 
-                  const i = await await sp.web.lists.getByTitle('Documents').items.add({
+                  const i = await await sp.web.lists.getByTitle('Documents1').items.add({
                     Title: $("#input_doc_number_add").val(),
                     description: $("#input_description_add").val(),
                     doc_number: $("#input_doc_number_add").val(),
                     revision: $("#input_revision_add").val(),
+                    revisionDate: moment($("#input_revision_date").val()).format("DD/MM/YYYY"),
                     ParentID: folderInfo[0].FolderID,
                     IsFolder: "FALSE",
                     keywords: $("#input_keywords_add").val(),
                     owner: user_current.Title,
-                    createdDate: new Date().toLocaleString(),
+                    createdDate: moment(formattedDate).format("DD/MM/YYYY"),
                     IsFiligrane: value_fili,
                     IsDownloadable: value_impri
                   })
@@ -1214,7 +1648,20 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                       //   item = iar.data.ID;
 
-                      const list = sp.web.lists.getByTitle("Documents");
+                      let listUri: string = '/sites/MyGed/Lists/Documents1';
+
+                      var splitResult = folderInfo[0].FileDirRef.split('/');
+
+                      if (splitResult.length >= 6) {
+                        var desiredSubstring = splitResult.slice(5).join('/');
+                      }
+
+                      await sp.web
+                        .getFileByServerRelativeUrl(`${listUri}/${iar.data.ID}_.000`)
+                        .moveTo(`${listUri}/${desiredSubstring}/${folderInfo[0].ID}_.000/${iar.data.ID}`);
+
+
+                      const list = sp.web.lists.getByTitle("Documents1");
 
                       await list.items.getById(iar.data.ID).attachmentFiles.add(fileName, content)
 
@@ -1241,22 +1688,29 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                             alert("Erreur: " + e.message);
                           }
 
-                        })
-
-                        .then(async () => {
-                          await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-                            Title: folderInfo[0].Title,
-                            FolderID: iar.data.ID,
-                            IsDone: "NO",
-                            ParentID: Number(folderInfo[0].FolderID)
-                          });
-
                         });
 
+                      var item_id = iar.data.ID,
+                        item_title = iar.data.Title;
+
+                      return { item_id, item_title };
+
+
                     })
-                    .then(() => {
+                    .then(({ item_id, item_title }) => {
                       alert("Document creer avec succès");
-                      window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+
+                      // const documentUrl = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+                      const documentUrl = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${item_title}&documentId=${item_id}`;
+
+
+                      // Append a cache-busting query parameter to the URL
+                      const cacheBuster = new Date().getTime();
+                      const noCacheUrl = `${documentUrl}&_=${cacheBuster}`;
+                      Navigation.navigate(noCacheUrl, true);
+
+                      // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+                      // Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}` , true);
                     });
 
                 }
@@ -1273,9 +1727,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             }
           }
-
-
-
 
         });
 
@@ -1298,52 +1749,112 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         await btn_add_subfolder?.addEventListener('click', async () => {
           var subId = null;
 
+          var splitResult = folderInfo[0].FileDirRef.split('/');
+
+          if (splitResult.length >= 6) {
+            var desiredSubstring = splitResult.slice(5).join('/');
+          }
+
           if ($("#folder_name").val() == '') {
             alert("Veuillez mettre une révision avant de continuer.")
           }
 
           else {
             try {
-              await sp.web.lists.getByTitle("Documents").items.add({
+              await sp.web.lists.getByTitle("Documents1").items.add({
                 Title: $("#folder_name").val(),
                 ParentID: folderInfo[0].FolderID,
-                IsFolder: "TRUE"
+                IsFolder: "TRUE",
+                FileSystemObjectType: 1,
+                ContentTypeId: '0x0120'
               })
                 .then(async (iar) => {
 
-                  const list = sp.web.lists.getByTitle("Documents");
+                  const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                    .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                    .filter(`IsFolder eq 'TRUE'`)
+                    .getAll();
+
+                  const parts = desiredSubstring.split('/');
+
+                  const reconstructedPath = parts
+                    .map(part => {
+                      const id = parseInt(part.split('_')[0]);
+                      const folder = allFolders.find(folder => folder.ID === id);
+                      return folder ? folder.Title : '';
+                    })
+                    .join('/');
+
+
+                  const list = sp.web.lists.getByTitle("Documents1");
 
                   subId = iar.data.ID;
 
                   await list.items.getById(iar.data.ID).update({
                     FolderID: parseInt(iar.data.ID),
+                    Title: $("#folder_name").val(),
+                    FileLeafRef: `${desiredSubstring}/${folderInfo[0].ID}_.000/${iar.data.ID}_.000`,
+                    Current: `${reconstructedPath}/${folderInfo[0].Title}`
 
-                  })
-                    .then(async () => {
+                  });
 
-                      await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-                        Title: folderInfo[0].Title,
-                        FolderID: iar.data.ID,
-                        IsDone: "NO",
-                        ParentID: Number(folderInfo[0].ID)
-                      });
+                  return subId;
+                })
+                .then(async (subId) => {
 
-                      alert(`Dossier ajouté avec succès`);
+                  const _item: any[] = await sp.web.lists.getByTitle('Documents1').items
+                    .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                    .filter(`IsFolder eq 'TRUE' and ID eq '${subId}'`)
+                    .getAll();
+
+                  const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                    .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                    .filter(`IsFolder eq 'TRUE'`)
+                    .getAll();
+
+                  const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                  const fileDir = _item[0].FileDirRef;
+
+                  console.log("_ITEM_FILEDIR", _item[0].FileDirRef);
+
+                  const modifiedFileDir = fileDir.replace(listUri, '');
+
+                  const parts = modifiedFileDir.split('/');
+
+                  const reconstructedPath = parts
+                    .map(part => {
+                      const id = parseInt(part.split('_')[0]);
+                      const folder = allFolders.find(folder => folder.ID === id);
+                      return folder ? folder.Title : '';
                     })
-                    .then(() => {
+                    .join('/');
 
-                      if (folderInfo[0].FolderID !== 1) {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+                  console.log({ "Title ": _item[0].Title, "Path": reconstructedPath })
 
-                      }
+                  const i = await await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(subId)).update({
+                    Current: reconstructedPath
 
-                      else {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
-                      }
-                      // window.open("https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=" + subId)
-                    });
+                  });
 
+                  alert(`Dossier ajouté avec succès`);
+
+                })
+                .then(() => {
+
+                  if (folderInfo[0].FolderID !== 1) {
+                    // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+                    Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
+
+                  }
+
+                  else {
+                    // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                    Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`, true);
+                  }
+                  // window.open("https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=" + subId)
                 });
+
 
             }
             catch (err) {
@@ -1409,11 +1920,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         });
       }
 
-      //
-      {
-
-      }
-
       //azoute permission
       {
 
@@ -1438,7 +1944,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         add_user_permission_container.innerHTML = add_btn_user_permission;
 
-        const btn_add_user = document.getElementById(folderInfo[0].ID + '_add_user');
+        const btn_add_user = document.getElementById(folderInfo[0].ID + '_add_user') as HTMLButtonElement;;
 
         var peopleID = null;
 
@@ -1455,6 +1961,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           }
           else {
 
+            const loader = document.createElement("div");
+            loader.id = "loader2";
+            loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations parent sont en cours d'ajout.</div>"; // Add the text here
+            document.body.appendChild(loader);
+
+            btn_add_user.disabled = true;
+
+            // Show loading text or spinner
+            btn_add_user.textContent = 'Loading...';
+
             if (selected_permission === "ALL") {
 
               permission = 1073741829;
@@ -1469,73 +1985,213 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             }
 
-
-            const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
-
-            users_Permission = user;
-
-            console.log("USERS FOR PERMISSION", users_Permission);
-
-            var x = await this.getChildrenById(folderInfo[0].FolderID, []);
-
-
             try {
-              console.log("KEY", folderInfo[0].FolderID);
+              const userEmail = $("#users_name").val().toString();
+              const user: any = await sp.web.siteUsers.getByEmail(userEmail)();
+              const userId = Number(user.Id);
+              console.log("USERS FOR PERMISSION", user);
 
-              await sp.web.lists.getByTitle("AccessRights").items.add({
-                Title: folderInfo[0].Title.toString(),
-                groupName: $("#users_name").val(),
-                permission: $("#permissions_user option:selected").val(),
-                FolderID: folderInfo[0].ID.toString(),
-                PrincipleID: user.Id,
-                RoleDefID: permission,
-                inherit: folderInfo[0].inherit
-              })
-                .then(async () => {
+              const folderId = folderInfo[0].FolderID;
+              const list = sp.web.lists.getByTitle("Documents1");
+              const mainItem = await list.items.getById(folderInfo[0].ID);
 
-                  await sp.web.lists.getByTitle("Documents").items.getById(folderInfo[0].ID).update({
-                    inheriting: "NO"
-                  }).then(result => {
-                    console.log("Item updated successfully");
-                  }).catch(error => {
-                    console.log("Error updating item: ", error);
-                  });
+              // Break inheritance for the main item
+              await mainItem.breakRoleInheritance(true, false);
+              const mainRoleAssignments = mainItem.roleAssignments;
 
-                  await Promise.all(x.map(async (item) => {
 
-                    if (item.inheriting !== "NO") {
-                      await sp.web.lists.getByTitle("AccessRights").items.add({
-                        Title: item.Title.toString(),
-                        groupName: $("#users_name").val(),
-                        permission: $("#permissions_user option:selected").val(),
-                        FolderID: item.ID.toString(),
-                        PrincipleID: user.Id,
-                        RoleDefID: permission
-                      });
-                    }
-                  }));
-                })
-                .then(() => {
-                  alert("Autorisation ajoutée à ce dossier avec succès.")
-                })
-                // .then(() => {
-                //   sp.web.lists.getByTitle("Documents").items.getById(item.id).update({
-                //     inheriting: "NO",
-                //   }).then(result => {
-                //     console.log("Item updated successfully");
-                //   }).catch(error => {
-                //     console.log("Error updating item: ", error);
-                //   });
-                // })
-                .then(() => {
-                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
-                });
+              // Add role assignment for the main item
+              await mainRoleAssignments.add(userId, permission);
 
+              // Update the main item's 'inheriting' property
+
+              // const childItems = await this.getChildrenById4(folderId, []);
+              // console.log("CHILD", childItems);
+
+              // // Process child items in batches to reduce API calls
+              // const batchSize = 100; // Adjust batch size as needed
+              // for (let i = 0; i < childItems.length; i += batchSize) {
+              //   const batch = childItems.slice(i, i + batchSize);
+              //   await Promise.all(
+              //     batch.map(async (item_group) => {
+              //       if (item_group.ID != folderInfo[0].ID) {
+              //         const childItem = await list.items.getById(item_group.ID);
+              //         await childItem.breakRoleInheritance(true, false);
+              //         const childRoleAssignments = childItem.roleAssignments;
+
+              //         // Add role assignment for the child item
+              //         await childRoleAssignments.add(userId, permission);
+              //       }
+              //     })
+              //   );
+
+              //   // Add a delay between batches to avoid rate limiting
+              //   await new Promise((resolve) => setTimeout(resolve, 2000)); // Adjust the delay time as needed
+              // }
+
+              console.log("Item updated successfully");
+              document.body.removeChild(loader);
+              alert("Autorisation ajoutée avec succès.");
+              //  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderId}`;
+
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderId}`, true);
+            } catch (e) {
+              console.log("Error updating item: ", e.message);
+              alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+              document.body.removeChild(loader);
+
+              btn_add_user.disabled = false;
+              // Show loading text or spinner
+              btn_add_user.textContent = 'Ajouter';
             }
 
-            catch (e) {
-              alert("Erreur: " + e.message);
-            }
+
+            // try {
+
+            //   const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
+
+            //   users_Permission = user;
+
+            //   console.log("USERS FOR PERMISSION", users_Permission);
+            //   var _x = await this.getChildrenById3(folderInfo[0].FolderID, []);
+            //   console.log("CHILD", _x);
+
+            //   const list = sp.web.lists.getByTitle("Documents1");
+            //   const _item = await list.items.getById(folderInfo[0].ID);
+            //   await _item.breakRoleInheritance(true, false);
+            //   const roleAssignments = _item.roleAssignments;
+
+            //   await roleAssignments.add(Number(user.Id), permission)
+
+
+            //     .then(async () => {
+
+            //       await sp.web.lists.getByTitle("Documents1").items.getById(folderInfo[0].ID).update({
+            //         inheriting: "NO",
+            //       });
+
+            //       await Promise.all(_x.map(async (item_group) => {
+
+            //         if (item_group.ID != folderInfo[0].ID) {
+
+            //           const _item = await list.items.getById(item_group.ID);
+            //           await _item.breakRoleInheritance(true, false);
+
+            //           const roleAssignments = _item.roleAssignments;
+            //           await roleAssignments.add(Number(user.Id), permission);
+            //         }
+
+
+            //         // await sp.web.lists.getByTitle("Documents1").items.getById(folderInfo[0].ID).update({
+            //         //   inheriting: "NO",
+            //         // });
+
+            //       }))
+            //         .then(result => {
+            //           console.log("Item updated successfully");
+
+            //           document.body.removeChild(loader);
+
+            //           alert("Autorisation ajoutée avec succès..");
+
+
+            //           window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+
+            //         })
+            //         .catch(error => {
+            //           console.log("Error updating item: ", error);
+            //           alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+            //           document.body.removeChild(loader);
+
+            //           btn_add_user.disabled = false;
+            //           // Show loading text or spinner
+            //           btn_add_user.textContent = 'Ajouter';
+            //         });
+
+            //     });
+
+            // }
+
+            // catch (e) {
+            //   console.log("Error updating item: ", e.message);
+            //   alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+            //   document.body.removeChild(loader);
+
+            //   btn_add_user.disabled = false;
+            //   // Show loading text or spinner
+            //   btn_add_user.textContent = 'Ajouter';
+            // }
+
+
+
+
+            // try {
+            //   console.log("KEY", folderInfo[0].FolderID);
+
+            //   await sp.web.lists.getByTitle("AccessRights").items.add({
+            //     Title: folderInfo[0].Title.toString(),
+            //     groupName: $("#users_name").val(),
+            //     permission: $("#permissions_user option:selected").val(),
+            //     FolderID: folderInfo[0].ID.toString(),
+            //     PrincipleID: user.Id,
+            //     RoleDefID: permission,
+            //     inherit: folderInfo[0].inherit,
+            //     ged_ID: folderInfo[0].FolderID,
+            //     ChildIds: folderInfo[0].ID.toString() + "," + x
+            //   })
+            //     .then(async () => {
+
+            //       await sp.web.lists.getByTitle("Documents1").items.getById(folderInfo[0].ID).update({
+            //         inheriting: "NO"
+            //       }).then(result => {
+            //         console.log("Item updated successfully");
+            //       }).catch(error => {
+            //         console.log("Error updating item: ", error);
+            //       });
+
+            //       // await Promise.all(x.map(async (item) => {
+
+            //       //   if (item.inheriting !== "NO") {
+            //       //     await sp.web.lists.getByTitle("AccessRights").items.add({
+            //       //       Title: item.Title.toString(),
+            //       //       groupName: $("#users_name").val(),
+            //       //       permission: $("#permissions_user option:selected").val(),
+            //       //       FolderID: item.ID.toString(),
+            //       //       PrincipleID: user.Id,
+            //       //       RoleDefID: permission
+            //       //     });
+            //       //   }
+            //       // }));
+
+            //       btn_add_user.disabled = false;
+
+            //       // Show loading text or spinner
+            //       btn_add_user.textContent = 'Ajouter';
+            //     })
+            //     .then(() => {
+            //       alert("Autorisation ajoutée à ce dossier avec succès.")
+            //     })
+            //     // .then(() => {
+            //     //   sp.web.lists.getByTitle("Documents1").items.getById(item.id).update({
+            //     //     inheriting: "NO",
+            //     //   }).then(result => {
+            //     //     console.log("Item updated successfully");
+            //     //   }).catch(error => {
+            //     //     console.log("Error updating item: ", error);
+            //     //   });
+            //     // })
+            //     .then(() => {
+            //       window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+            //     });
+
+            // }
+
+            // catch (e) {
+            //   alert("Erreur: " + e.message);
+            // }
 
           }
 
@@ -1549,20 +2205,31 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         add_group_permission_container.innerHTML = add_btn_group_permission;
 
-        const btn_add_group = document.getElementById(folderInfo[0].ID + '_add_group');
+        const btn_add_group = document.getElementById(folderInfo[0].ID + '_add_group') as HTMLButtonElement;
+
 
         await btn_add_group?.addEventListener('click', async () => {
+
 
           var selected_permission = $("#permissions_group option:selected").val();
 
           var permission = 0;
 
 
-
           if ($("#group_name").val() === "") {
             alert("Please select a group.");
           }
           else {
+
+            const loader = document.createElement("div");
+            loader.id = "loader2";
+            loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations parent sont en cours d'ajout.</div>"; // Add the text here
+            document.body.appendChild(loader);
+
+            btn_add_group.disabled = true;
+
+            // Show loading text or spinner
+            btn_add_group.textContent = 'Loading...';
 
             if (selected_permission === "ALL") {
 
@@ -1578,18 +2245,61 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
             }
 
-            //  const stringGroupUsers: string[] = await getAllUsersInGroup($("#group_name").val());
-            //  console.log("TESTER GROUP USERS", stringGroupUsers);
+            try {
+              const folderId = folderInfo[0].FolderID;
+              const list = sp.web.lists.getByTitle("Documents1");
+              const mainItem = await list.items.getById(folderInfo[0].ID);
 
-            this.add_permission_group2($("#group_name").val().toString(), permission, folderInfo[0].FolderID, folderInfo[0].Title, folderInfo[0].ID, folderInfo[0].inheriting, principleIdOfGroup);
+              // Break inheritance for the main item
+              await mainItem.breakRoleInheritance(true, false);
+              const mainRoleAssignments = mainItem.roleAssignments;
 
-            await sp.web.lists.getByTitle("Documents").items.getById(folderInfo[0].ID).update({
-              inheriting: "NO",
-            }).then(result => {
+              // const principleIdOfGroup = Number(principleIdOfGroup); // Assuming 'principleIdOfGroup' is the group ID
+
+              // Add role assignment for the main item
+              await mainRoleAssignments.add(Number(principleIdOfGroup), permission);
+
+              // Update the main item's 'inheriting' property
+
+
+              // Process child items in batches to reduce API calls
+              // const batchSize = 100; // Adjust batch size as needed
+              // for (let i = 0; i < childItems.length; i += batchSize) {
+              //   const batch = childItems.slice(i, i + batchSize);
+              //   await Promise.all(
+              //     batch.map(async (item_group) => {
+              //       if (item_group.ID != folderInfo[0].ID) {
+              //         const childItem = await list.items.getById(item_group.ID);
+              //         await childItem.breakRoleInheritance(true, false);
+              //         const childRoleAssignments = childItem.roleAssignments;
+
+              //         // Add role assignment for the child item
+              //         await childRoleAssignments.add(Number(principleIdOfGroup), permission);
+              //       }
+              //     })
+              //   );
+
+              //   // Add a delay between batches to avoid rate limiting
+              //   await new Promise((resolve) => setTimeout(resolve, 2000)); // Adjust the delay time as needed
+              // }
+
               console.log("Item updated successfully");
-            }).catch(error => {
-              console.log("Error updating item: ", error);
-            });
+              document.body.removeChild(loader);
+              alert("Autorisation ajoutée avec succès.");
+              //window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderId}`;
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderId}`, true);
+            } catch (e) {
+              console.log("Error updating item: ", e.message);
+              alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+              document.body.removeChild(loader);
+
+              btn_add_group.disabled = false;
+              // Show loading text or spinner
+              btn_add_group.textContent = 'Ajouter';
+            }
+
+
           }
 
         });
@@ -1601,72 +2311,546 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         inherit_permission_container.innerHTML = inherit_parent_permission;
 
-        const btn_inherit_permission = document.getElementById(folderInfo[0].ID + '_inheritParentPermission');
+        const btn_inherit_permission = document.getElementById(folderInfo[0].ID + '_inheritParentPermission') as HTMLButtonElement;
 
         await btn_inherit_permission?.addEventListener('click', async () => {
 
-          var x = await this.getChildrenById(folderInfo[0].FolderID, []);
+          if (confirm(`Voulez-vous vraiment supprimer toutes les autorisations uniques et hériter de ses autorisations parent?`)) {
 
-          try {
-            // console.log(item_perm.title);
+            try {
+              btn_inherit_permission.disabled = true;
+              btn_inherit_permission.textContent = 'Loading...';
+              var loader = document.createElement("div");
+              loader.id = "loader2";
+              loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations parent sont en cours d'ajout.</div>";
+              document.body.appendChild(loader);
 
-            var items = await sp.web.lists.getByTitle("Documents").items
-              .select("ID")
-              .filter(`FolderID eq '${folderInfo[0].ParentID}' and IsFolder eq 'TRUE'`)
-              .get();
+              const list = sp.web.lists.getByTitle("Documents1");
+              const parentFolderId = folderInfo[0].ParentID;
 
-            await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-              Title: folderInfo[0].Title,
-              FolderID: folderInfo[0].ID,
-              IsDone: "NO",
-              ParentID: Number(items[0].ID)
-            })
-              .then(async () => {
-                await Promise.all(x.map(async (item_group) => {
-                  await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-                    Title: item_group.Title,
-                    FolderID: item_group.ID,
-                    IsDone: "NO",
-                    ParentID: Number(items[0].ID)
-                  });
-                }));
+              const mainItem = await list.items.getById(folderInfo[0].ID);
 
-              })
-              .then(() => {
-                console.log("ADDED PARENT");
-              })
-              .then(() => {
+              await mainItem.resetRoleInheritance()
 
-                sp.web.lists.getByTitle("Documents").items.getById(folderInfo[0].ID).update({
-                  inheriting: "YES",
-                }).then(result => {
+                .then(() => {
                   console.log("Item updated successfully");
-                }).catch(error => {
-                  console.log("Error updating item: ", error);
-                });
-              });
+                  document.body.removeChild(loader);
+                  alert("Suppression des autorisations uniques et application des autorisations du parent sur ce dossier.");
+                  // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+                  Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
+                })
 
-            alert("Parent permissions added.");
-            window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+
+
+            } catch (e) {
+              console.log('Error Setting parents permissions', e.message);
+              alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+              document.body.removeChild(loader);
+              btn_inherit_permission.disabled = false;
+              btn_inherit_permission.textContent = "Hériter les droits d'accès du parent";
+            }
+
+
 
           }
-          catch (e) {
-            alert(e.message);
-          }
+
+
         });
 
+
+        var NOT_inherit_permission_container: Element = document.getElementById("NOTinnheritParentFolderPermission");
+        let NOT_inherit_parent_permission: string = `
+  <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${folderInfo[0].ID}_not_inheritParentPermission>Rompre les droits d'accès du parent</button>
+  `;
+
+        NOT_inherit_permission_container.innerHTML = NOT_inherit_parent_permission;
+
+        const NOT_btn_inherit_permission = document.getElementById(folderInfo[0].ID + '_not_inheritParentPermission') as HTMLButtonElement;;
+
+        await NOT_btn_inherit_permission?.addEventListener('click', async () => {
+
+
+          //cki bon la
+          if (confirm(`Voulez-vous vraiment supprimer toutes les autorisations du parents sur ce dossier?`)) {
+
+
+            try {
+
+              NOT_btn_inherit_permission.disabled = true;
+              NOT_btn_inherit_permission.textContent = 'Loading...';
+              var loader = document.createElement("div");
+              loader.id = "loader2";
+              loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations parent sont en cours d'ajout.</div>";
+              document.body.appendChild(loader);
+
+
+              const list = sp.web.lists.getByTitle("Documents1");
+              const mainItem = await list.items.getById(folderInfo[0].ID);
+
+              await mainItem.breakRoleInheritance(false, true)
+
+                .then(() => {
+                  console.log("Item updated successfully");
+                  document.body.removeChild(loader);
+                  alert("Attention, l'héritager des drotits pour ce dossier est rompu.");
+                  //window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+                  Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
+                });
+
+
+            }
+
+            catch (e) {
+              console.log('Error Setting parents permissions', e.message);
+              alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+              document.body.removeChild(loader);
+              btn_inherit_permission.disabled = false;
+              btn_inherit_permission.textContent = "Hériter les droits d'accès du parent";
+              console.log(e.message);
+            }
+          }
+
+
+          // }
+
+        });
 
       }
 
 
+      if (folderInfo[0].HasUniqueRoleAssignments === false) {
+
+        $("#heriter_input").val("OUI");
+
+        $("#spListPermissions").css("display", "block");
+
+        var element = document.getElementById("inheritparagraph");
+        element.innerHTML = "Ce dossier hérite des permissions de son parent.";
+
+        $("#inheritparagraph").css("display", "block");
+
+        var elementBtn = document.getElementById(folderInfo[0].ID + '_inheritParentPermission');
+        elementBtn.style.display = "none";
+
+        var rompreBtn = document.getElementById(folderInfo[0].ID + '_not_inheritParentPermission');
+        rompreBtn.style.display = "block";
+
+        //  $(`#${folderInfo[0].FolderID}_inheritParentPermission`).css("display", "none");
+      }
+
+
+      else {
+
+        $("#heriter_input").val("NON");
+
+
+        $("#inheritparagraph").css("display", "none");
+
+        $("#spListPermissions").css("display", "block");
+
+        var elementBtn2 = document.getElementById(folderInfo[0].ID + '_inheritParentPermission');
+        elementBtn2.style.display = "block";
+
+        var rompreBtn = document.getElementById(folderInfo[0].ID + '_not_inheritParentPermission');
+        rompreBtn.style.display = "none";
+
+      }
+
       //close doc upload
       {
+
         $("#cancel_doc").click(() => {
 
           $("#doc_details_add").css("display", "none");
         });
-      }
 
+
+        $("#1_CreateFolders").click(async () => {
+
+          const list = sp.web.lists.getByTitle('Documents1');
+
+          const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+            .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+            .filter(`IsFolder eq 'TRUE'`)
+            .getAll();
+
+
+          for (const item_ of allFolders) {
+
+            try {
+
+              const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+              const fileDir = item_.FileDirRef;
+
+              const modifiedFileDir = fileDir.replace(listUri, '');
+
+              const parts = modifiedFileDir.split('/');
+
+              const reconstructedPath = parts
+                .map(part => {
+                  const id = parseInt(part.split('_')[0]);
+                  const folder = allFolders.find(folder => folder.ID === id);
+                  return folder ? folder.Title : '';
+                })
+                .join('/');
+
+              console.log({ "Title ": item_.Title, "Path": reconstructedPath })
+
+              const i = await list.items.getById(item_.ID).update({
+                Current: reconstructedPath
+              });
+            }
+            catch (e) {
+
+              console.log(e.message);
+
+            }
+
+            // const rootFolder = await list.items.up({
+            //   Title: item_.Title,
+            //   FolderID: item_.FolderID,
+            //   ParentID: item_.ParentID,
+            //   IsFolder: "TRUE",
+            //   description: item_.description,
+            //   FileSystemObjectType: 1,
+            //   ContentTypeId: '0x0120'
+            // });
+          }
+
+        });
+
+
+        // $("#1_CreateFolders").click(async () => {
+
+        //   const list = sp.web.lists.getByTitle('Documents1');
+
+        //   const allFoldersFromList: any[] = await sp.web.lists.getByTitle('Documents').items
+        //     .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+        //     .filter(`IsFolder eq 'TRUE'`)
+        //     .getAll();
+
+        //   const allItemsFromLib: any[] = await sp.web.lists.getByTitle('Documents1').items
+        //     .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+        //     .filter(`IsFolder eq 'TRUE'`)
+        //     .getAll();
+
+        //   const filteredFolders = allItemsFromLib.filter(item => {
+        //     const title = item.Title;
+        //     const slashCount = title.split('/').length - 1;
+        //     return slashCount > 1;
+        //   });
+
+        //   for (const item_ of filteredFolders) {
+
+        //     console.log("FOLDERS KI PAS BON", filteredFolders);
+
+        //     try {
+
+        //       const folder = allFoldersFromList.find(folder => folder.FolderID === item_.FolderID);
+
+
+        //       //   const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+        //       //   const fileDir = item_.FileDirRef;
+
+        //       //   const modifiedFileDir = fileDir.replace(listUri, '');
+
+        //       //   const parts = modifiedFileDir.split('/');
+
+        //       //   const reconstructedPath = parts
+        //       //     .map(part => {
+        //       //       const id = parseInt(part.split('_')[0]);
+        //       //       const folder = allFolders.find(folder => folder.ID === id);
+        //       //       return folder ? folder.Title : '';
+        //       //     })
+        //       //     .join('/');
+
+        //       //   console.log({ "Title ": item_.Title, "Path": reconstructedPath })
+
+        //       const i = await list.items.getById(item_.ID).update({
+        //         Title: folder.Title
+        //       });
+
+        //       console.log(i);
+        //     }
+        //     catch (e) {
+
+        //       console.log(e.message);
+
+        //     }
+
+        //     // const rootFolder = await list.items.up({
+        //     //   Title: item_.Title,
+        //     //   FolderID: item_.FolderID,
+        //     //   ParentID: item_.ParentID,
+        //     //   IsFolder: "TRUE",
+        //     //   description: item_.description,
+        //     //   FileSystemObjectType: 1,
+        //     //   ContentTypeId: '0x0120'
+        //     // });
+        //   }
+
+        // });
+
+
+        // $("#1_CreateFolders").click(async () => {
+
+        //   try {
+
+        //     const list = sp.web.lists.getByTitle('Documents1');
+
+
+        //     const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+        //       .select("ID,ParentID,FolderID,Title,IsFolder,description,keywords,doc_number,createdDate, IsFiligrane, IsDownloadable, owner, revision, Title")
+        //       .filter(`IsFolder eq 'TRUE'`)
+        //       .getAll();
+
+
+        //     for (const item_ of allFolders) {
+
+        //       const rootFolder = await list.items.add({
+        //         Title: item_.Title,
+        //         FolderID: item_.FolderID,
+        //         ParentID: item_.ParentID,
+        //         IsFolder: "TRUE",
+        //         description: item_.description,
+        //         FileSystemObjectType: 1,
+        //         ContentTypeId: '0x0120'
+        //       });
+        //     }
+        //   }
+
+
+
+        //   catch (e) {
+
+        //     console.log(e.message);
+
+        //   }
+        // });
+
+        // $("#1_CreateFolders").click(async () => {
+
+
+        //   const allDocs: any[] = await sp.web.lists.getByTitle('Documents1').items
+        //     .select("ID,ParentID,FolderID,Title,IsFolder,description,keywords,doc_number,createdDate, IsFiligrane, IsDownloadable, owner, revision, Title, FileDirRef")
+        //     // .filter(`IsFolder eq 'FALSE' and FileDirRef eq '/sites/MyGed/Lists/Documents1'`)
+        //     .getAll();
+
+
+        //   const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+        //     .select("ID,ParentID,FolderID,Title,IsFolder,description,keywords,doc_number,createdDate, IsFiligrane, IsDownloadable, owner, revision, Title, FileDirRef")
+        //     .filter(`IsFolder eq 'TRUE'`)
+        //     .getAll();
+
+        //   const filteredDocs = allDocs.filter(doc => doc.IsFolder === 'FALSE' && doc.FileDirRef === '/sites/MyGed/Lists/Documents1');
+
+
+
+        //   const listUri = '/sites/MyGed/Lists/Documents1';
+
+
+        //   for (const item_ of filteredDocs) {
+
+
+        //     // if (item_.IsFolder === "FALSE" && item_.FileDirRef === "/sites/MyGed/Lists/Documents1") {
+
+        //     try {
+
+
+        //       const parent = allFolders.filter(parent => parent.FolderID === item_.ParentID);
+
+
+        //       await sp.web
+        //         .getFileByServerRelativeUrl(`${listUri}/${item_.ID}_.000`)
+        //         .moveTo(`${parent[0].FileDirRef}/${parent[0].ID}_.000/${item_.ID}`);
+
+        //       console.log("MOVED");
+        //     }
+
+        //     catch (e) {
+
+        //       console.log("ERROR", e.message);
+        //     }
+
+        //   }
+
+        //   // }
+
+        // });
+
+
+        // $("#1_CreateFolders").click(async () => {
+
+        //   try {
+
+        //     const folderpath = '/sites/MyGed/Lists/Documents1/Gestion Documentaire/ARCHIVES';
+        //     const listUri = `/sites/MyGed/Lists/Documents1`;
+
+
+
+        //     var itemTitle;
+
+        //     const allItems: any[] = await sp.web.lists.getByTitle('Documents1').items
+        //       .select("ID,ParentID,FolderID,Title,IsFolder,description,FileDirRef, FileLeafRef")
+        //       .filter("IsFolder eq 'TRUE'")
+        //       .getAll();
+
+        //     const list = sp.web.lists.getByTitle('Documents1');
+
+        //     for (const item_ of allItems) {
+
+
+
+        //       try {
+        //         if (item_.ParentID !== -1) {
+
+        //           const parentItem = allItems.filter(parentItem => parentItem.FolderID === item_.ParentID);
+        //           const inputString = item_.FileDirRef;
+
+        //           const targetSubstring = `${parentItem[0].ID}_.000`;
+
+        //           if (inputString.includes(targetSubstring)) {
+
+        //             continue;
+
+
+        //           }
+
+        //           else {
+
+        //             console.log("Child :", item_.Title);
+        //             console.log("Child FileDirREf", item_.FileDirRef);
+
+        //             console.log("Parent :", parentItem[0].Title);
+        //             console.log("Parent FileDirREf", parentItem[0].FileDirRef);
+
+
+        //             if (parentItem) {
+
+        //               if (parentItem[0].FileDirRef === "/sites/MyGed/Lists/Documents1") {
+        //                 console.log("Without FileLeafRef", `${parentItem[0].ID}_.000/${item_.ID}_.000`);
+
+
+
+        //                 var i = {
+        //                   Title: item_.Title,
+        //                   // path: `${parentItem[0].ID}_.000`,
+        //                   FileLeafRef: `${parentItem[0].ID}_.000/${item_.ID}_.000`
+        //                 }
+        //               }
+
+        //               else {
+
+
+        //                 var splitResult = parentItem[0].FileDirRef.split('/');
+
+        //                 if (splitResult.length >= 6) {
+        //                   var desiredSubstring = splitResult.slice(5).join('/');
+
+        //                   console.log("With FileLeafRef", `${desiredSubstring}/${parentItem[0].ID}_.000/${item_.ID}_.000`);
+
+
+        //                   i = {
+        //                     Title: item_.Title,
+        //                     // path: `${desiredSubstring}${parentItem[0].Title}`,
+        //                     FileLeafRef: `${desiredSubstring}/${parentItem[0].ID}_.000/${item_.ID}_.000`
+        //                   }
+
+
+        //                   console.log(desiredSubstring);
+        //                 } else {
+        //                   console.log("Input string doesn't have enough slashes.");
+        //                 }
+
+
+        //               }
+
+
+        //             }
+
+        //             const ii = await list.items.getById(item_.ID).update(i);
+
+
+        //           }
+
+
+        //         }
+        //       }
+
+        //       catch (e) {
+        //         console.log(`Error updating item with ID ${item_.ID}: ${e.message}`);
+        //       }
+
+        //     }
+
+
+
+
+        //   }
+
+
+
+        //   catch (e) {
+
+        //     console.log(e.message);
+
+        //   }
+
+
+        // });
+
+        // $("#1_CreateFolders").click(async () => {
+
+
+        //   const allDocs: any[] = await sp.web.lists.getByTitle('Documents1').items
+        //     .select("ID,ParentID,FolderID,Title,IsFolder,description,keywords,doc_number,createdDate, IsFiligrane, IsDownloadable, owner, revision, Title, FileDirRef")
+        //     // .filter(`IsFolder eq 'FALSE' and FileDirRef eq '/sites/MyGed/Lists/Documents1'`)
+        //     .getAll();
+
+
+        //   const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+        //     .select("ID,ParentID,FolderID,Title,IsFolder,description,keywords,doc_number,createdDate, IsFiligrane, IsDownloadable, owner, revision, Title, FileDirRef")
+        //     .filter(`IsFolder eq 'TRUE'`)
+        //     .getAll();
+
+        //   const filteredDocs = allDocs.filter(doc => doc.IsFolder === 'FALSE' && doc.FileDirRef === '/sites/MyGed/Lists/Documents1');
+
+
+
+        //   const listUri = '/sites/MyGed/Lists/Documents1';
+
+
+        //   for (const item_ of filteredDocs) {
+
+
+        //     // if (item_.IsFolder === "FALSE" && item_.FileDirRef === "/sites/MyGed/Lists/Documents1") {
+
+        //     try {
+
+
+        //       const parent = allFolders.filter(parent => parent.FolderID === item_.ParentID);
+
+
+        //       await sp.web
+        //         .getFileByServerRelativeUrl(`${listUri}/${item_.ID}_.000`)
+        //         .moveTo(`${parent[0].FileDirRef}/${parent[0].ID}_.000/${item_.ID}`);
+
+        //       console.log("MOVED");
+        //     }
+
+        //     catch (e) {
+
+        //       console.log("ERROR", e.message);
+        //     }
+
+        //   }
+
+        //   // }
+
+        // });
+      }
 
     }
 
@@ -1728,7 +2912,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           })
             .then(() => {
               alert("Ajoutee dans Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+              // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
             });
 
         }
@@ -1755,7 +2940,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             .delete()
             .then(() => {
               alert("Retiree depuis Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+              // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
             });
 
         }
@@ -1812,7 +2998,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           })
             .then(() => {
               alert('Dossier ajouté à la liste des départements.');
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+              // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
 
             });
 
@@ -1842,7 +3030,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           await sp.web.lists.getByTitle("Department").items.getById(items[0].ID).delete();
 
           alert('Dossier supprimé de la liste des services.');
-          window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+          // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`;
+
+          Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].FolderID}`, true);
 
         }
 
@@ -1862,8 +3052,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     document_container.innerHTML = '';
 
     try {
-      const all_documents = await sp.web.lists.getByTitle('Documents').items
-        .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, filename")
+      const all_documents = await sp.web.lists.getByTitle('Documents1').items
+        .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, filename, Created")
         .top(5000)
         .filter(`ParentID eq '${itemKey}' and IsFolder eq '${value1}'`)
         .getAll();
@@ -1875,17 +3065,32 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
       const result = response_doc.reduce((acc: any[], obj: any) => {
         if (!obj.revision || obj.revision === null) return acc;
-        let existingObj = acc.find(o => o.Title === obj.Title);
-        if (!existingObj || obj.revision > existingObj.revision) {
-          acc = acc.filter(o => o.Title !== obj.Title);
+        let existingObjIndex = acc.findIndex(o => o.Title === obj.Title);
+        if (existingObjIndex === -1 || Number(obj.revision) > Number(acc[existingObjIndex].revision) ||
+        new Date(obj.Created) > new Date(acc[existingObjIndex].Created)) {
+
+          if (existingObjIndex !== -1) {
+            acc.splice(existingObjIndex, 1);
+          }
           acc.push(obj);
         }
         return acc;
-      }, []).sort((a: any, b: any) => (a.Title > b.Title) ? 1 : -1);
+      }, [])
+        .sort((a: any, b: any) => {
+          if (a.Title > b.Title) return 1;
+          if (a.Title < b.Title) return -1;
+          if (Number(a.revision) > Number(b.revision)) return -1;
+          if (Number(a.revision) < Number(b.revision)) return 1;
 
+          // Sort by Created in descending order
+          const dateA = new Date(a.Created);
+          const dateB = new Date(b.Created);
+          if (dateA > dateB) return -1;
+          if (dateA < dateB) return 1;
+          return 0;
+        });
 
       console.log("ALL", response_doc);
-
       console.log("RESULT DISTINCT", result);
       console.log("RESULT DISTINCT ARRAY LOT LA", response_distinc);
 
@@ -1898,6 +3103,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         await result.forEach(async (element) => {
 
+          var desc;
+
+          if (element.description == null) {
+            desc = "";
+          }
+
+          else {
+            desc = element.description;
+          }
+
           if (element.revision !== null || element.revision !== undefined || element.revision !== "") {
 
             var urlFile = '';
@@ -1909,7 +3124,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   
             <td class="text-left" style="
             padding-left: 6rem;"> 
-            ${element.description}          
+            ${desc}          
             </td>
   
             <td class="text-center">${element.revision}</td>
@@ -1917,7 +3132,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             
             <td style="font-size: 8px;">
 <div class="button-container">
-  <a title="Mettre à jour le document" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details" style="text-decoration: auto;">
+  <a title="Informations" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details" style="text-decoration: auto;">
   <svg aria-hidden="true" focusable="false" data-prefix="far" 
   data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
   role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 256"><!--! Font Awesome Pro 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg>
@@ -1935,8 +3150,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                      
 `;
 
-
-            await sp.web.lists.getByTitle("Documents")
+            await sp.web.lists.getByTitle("Documents1")
               .items
               .getById(parseInt(element.Id))
               .attachmentFiles
@@ -1965,7 +3179,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     if (this.getFileExtensionFromUrl(urlFile) !== "pdf") {
 
                       // if (element.IsFiligrane == "NO") {
-                      window.open(`${urlFile}`, '_blank');
+                      // window.open(`${urlFile}`, '_blank');
+                      await this.downloadFile(urlFile, `${element.Title}.${this.getFileExtensionFromUrl(urlFile)}`, element.FolderID);
                     }
 
                     else {
@@ -1999,7 +3214,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     }
                   }
                   else {
-                    //   window.open(`${externalFileUrl}`, '_blank');
+                    window.open(`${externalFileUrl}`, '_blank');
                   }
 
                 });
@@ -2009,9 +3224,23 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 //   window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
                 // });
 
-                await btn_view_doc_details?.addEventListener('click', async () => {
-                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`;
+                // await btn_view_doc_details?.addEventListener('click', async () => {
+                //   // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`;
+                //   Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, true);
+
+                // });
+
+
+
+                btn_view_doc_details?.addEventListener('click', () => {
+                  const documentUrl = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`;
+
+                  // Append a cache-busting query parameter to the URL
+                  const cacheBuster = new Date().getTime();
+                  const noCacheUrl = `${documentUrl}&_=${cacheBuster}`;
+                  Navigation.navigate(noCacheUrl, true);
                 });
+
 
                 $("#edit_cancel").click(() => {
 
@@ -2052,7 +3281,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     }
   }
 
-
   private async createWebpageInNewTab(url, filename: any) {
     try {
 
@@ -2078,7 +3306,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       closeButton.style.cssText = `
       position: absolute;
       top: 80px;
-      left: 50px;
+      left: 27%;
       padding: 5px 10px;
       background-color: #fa0f00;
       border: none;
@@ -2106,8 +3334,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
       const iframe = document.createElement('iframe');
       iframe.style.cssText = `
-        width: 90%;
-        height: 90%;
+        width: 39%;
+        height: 97%;
       `;
 
       overlay.appendChild(iframe);
@@ -2158,7 +3386,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               // x.then(blob => {
                 adobeDCView.previewFile({
                   content:{location: {url: '${pdfUrl}'}},
-                  metaData: { fileName: '${filename}' }
+                  metaData: { fileName: "${filename}" }
                 }, { embedMode: "IN_LINE", showDownloadPDF: false, showPrintPDF: false});
               });
             // });
@@ -2174,7 +3402,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       console.error('Error:', error);
     }
   }
-
 
   private getFileExtensionFromUrl(url: string): string {
     const lastDotIndex = url.lastIndexOf('.');
@@ -2198,7 +3425,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     var parentIDArray: number[] = [];
 
-    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
+    await sp.web.lists.getByTitle('Documents1').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + id + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
       parentID = results[0].ParentID;
       if (parentID) {
         parentIDArray.push(parentID);
@@ -2207,7 +3434,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     });
 
     while (parentID && parentID != 1) {
-      await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID, Title").filter("FolderID eq '" + parentID + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
+      await sp.web.lists.getByTitle('Documents1').items.select("ID,ParentID,FolderID, Title").filter("FolderID eq '" + parentID + "' and IsFolder eq '" + value2 + "'").get().then((results) => {
         parentID = results[0].ParentID;
         if (parentID) {
           if (parentArray) {
@@ -2307,10 +3534,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     console.log('Folder removed from Department list.');
   }
 
-
   // public render(): React.ReactElement<IMyGedTreeViewProps> {
 
   render() {
+
 
     const { TreeLinks, parentIDArray, selectedKey, isLoaded } = this.state;
 
@@ -2508,8 +3735,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
                 <h4 id='alert_0_doc'>Veuillez sélectionner un sous répertoire</h4>
-
-
+                <button type="button" className="btn btn-primary" style={{ fontSize: "1em", display: 'none', }} id='1_CreateFolders'>Annuler</button>
 
                 <div id="edit_details">
                   <div className="row">
@@ -2542,11 +3768,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                       </Label>
                     </div>
 
-                    {/* <div className="col-sm-6">
-                      <Label>Folder Order
-                        <input type="text" className="form-control" id="folder_order" />
+                    <div className="col-sm-6">
+                      <Label>Chemin du Dossier
+                        <input type="text" className="form-control" id="parent_path" style={{ fontSize: "1em" }} disabled />
                       </Label>
-                    </div> */}
+                    </div>
 
                   </div>
 
@@ -2637,6 +3863,13 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
                   <div className="row">
+
+                    <div className='col-sm-6'>
+                      <Label>Hériter?
+                        <input type="text" className="form-control" id="heriter_input" disabled style={{ fontSize: "1em" }} />
+                      </Label>
+                    </div>
+
                     <div className='col-sm-6'>
                       <p id="inheritparagraph" className='h4' style={{
                         display: 'none',
@@ -2651,6 +3884,17 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     </div>
 
                   </div>
+
+                  <div className="row">
+
+
+                    <div className="col-sm-3" id="NOTinnheritParentFolderPermission" >
+
+                    </div>
+
+                  </div>
+
+
 
                   <div className='row'>
                     <div id="spListPermissions" style={{
@@ -2739,7 +3983,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                         <tr>
                           <th className="text-left" id='nom_doc'>Nom du document</th>
                           <th className="text-left" id='desc_doc'>Description</th>
-                          <th className="text-center">Revision</th>
+                          <th className="text-center">revision</th>
                           <th className="text-center" >Actions</th>
                         </tr>
                       </thead>
@@ -2845,10 +4089,16 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
                   <div className="row">
-                    <div className="col-sm-6">
+                    <div className="col-sm-3">
                       <Label>
                         Révision
                         <input type="text" id='input_revision_add' className='form-control' style={{ fontSize: "1em" }} />
+                      </Label>
+                    </div>
+                    <div className="col-sm-3">
+                      <Label>
+                        Date de Révision
+                        <input type="date" id='input_revision_date' className='form-control' style={{ fontSize: "1em" }} />
                       </Label>
                     </div>
                     <div className="col-sm-6">
@@ -2949,13 +4199,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
   private async load_folders() {
 
-
     var value1 = "TRUE";
     var drp_folders = document.getElementById("select_folders");
+    drp_folders.innerHTML = "";
 
-    // const allItems: any = await sp.web.lists.getByTitle('Documents').items.getAll(),
 
-    const all_folders: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,IsFolder,description").top(5000).filter("IsFolder eq '" + value1 + "'").get();
+    // const allItems: any = await sp.web.lists.getByTitle('Documents1').items.getAll(),
+
+    const all_folders: any = await sp.web.lists.getByTitle('Documents1').items.select("ID,ParentID,FolderID,Title,IsFolder,description,FileDirRef").top(5000).filter("IsFolder eq '" + value1 + "'").get();
 
     folders = all_folders;
 
@@ -2963,8 +4214,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       var opt = document.createElement('option');
       opt.appendChild(document.createTextNode(result.Title));
       opt.value = result.FolderID + "_" + result.Title;
-      drp_folders.appendChild(opt);
 
+      opt.setAttribute("data-filedirref", `${result.FileDirRef}/${result.ID}_.000`);
+
+      drp_folders.appendChild(opt);
     });
 
   }
@@ -3040,11 +4293,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
   public async getSiteGroups() {
 
     //var drp_users = document.getElementById("select_groups");
-    var drp_users = document.getElementById("groups") as HTMLSelectElement;
+    var drp_users = document.getElementById("groups") as HTMLDataListElement;
+    drp_users.innerHTML = ""; // Clear the innerHTML of the datalist
+
 
     if (!drp_users) {
       console.error("Dropdown element not found");
       return;
+    }
+
+    // Clear the options of the datalist
+    while (drp_users.options.length > 0) {
+      drp_users.remove();
     }
 
 
@@ -3451,7 +4711,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         closeButton.style.cssText = `
         position: absolute;
         top: 80px;
-        left: 50px;
+        left: 27%;
         padding: 5px 10px;
         background-color: #fa0f00;
         border: none;
@@ -3479,8 +4739,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         const iframe = document.createElement('iframe');
         iframe.style.cssText = `
-          width: 90%;
-          height: 90%;
+          width: 39%;
+          height: 97%;
         `;
 
         overlay.appendChild(iframe);
@@ -3531,7 +4791,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                 // x.then(blob => {
                   adobeDCView.previewFile({
                     content:{location: {url: '${pdfUrl}'}},
-                    metaData: { fileName: '${filename}' }
+                    metaData: { fileName: "${filename}" }
                   }, { embedMode: "IN_LINE", showDownloadPDF: false, showPrintPDF: false });
                 });
               // });
@@ -3552,7 +4812,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
       try {
 
-        var x = await getChildrenById(id, []);
+        var x = await getChildrenById2(id, []);
+        console.log("CHILD", x);
 
         await sp.web.lists.getByTitle("AccessRights").items.add({
           Title: item.label.toString(),
@@ -3561,30 +4822,32 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           FolderID: item.id,
           PrincipleID: principleId,
           groupTitle: group_name,
-          RoleDefID: permission
-        })
+          RoleDefID: permission,
+          ged_ID: item.key,
+          ChildIds: item.id + "," + x
+        });
 
-          .then(async () => {
+        // .then(async () => {
 
-            await Promise.all(x.map(async (item_group) => {
+        //   await Promise.all(x.map(async (item_group) => {
 
-              await sp.web.lists.getByTitle("AccessRights").items.add({
-                Title: item_group.Title.toString(),
-                groupName: group_name,
-                permission: $("#permissions_group option:selected").val(),
-                FolderID: item_group.ID,
-                PrincipleID: principleId,
-                groupTitle: group_name,
-                RoleDefID: permission
-              });
+        //     await sp.web.lists.getByTitle("AccessRights").items.add({
+        //       Title: item_group.Title.toString(),
+        //       groupName: group_name,
+        //       permission: $("#permissions_group option:selected").val(),
+        //       FolderID: item_group.ID,
+        //       PrincipleID: principleId,
+        //       groupTitle: group_name,
+        //       RoleDefID: permission
+        //     });
 
-            }));
+        //   }));
 
-          });
+        // });
         // }));
 
-        alert("Authorization added successfully.");
-        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+        alert("Autorisation ajoutée avec succès..");
+        // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
       }
       catch (e) {
         alert("Error: " + e.message);
@@ -3630,8 +4893,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       document_container.innerHTML = '';
 
       try {
-        const all_documents = await sp.web.lists.getByTitle('Documents').items
-          .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable,inheriting,filename")
+        const all_documents = await sp.web.lists.getByTitle('Documents1').items
+          .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable,filename, Created")
           .top(5000)
           .filter(`ParentID eq '${itemKey}' and IsFolder eq '${value1}'`)
           .getAll();
@@ -3650,15 +4913,33 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
         response_doc = all_documents;
 
+
+
         const result = response_doc.reduce((acc: any[], obj: any) => {
           if (!obj.revision || obj.revision === null) return acc;
-          let existingObj = acc.find(o => o.Title === obj.Title);
-          if (!existingObj || obj.revision > existingObj.revision) {
-            acc = acc.filter(o => o.Title !== obj.Title);
+          let existingObjIndex = acc.findIndex(o => o.Title === obj.Title);
+          if (existingObjIndex === -1 || Number(obj.revision) > Number(acc[existingObjIndex].revision)||
+          new Date(obj.Created) > new Date(acc[existingObjIndex].Created)) {
+            if (existingObjIndex !== -1) {
+              acc.splice(existingObjIndex, 1);
+            }
             acc.push(obj);
           }
           return acc;
-        }, []).sort((a: any, b: any) => (a.Title > b.Title) ? 1 : -1);
+        }, [])
+          .sort((a: any, b: any) => {
+            if (a.Title > b.Title) return 1;
+            if (a.Title < b.Title) return -1;
+            if (Number(a.revision) > Number(b.revision)) return -1;
+            if (Number(a.revision) < Number(b.revision)) return 1;
+
+            const dateA = new Date(a.Created);
+            const dateB = new Date(b.Created);
+            if (dateA > dateB) return -1;
+            if (dateA < dateB) return 1;
+
+            return 0;
+          });
 
 
         console.log("ALL", response_doc);
@@ -3675,6 +4956,18 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           await result.forEach(async (element) => {
 
+            var desc;
+
+            if (element.description == null) {
+              desc = "";
+            }
+
+            else {
+
+              desc = element.description;
+
+            }
+
             if (element.revision !== null || element.revision !== undefined || element.revision !== "") {
 
               var urlFile = '';
@@ -3685,14 +4978,14 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               <td class="text-left">${element.Title}</td>
     
               <td class="text-left"> 
-              ${element.description}          
+              ${desc}          
               </td>
     
               <td class="text-center">${element.revision}</td>
   
               <td style="font-size: 8px;">
   <div class="button-container">
-    <a title="Mettre à jour le document" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details" style="text-decoration: auto;">
+    <a title="Informations" role="button" id="${element.Id}_view_doc_details" class="btn_view_doc_details" style="text-decoration: auto;">
     <svg aria-hidden="true" focusable="false" data-prefix="far" 
     data-icon="eye" class="svg-inline--fa fa-eye fa-icon fa-2x" 
     role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 256"><!--! Font Awesome Pro 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg>
@@ -3712,7 +5005,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               `;
 
 
-              await sp.web.lists.getByTitle("Documents")
+              await sp.web.lists.getByTitle("Documents1")
                 .items
                 .getById(parseInt(element.Id))
                 .attachmentFiles
@@ -3740,7 +5033,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                       if (getFileExtensionFromUrl(urlFile) !== "pdf") {
                         // if (element.IsFiligrane == "NO") {
-                        window.open(`${urlFile}`, '_blank');
+                        //  window.open(`${urlFile}`, '_blank');
+                        await downloadFile(urlFile, `${element.Title}.${getFileExtensionFromUrl(urlFile)}`, element.FolderID);
                       }
 
                       else {
@@ -3793,8 +5087,23 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   //   window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, '_blank');
                   // });
 
-                  await btn_view_doc_details?.addEventListener('click', async () => {
-                    window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`;
+                  // await btn_view_doc_details?.addEventListener('click', async () => {
+                  //   // Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, true);
+
+
+
+                  //   Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`, true);
+
+                  // });
+
+                  btn_view_doc_details?.addEventListener('click', () => {
+                    const documentUrl = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${element.Title}&documentId=${element.FolderID}`;
+
+                    // Append a cache-busting query parameter to the URL
+                    const cacheBuster = new Date().getTime();
+                    const noCacheUrl = `${documentUrl}&_=${cacheBuster}`;
+
+                    Navigation.navigate(noCacheUrl, true);
                   });
 
                   $("#edit_cancel").click(() => {
@@ -4037,47 +5346,102 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
       const btn = document.getElementById(id + '_deleteFolder');
 
       await btn?.addEventListener('click', async () => {
-        // this.domElement.querySelector('#btn' + Id + '_edit').addEventListener('click', () => {
-        //localStorage.set"contractId", Id);
-        // if (confirm(`Êtes-vous sûr de vouloir supprimer ${label} ?`)) {
 
-        //   try {
-        //     var res = await sp.web.lists.getByTitle('Documents').items.getById(parseInt(id)).delete()
-        //       .then(() => {
-        //         alert("Dossier supprimé avec succès.");
-        //       })
-        //       .then(() => {
-        //         window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
-        //       });
-        //   }
-        //   catch (err) {
-        //     alert(err.message);
-        //   }
-
-        // }
-        // else {
-
-        // }
 
         if (confirm(`Voulez-vous vraiment archiver ce dossier : ${label} ?`)) {
 
           try {
 
-            const list = sp.web.lists.getByTitle("Documents");
+            const list = sp.web.lists.getByTitle("Documents1");
 
             const i = await list.items.getById(Number(id)).update({
+              Title: label,
               ParentID: 791,
+              FileLeafRef: `1_.000/303_.000/${item.id}_.000`,
+              Current: `Gestion Documentaire/ARCHIVES`
             })
-              .then(() => {
-                alert("Dossier archivé avec succès.");
+              // .then(async () => {
+
+              //   const i = await list.items.getById(Number(id)).update({
+              //     Title: item.label
+              //   });
+
+
+              // })
+
+              .then(async () => {
+                const list = sp.web.lists.getByTitle('Documents1');
+
+                var childs = await getChildrenById3(item.key, []);
+
+                if (childs.length > 0) {
+
+                  const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                    .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                    .filter(`IsFolder eq 'TRUE'`)
+                    .getAll();
+
+                  for (const item_ of childs) {
+
+                    try {
+
+                      const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                      // const _item = allFolders.find(folder => folder.ID === item_);
+
+                      // console.log("_ITEM", _item);
+
+                      const fileDir = item_.FileDirRef;
+
+                      console.log("_ITEM_FILEDIR", item_.FileDirRef);
+
+                      const modifiedFileDir = fileDir.replace(listUri, '');
+
+                      const parts = modifiedFileDir.split('/');
+
+                      const reconstructedPath = parts
+                        .map(part => {
+                          const id = parseInt(part.split('_')[0]);
+                          const folder = allFolders.find(folder => folder.ID === id);
+                          return folder ? folder.Title : '';
+                        })
+                        .join('/');
+
+                      console.log({ "Title ": item_.Title, "Path": reconstructedPath })
+
+
+                      const i = await list.items.getById(Number(item_.ID)).update({
+                        Current: reconstructedPath
+                      });
+                    }
+                    catch (e) {
+
+                      console.log(e.message);
+
+                    }
+
+                    // const rootFolder = await list.items.up({
+                    //   Title: item_.Title,
+                    //   FolderID: item_.FolderID,
+                    //   ParentID: item_.ParentID,
+                    //   IsFolder: "TRUE",
+                    //   description: item_.description,
+                    //   FileSystemObjectType: 1,
+                    //   ContentTypeId: '0x0120'
+                    // });
+                  }
+                }
               })
               .then(() => {
-                window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
-                // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
+                alert("Dossier archivé avec succès.");
+                //  window.location.href = `https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/documentation.aspx`;
+                Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/TestMyGed/SitePages/documentation.aspx`, true);
+
               });
 
 
-            // var res = await sp.web.lists.getByTitle('Documents').items.getById(parseInt(folderInfo[0].ID)).delete()
+
+            // var res = await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(folderInfo[0].ID)).delete()
             //   .then(() => {
             //     alert("Dossier supprimé avec succès.");
             //   })
@@ -4166,7 +5530,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           })
             .then(() => {
               alert("Ajoutee dans Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+              // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
             });
 
         }
@@ -4193,7 +5558,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             .delete()
             .then(() => {
               alert("Retiree depuis Marque-Pages.");
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+              // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
             });
 
         }
@@ -4202,10 +5568,52 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           alert(e.message);
         }
 
-
       });
+    }
+
+    const downloadFile = async (url, filename, folderID) => {
+
+      try {
+
+        const message = document.createElement('div');
+        message.textContent = 'Downloading file...';
+        message.style.cssText = `
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          background-color: #f54630;
+          color: white;
+          text-align: center;
+          font-size: 24px;
+          padding: 10px 0;
+        `;
+
+        document.body.appendChild(message);
+
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const a = document.createElement("a");
+        const downloadUrl = URL.createObjectURL(blob);
+        a.href = downloadUrl;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(downloadUrl);
 
 
+        document.body.removeChild(message);
+      }
+
+      catch (e) {
+        alert("Cannot download this file for the following reason: " + e);
+
+        // Remove the message from the DOM in case of an error
+        const message = document.querySelector('div');
+        if (message) {
+          document.body.removeChild(message);
+        }
+
+        window.location.reload();
+      }
 
     }
 
@@ -4252,7 +5660,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           })
             .then(() => {
               alert('Dossier ajouté à la liste des départements.');
-              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+              //   window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+              Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
 
             });
 
@@ -4282,7 +5692,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
           await sp.web.lists.getByTitle("Department").items.getById(items[0].ID).delete();
 
           alert('Dossier supprimé de la liste des services.');
-          window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+          //window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+          Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
+
 
         }
 
@@ -4299,22 +5712,116 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
     const getChildrenById = async (id, items) => {
 
-      const children = await sp.web.lists.getByTitle("Documents").items
-        .select("ID, Title, ParentID, inheriting, FolderID")
+      const children = await sp.web.lists.getByTitle("Documents1").items
+        .select("ID, Title, ParentID, FolderID, IsFolder")
         .filter(`ParentID eq '${id}'`)
         .get();
 
       let result = [];
 
       for (const child of children) {
-        result.push(child);
-        //  const subChildren = await getChildrenById(child.ID, items);
-        //  ine fr changement
-        const subChildren = await getChildrenById(child.FolderID, items);
-        result = [...result, ...subChildren];
+        if ((child.inheriting === "YES")) {
+          // if (child.IsFolder === 'TRUE') {
+
+          result.push(child);
+          //  const subChildren = await getChildrenById(child.ID, items);
+          //  ine fr changement
+          const subChildren = await getChildrenById(child.FolderID, items);
+          result = [...result, ...subChildren];
+        }
       }
 
       return result;
+    }
+
+    const getChildrenById2 = async (id, items) => {
+
+      const children = await sp.web.lists.getByTitle("Documents1").items
+        .select("ID, Title, ParentID, FolderID")
+        .filter(`ParentID eq '${id}'`)
+        .get();
+
+      let result = [];
+
+      for (const child of children) {
+
+        if (child.inheriting === "YES") {
+          result.push(child.ID);
+          const subChildren = await getChildrenById2(child.FolderID, items);
+          result = result.concat(subChildren);
+        }
+      }
+
+      console.log("CHILDREN", result);
+      const filteredResult = result.filter(Boolean); // Remove empty values
+      return filteredResult.join(",");
+    }
+
+    const getChildrenById3 = async (id, items) => {
+      const children = await sp.web.lists.getByTitle("Documents1").items
+        .select("ID, Title, ParentID, FolderID, FileDirRef")
+        .filter(`ParentID eq '${id}' and IsFolder eq 'TRUE'`)
+        .get();
+
+      let result = [];
+
+      for (const child of children) {
+        result.push(child); // Push the entire object into the array
+        const subChildren = await getChildrenById2(child.FolderID, items);
+        result = result.concat(subChildren);
+      }
+
+      console.log("CHILDREN", result);
+      const filteredResult = result.filter(Boolean); // Remove empty values
+      return filteredResult;
+    };
+
+    const getChildrenById4 = async (id, items) => {
+      try {
+        const children = await sp.web.lists.getByTitle("Documents1").items
+          .select("ID, Title, ParentID, FolderID, IsFolder, revision")
+          .filter(`ParentID eq '${id}'`)
+          .get();
+
+        let result = [];
+        let latestRevisions = new Map(); // To store the latest revision items with the same title
+
+        const batch = sp.createBatch();
+
+        for (const child of children) {
+          if (child.IsFolder === 'TRUE' && child.inheriting === "YES") {
+            result.push(child);
+            const subChildren = await getChildrenById4(child.FolderID, items);
+            result = [...result, ...subChildren];
+          }
+
+          else if (child.IsFolder === 'FALSE' && child.inheriting === "YES") {
+            // For items with IsFolder === 'FALSE'
+            const title = child.Title;
+            const revision = parseFloat(child.revision); // Parse revision as a float for numerical comparison
+
+            if (latestRevisions.has(title)) {
+              const existingRevision = parseFloat(latestRevisions.get(title).revision);
+              if (revision > existingRevision) {
+                latestRevisions.set(title, child);
+              }
+            } else {
+              latestRevisions.set(title, child);
+            }
+          }
+
+        }
+
+        // Add the latest revision items to the result array
+        result.push(...latestRevisions.values());
+
+        await batch.execute(); // Execute the batch to make all the API calls in one request
+
+        return result;
+      } catch (error) {
+        console.log('Error occurred while fetching children:', error.message);
+        return [];
+      }
     }
 
     const getListItemPermissions = async (siteUrl, listName, itemId, username, password) => {
@@ -4409,6 +5916,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         // while (permission_container.firstChild) {
         //   permission_container.removeChild(permission_container.firstChild);
         // }
+        let user_current = await sp.web.currentUser();
 
 
         // permission_container.innerHTML = "";
@@ -4430,8 +5938,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
         for (const element1 of groups) {
+          if (element1.title !== "Musharaf GOLAPKHAN" || element1.Title !== user_current.Title) {
 
-          html += `
+
+            if (element1.role !== "Limited Access" && element1.role !== "Accès limité") {
+
+              html += `
             <tr>
             <td class="text-left" id="${element1.id}">${element1.id}</td>
   
@@ -4440,7 +5952,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             <td class="text-center" id="${element1.id}_permission_value"> ${element1.role} </td>
   
             <td class="text-center">
-            <a id="btn${element1.id}_edit" class='buttoncss' role="button">
+            <a id="btn${element1.id}_edit" class='buttoncss' role="button" title="Suppression">
             
             <svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="trash-can" class="svg-inline--fa fa-trash-can fa-icon fa-2x" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                       <path fill="currentColor" d="M160 400C160 408.8 152.8 416 144 416C135.2 416 128 408.8 128 400V192C128 183.2 135.2 176 144 176C152.8 176 160 183.2 160 192V400zM240 400C240 408.8 232.8 416 224 416C215.2 416 208 408.8 208 400V192C208 183.2 215.2 176 224 176C232.8 176 240 183.2 240 192V400zM320 400C320 408.8 312.8 416 304 416C295.2 416 288 408.8 288 400V192C288 183.2 295.2 176 304 176C312.8 176 320 183.2 320 192V400zM317.5 24.94L354.2 80H424C437.3 80 448 90.75 448 104C448 117.3 437.3 128 424 128H416V432C416 476.2 380.2 512 336 512H112C67.82 512 32 476.2 32 432V128H24C10.75 128 0 117.3 0 104C0 90.75 10.75 80 24 80H93.82L130.5 24.94C140.9 9.357 158.4 0 177.1 0H270.9C289.6 0 307.1 9.358 317.5 24.94H317.5zM151.5 80H296.5L277.5 51.56C276 49.34 273.5 48 270.9 48H177.1C174.5 48 171.1 49.34 170.5 51.56L151.5 80zM80 432C80 449.7 94.33 464 112 464H336C353.7 464 368 449.7 368 432V128H80V432z">
@@ -4451,6 +5963,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
             
             </tr>
             `;
+            }
+
+          }
+
         }
 
         html += `</tbody>
@@ -4469,47 +5985,45 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
           $('#tbl_permission tbody').on('click', '.buttoncss', async (event) => {
             var data = table.row($(event.currentTarget).parents('tr')).data();
+
+            if (confirm(`Voulez-vous vraiment supprimer '${data[1]}' de ce dossier?\nATTENTION : l'héritage des droits pour ce dossier sera rompu.`)) {
+              const loader = document.createElement("div");
+
+              try {
+                const loader = document.createElement("div");
+                loader.id = "loader2";
+                loader.innerHTML =
+                  "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter...des modifications sont en cours.</div>"; // Add the text here
+                document.body.appendChild(loader);
+
+                const list = sp.web.lists.getByTitle("Documents1");
+                const _item = await list.items.getById(item.id);
+
+                // Break inheritance for the main item
+                await _item.breakRoleInheritance(true, false);
+                await _item.roleAssignments.getById(data[0]).delete();
+
+                // Update the main item's 'inheriting' property
+
+
+                // Process child items in batches to reduce API calls
+
+                document.body.removeChild(loader);
+                alert("Autorisation supprimée avec succès.");
+
+                // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+                Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
+
+              } catch (e) {
+                console.log(e.message);
+                alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+                document.body.removeChild(loader);
+              }
+
+
+            }
             // alert("Remove permission with people id" + data[0]);
-
-            try {
-
-              var x = await getChildrenById(item.key, []);
-
-              await sp.web.lists.getByTitle("AccessRights").items.add({
-                Title: item.label.toString(),
-                groupName: $("#users_name").val(),
-                permission: "NONE",
-                FolderID: item.id.toString(),
-                PrincipleID: data[0]
-              })
-                .then(async () => {
-                  await Promise.all(x.map(async (item_group) => {
-                    await sp.web.lists.getByTitle("AccessRights").items.add({
-                      Title: item_group.Title.toString(),
-                      groupName: $("#users_name").val(),
-                      permission: "NONE",
-                      FolderID: item_group.ID,
-                      PrincipleID: data[0]
-                    });
-                  }));
-
-                })
-                .then(async () => {
-                  alert("Autorisation supprimée avec succès.");
-                  await sp.web.lists.getByTitle("Documents").items.getById(item.id).update({
-                    inheriting: "NO"
-                  }).then(result => {
-                    console.log("Item updated successfully");
-                  }).catch(error => {
-                    console.log("Error updating item: ", error);
-                  });
-
-                });
-            }
-            catch (e) {
-              console.log(e.message);
-            }
-
           });
 
         } else {
@@ -4534,6 +6048,179 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
         return err.message;
       }
     }
+
+    const setPermissionsOnItem = async (listTitle, itemId, permissions) => {
+      try {
+        const list = sp.web.lists.getByTitle(listTitle);
+        const item = await list.items.getById(itemId);
+
+        const roleAssignments = item.roleAssignments;
+        const roleDefinitions = await sp.web.roleDefinitions();
+
+        // Function to add role assignment with exponential backoff
+        const addRoleAssignmentWithRetry = async (permission, roleId) => {
+          const maxRetries = 5;
+          let retryCount = 0;
+
+          while (retryCount < maxRetries) {
+            try {
+              await roleAssignments.add(permission.id, roleId);
+              console.log('Permission added successfully after retry.');
+              return true;
+            } catch (error) {
+              console.error('Error setting permissions after retry:', error);
+              retryCount++;
+              // Implement exponential backoff
+              await delay(1000 * Math.pow(2, retryCount));
+            }
+          }
+
+          return false; // If all retries fail
+        };
+
+        for (const permission of permissions) {
+          let roleId;
+
+          switch (permission.role) {
+            case "Read":
+              roleId = roleDefinitions.filter(def => def.Name === "Read")[0]?.Id;
+              break;
+            case "Full Control":
+              roleId = roleDefinitions.filter(def => def.Name === "Full Control")[0]?.Id;
+              break;
+            case "Edit":
+              roleId = roleDefinitions.filter(def => def.Name === "Edit")[0]?.Id;
+              break;
+            default:
+              roleId = null;
+          }
+
+          if (roleId) {
+            await addRoleAssignmentWithRetry(permission, roleId);
+          }
+        }
+
+        console.log('Permissions set successfully.');
+
+        return true;
+      } catch (error) {
+        console.error('Error setting permissions:', error);
+        return false;
+      }
+    };
+
+
+    // Helper function for delay
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    // const setPermissionsOnItem = async (listTitle, itemId, permissions) => {
+    //   try {
+    //     const list = sp.web.lists.getByTitle(listTitle);
+    //     const item = await list.items.getById(itemId);
+
+    //     for (const permission of permissions) {
+
+    //       if (permission.role === "Read") {
+    //         const roleAssignments = item.roleAssignments;
+    //         await roleAssignments.add(permission.id, 1073741826);
+    //       }
+
+    //       else if (permission.role === "Full Control") {
+    //         const roleAssignments = item.roleAssignments;
+    //         await roleAssignments.add(permission.id, 1073741829);
+    //       }
+
+    //       else if (permission.role === "Edit") {
+    //         const roleAssignments = item.roleAssignments;
+    //         await roleAssignments.add(permission.id, 1073741830);
+    //       }
+
+    //       else {
+
+    //       }
+    //       // Updated line
+    //     }
+
+    //     console.log('Permissions set successfully.');
+
+    //     return true;
+    //   } catch (error) {
+    //     console.error('Error setting permissions:', error);
+    //     return false;
+    //   }
+    // };
+
+    // const removePermissionsOnItem = async (listTitle, itemId) => {
+    //   const list = sp.web.lists.getByTitle(listTitle);
+    //   const item = await list.items.getById(itemId);
+
+    //   // Break inheritance on the item
+    //   await item.breakRoleInheritance(true, false);
+
+    //   const roleAssignments = await item.roleAssignments();
+
+    //   console.log("PERMISSIONS TO B REMOVED", roleAssignments);
+
+    //   // Delete each role assignment
+    //   for (const roleAssignment of roleAssignments) {
+    //     await item.roleAssignments.getById(roleAssignment.PrincipalId).delete();
+    //     // await item.roleAssignments.remove(roleAssignment.PrincipalId, roleAssignment.);
+    //   }
+
+    //   console.log('User permissions removed successfully.');
+    // };
+
+    const removePermissionsOnItem = async (listTitle, itemId) => {
+      try {
+        const list = sp.web.lists.getByTitle(listTitle);
+        const item = await list.items.getById(itemId);
+
+        // Break inheritance on the item
+        await item.breakRoleInheritance(true, false);
+
+        const roleAssignments = await item.roleAssignments.get();
+
+        console.log("PERMISSIONS TO BE REMOVED", roleAssignments);
+
+        const batch = sp.createBatch();
+
+        roleAssignments.forEach((roleAssignment) => {
+          item.roleAssignments.getById(roleAssignment.PrincipalId).inBatch(batch).delete();
+        });
+
+        await batch.execute();
+
+        console.log('User permissions removed successfully.');
+      } catch (error) {
+        console.log('Error occurred while removing permissions:', error.message);
+      }
+    }
+
+    // const doesRoleAssignmentExist = async (item, roleAssignmentId) => {
+    //   try {
+    //     // Try to get the role assignment by ID
+    //     await item.roleAssignments.getById(roleAssignmentId).get();
+    //     return true; // Role assignment exists
+    //   } catch (error) {
+    //     if (error && error.statusCode === 404) {
+    //       return false; // Role assignment does not exist
+    //     }
+    //     throw error; // Unexpected error occurred
+    //   }
+    // }
+
+    const doesRoleAssignmentExist = async (item, roleAssignmentId) => {
+      try {
+        // Try to get the role assignment by ID
+        await item.roleAssignments.getById(roleAssignmentId).get();
+        return true; // Role assignment exists
+      } catch (error) {
+        if (error && error.statusCode === 404) {
+          return false; // Role assignment does not exist
+        }
+        return false; // Any other error is treated as non-existent role assignment
+      }
+    };
 
     // Function to load the next batch of pages manually
 
@@ -4616,9 +6303,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               await handleBookmark();
               await handleDept();
 
-              
 
-              await getBasePermTest2('df095fdf-9978-44f8-941c-23b6c095751a', item.id)
+
+              await getBasePermTest2('be040ad0-c2e1-45bf-9a2d-3503043fb77b', item.id)
                 .then(async result => {
                   // Handle the result
                   console.log('High Value:', result.high);
@@ -4631,21 +6318,560 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     console.log("You have full control!");
                     $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder, #ajouteDoc, #bouton_bookmark").css("display", "block");
 
-                    const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
-                    await generateTable(permissions, Number(x));
+                    //azoute permission
+                    {
+                      //add permission user
+
+                      var add_user_permission_container: Element = document.getElementById("add_btn_user");
+
+                      let add_btn_user_permission: string = `
+          <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_add_user>Ajouter</button>
+          `;
+
+                      add_user_permission_container.innerHTML = add_btn_user_permission;
+
+                      const btn_add_user = document.getElementById(item.id + '_add_user') as HTMLButtonElement;;
+
+                      var peopleID = null;
+
+
+                      await btn_add_user?.addEventListener('click', async () => {
+
+
+                        var selected_permission = $("#permissions_user option:selected").val();
+
+                        var permission = 0;
+
+                        if ($("#users_name").val() === "") {
+                          alert("Please select a user.");
+                        }
+                        else {
+
+                          const loader = document.createElement("div");
+                          loader.id = "loader2";
+                          loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations parent sont en cours d'ajout.</div>"; // Add the text here
+                          document.body.appendChild(loader);
+
+                          btn_add_user.disabled = true;
+
+                          // Show loading text or spinner
+                          btn_add_user.textContent = 'Loading...';
+
+                          if (selected_permission === "ALL") {
+
+                            permission = 1073741829;
+                          }
+
+                          else if (selected_permission === "READ") {
+                            permission = 1073741826;
+
+                          }
+                          else if (selected_permission === "READ_WRITE") {
+                            permission = 1073741830;
+
+                          }
+
+
+                          const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
+
+                          users_Permission = user;
+
+                          console.log("USERS FOR PERMISSION", users_Permission);
+
+
+
+                          // try {
+                          //   console.log("KEY", item.key);
+
+                          //   var _x = await getChildrenById3(item.key, []);
+                          //   console.log("CHILD", _x);
+
+                          //   const list = sp.web.lists.getByTitle("Documents1");
+
+                          //   const _item = await list.items.getById(item.id);
+                          //   await _item.breakRoleInheritance(true, false);
+                          //   const roleAssignments = _item.roleAssignments;
+
+
+                          //   await roleAssignments.add(user.Id, permission)
+                          //     .then(async () => {
+
+                          //       await sp.web.lists.getByTitle("Documents1").items.getById(item.id).update({
+                          //         inheriting: "NO",
+                          //       });
+
+                          //       await Promise.all(_x.map(async (item_group) => {
+
+                          //         if (item_group.ID != item.id) {
+
+                          //           const _item = await list.items.getById(item_group.ID);
+                          //           await _item.breakRoleInheritance(true, false);
+
+                          //           const roleAssignments = _item.roleAssignments;
+                          //           await roleAssignments.add(user.Id, permission);
+                          //         }
+
+                          //         // .then(async () => {
+                          //         //   await sp.web.lists.getByTitle("Documents1").items.getById(item_group.ID).update({
+                          //         //     inheriting: "NO",
+                          //         //   });
+                          //         // });
+                          //       }))
+
+                          //         .then(result => {
+                          //           console.log("Item updated successfully");
+
+                          //           document.body.removeChild(loader);
+                          //           alert("Autorisation ajoutée avec succès..");
+                          //           window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+                          //         })
+                          //         .catch(error => {
+                          //           console.log("Error updating item: ", error);
+                          //           alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+                          //           document.body.removeChild(loader);
+
+                          //           btn_add_user.disabled = false;
+
+                          //           // Show loading text or spinner
+                          //           btn_add_user.textContent = 'Ajouter';
+                          //         });
+                          //     });
+
+
+                          // }
+
+                          // catch (e) {
+                          //   console.log("Error updating item: ", e.message);
+                          //   alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+                          //   document.body.removeChild(loader);
+
+                          //   btn_add_user.disabled = false;
+
+                          //   // Show loading text or spinner
+                          //   btn_add_user.textContent = 'Ajouter';
+                          // }
+
+                          try {
+                            console.log("KEY", item.key);
+
+                            // const _x = await getChildrenById4(item.key, []);
+                            // console.log("CHILD", _x);
+
+                            const list = sp.web.lists.getByTitle("Documents1");
+                            const _item = await list.items.getById(item.id);
+
+                            // Break inheritance for the main item
+                            await _item.breakRoleInheritance(true, false);
+                            const roleAssignments = _item.roleAssignments;
+
+                            // Add role assignment for the main item
+                            await roleAssignments.add(user.Id, permission);
+
+                            // Update the main item's 'inheriting' property
+
+
+                            // Process child items in batches to reduce API calls
+                            // const batchSize = 100; // Adjust batch size as needed
+                            // for (let i = 0; i < _x.length; i += batchSize) {
+                            //   const batch = _x.slice(i, i + batchSize);
+                            //   await Promise.all(
+                            //     batch.map(async (item_group) => {
+                            //       if (item_group.ID != item.id) {
+                            //         const _item = await list.items.getById(item_group.ID);
+                            //         await _item.breakRoleInheritance(true, false);
+                            //         const roleAssignments = _item.roleAssignments;
+
+                            //         // Add role assignment for the child item
+                            //         await roleAssignments.add(user.Id, permission);
+                            //       }
+                            //     })
+                            //   );
+
+                            //   // Add a delay between batches to avoid rate limiting
+                            //   await new Promise((resolve) => setTimeout(resolve, 2000)); // Adjust the delay time as needed
+                            // }
+
+                            console.log("Item updated successfully");
+                            document.body.removeChild(loader);
+                            alert("Autorisation ajoutée avec succès.");
+                            // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+                            Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
+
+                          } catch (e) {
+                            console.log("Error updating item: ", e.message);
+                            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+                            document.body.removeChild(loader);
+
+                            btn_add_user.disabled = false;
+                            // Show loading text or spinner
+                            btn_add_user.textContent = 'Ajouter';
+                          }
+
+
+                        }
+
+                      });
+
+
+
+                      var add_group_permission_container: Element = document.getElementById("add_btn_group");
+
+                      let add_btn_group_permission: string = `
+                      <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_add_group>Ajouter</button>
+                      `;
+
+                      //                       let add_btn_group_permission: string = `
+                      //     <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_add_group onclick="handleButtonClick(this);" disabled>
+                      //         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      //         Loading...
+                      //     </button>
+                      // `;
+
+                      add_group_permission_container.innerHTML = add_btn_group_permission;
+
+                      const btn_add_group = document.getElementById(item.id + '_add_group') as HTMLButtonElement;;
+
+                      await btn_add_group?.addEventListener('click', async () => {
+
+                        var selected_permission = $("#permissions_group option:selected").val();
+                        var permission = 0;
+
+                        if ($("#group_name").val() === "") {
+                          alert("Please select a group.");
+                        }
+                        else {
+
+                          const loader = document.createElement("div");
+                          loader.id = "loader2";
+                          loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations sont en cours d'ajout.</div>"; // Add the text here
+                          document.body.appendChild(loader);
+
+                          btn_add_group.disabled = true;
+
+                          // Show loading text or spinner
+                          btn_add_group.textContent = 'Loading...';
+
+                          if (selected_permission === "ALL") {
+                            permission = 1073741829;
+                          }
+
+                          else if (selected_permission === "READ") {
+                            permission = 1073741826;
+                          }
+                          else if (selected_permission === "READ_WRITE") {
+                            permission = 1073741830;
+                          }
+
+                          //  const stringGroupUsers: string[] = await getAllUsersInGroup($("#group_name").val());
+                          //  console.log("TESTER GROUP USERS", stringGroupUsers);
+
+                          // await add_permission_group2($("#group_name").val().toString(), permission, item.key, principleOfGroupAD)
+                          //   .then(async () => {
+
+                          //     await sp.web.lists.getByTitle("Documents1").items.getById(item.id).update({
+                          //       inheriting: "Awaiting",
+                          //     }).then(result => {
+                          //       console.log("Item updated successfully");
+                          //       window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+                          //     }).catch(error => {
+                          //       console.log("Error updating item: ", error);
+                          //     });
+                          //   });
+
+                          // var _x = await getChildrenById3(item.key, []);
+                          // console.log("CHILD", _x);
+
+                          // const list = sp.web.lists.getByTitle("Documents1");
+
+
+                          // const _item = await list.items.getById(item.id);
+                          // await _item.breakRoleInheritance(true, false);
+                          // const roleAssignments = _item.roleAssignments;
+                          // await roleAssignments.add(principleOfGroupAD, permission)
+                          //   .then(async () => {
+
+                          //     await sp.web.lists.getByTitle("Documents1").items.getById(item.id).update({
+                          //       inheriting: "NO",
+                          //     });
+
+                          //     await Promise.all(_x.map(async (item_group) => {
+
+                          //       if(item_group.ID != item.id){
+                          //         const _item = await list.items.getById(item_group.ID);
+                          //         await _item.breakRoleInheritance(true, false);
+
+                          //         const roleAssignments = _item.roleAssignments;
+                          //         await roleAssignments.add(principleOfGroupAD, permission)
+                          //       }
+
+                          //     }))
+                          //       .then(result => {
+                          //         console.log("Item updated successfully");
+
+                          //         document.body.removeChild(loader);
+
+                          //         alert("Autorisation ajoutée avec succès..");
+
+                          //         window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+                          //       }).catch(error => {
+                          //         console.log("Error updating item: ", error);
+                          //         alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+                          //         document.body.removeChild(loader);
+
+                          //         btn_add_group.disabled = false;
+
+                          //         // Show loading text or spinner
+                          //         btn_add_group.textContent = 'Ajouter';
+                          //       });
+
+                          //   });
+
+
+                          // btn_add_group.disabled = false;
+
+                          // // Show loading text or spinner
+                          // btn_add_group.textContent = 'Ajouter';
+
+                          try {
+                            const list = sp.web.lists.getByTitle("Documents1");
+
+                            const folderKey = item.key;
+                            const folderId = item.id;
+
+                            // Get child items
+
+                            // Break inheritance for the main item
+                            const mainItem = await list.items.getById(folderId);
+                            await mainItem.breakRoleInheritance(true, false);
+                            const mainRoleAssignments = mainItem.roleAssignments;
+
+                            // Add role assignment for the main item
+                            await mainRoleAssignments.add(principleOfGroupAD, permission);
+
+                            // Update the main item's 'inheriting' property
+
+
+                            // Process child items in batches to reduce API calls
+
+
+                            console.log("Item updated successfully");
+                            document.body.removeChild(loader);
+                            alert("Autorisation ajoutée avec succès.");
+                            //   window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderKey}`;
+
+                            Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderKey}`, true);
+
+                          } catch (e) {
+                            console.log("Error updating item: ", e.message);
+                            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+                            document.body.removeChild(loader);
+
+                            btn_add_group.disabled = false;
+                            // Show loading text or spinner
+                            btn_add_group.textContent = 'Ajouter';
+                          }
+
+
+                        }
+
+                      });
+
+                      var inherit_permission_container: Element = document.getElementById("inheritParentFolderPermission");
+                      let inherit_parent_permission: string = `
+                <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_inheritParentPermission>Hériter les droits d'accès du parent</button>
+                `;
+
+                      inherit_permission_container.innerHTML = inherit_parent_permission;
+
+                      const btn_inherit_permission = document.getElementById(item.id + '_inheritParentPermission') as HTMLButtonElement;;
+
+                      await btn_inherit_permission?.addEventListener('click', async () => {
+
+
+
+                        //cki bon la
+                        if (confirm(`Voulez-vous vraiment supprimer toutes les autorisations uniques et hériter de ses autorisations parent?`)) {
+
+
+                          try {
+
+                            btn_inherit_permission.disabled = true;
+                            btn_inherit_permission.textContent = 'Loading...';
+                            var loader = document.createElement("div");
+                            loader.id = "loader2";
+                            loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations parent sont en cours d'ajout.</div>";
+                            document.body.appendChild(loader);
+
+
+                            const list = sp.web.lists.getByTitle("Documents1");
+                            const mainItem = await list.items.getById(item.id);
+
+                            await mainItem.resetRoleInheritance()
+
+                              .then(() => {
+                                console.log("Item updated successfully");
+                                document.body.removeChild(loader);
+                                alert("Suppression des autorisations uniques et application des autorisations du parent sur ce dossier.");
+                                // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+
+                                Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
+
+                              });
+
+
+
+                          }
+
+                          catch (e) {
+                            console.log('Error Setting parents permissions', e.message);
+                            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+                            document.body.removeChild(loader);
+                            btn_inherit_permission.disabled = false;
+                            btn_inherit_permission.textContent = "Hériter les droits d'accès du parent";
+                            console.log(e.message);
+                          }
+                        }
+
+
+                      });
+
+                      var NOT_inherit_permission_container: Element = document.getElementById("NOTinnheritParentFolderPermission");
+                      let NOT_inherit_parent_permission: string = `
+                <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_not_inheritParentPermission>Rompre les droits d'accès du parent</button>
+                `;
+
+                      NOT_inherit_permission_container.innerHTML = NOT_inherit_parent_permission;
+
+                      const NOT_btn_inherit_permission = document.getElementById(item.id + '_not_inheritParentPermission') as HTMLButtonElement;;
+
+                      await NOT_btn_inherit_permission?.addEventListener('click', async () => {
+
+
+                        //cki bon la
+                        if (confirm(`Voulez-vous vraiment supprimer toutes les autorisations du parents sur ce dossier?`)) {
+
+
+                          try {
+
+                            NOT_btn_inherit_permission.disabled = true;
+                            NOT_btn_inherit_permission.textContent = 'Loading...';
+                            var loader = document.createElement("div");
+                            loader.id = "loader2";
+                            loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations parent sont en cours d'ajout.</div>";
+                            document.body.appendChild(loader);
+
+
+                            const list = sp.web.lists.getByTitle("Documents1");
+                            const mainItem = await list.items.getById(item.id);
+
+                            await mainItem.breakRoleInheritance(false, true)
+
+                              .then(() => {
+                                console.log("Item updated successfully");
+                                document.body.removeChild(loader);
+                                alert("Attention, l'héritager des drotits pour ce dossier est rompu.");
+                                //  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+                                Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
+                              });
+
+
+                          }
+
+                          catch (e) {
+                            console.log('Error Setting parents permissions', e.message);
+                            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+                            document.body.removeChild(loader);
+                            btn_inherit_permission.disabled = false;
+                            btn_inherit_permission.textContent = "Hériter les droits d'accès du parent";
+                            console.log(e.message);
+                          }
+                        }
+
+
+                        // }
+
+                      });
+
+
+
+
+                    }
+
+                    let user_current = await sp.web.currentUser();
+
+                    const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+                    const excludedItems = permissions.filter(item => item.title !== user_current.Title);
+
+
+                    if (excludedItems.length === 0) {
+
+
+                      await generateTable([{ type: 'member', id: '', role: 'Full Control', title: 'MYGED_ADMIN' }], Number(x));
+
+
+                    } else {
+                      await generateTable(excludedItems, Number(x));
+                    }
+
+                    // await generateTable(excludedItems, Number(x));
                     console.log("PERMISSIONS ON ITEM", permissions);
 
-                    var items = await sp.web.lists.getByTitle("Documents").items
-                      .select("ID, Title, ParentID, inheriting")
+                    var items = await sp.web.lists.getByTitle("Documents1").items
+                      .select("ID, Title, ParentID, HasUniqueRoleAssignments")
                       .filter(`FolderID eq '${item.key}' and IsFolder eq 'TRUE'`)
                       .get();
 
-                    if (items[0].inheriting === "YES") {
+                    console.log("ITEMS LOGGED", items);
+
+
+                    if (items[0].HasUniqueRoleAssignments === false) {
+
+                      $("#heriter_input").val("OUI");
+
+
+                      $("#spListPermissions").css("display", "block");
+
+                      var element = document.getElementById("inheritparagraph");
+                      element.innerHTML = "Ce dossier hérite des permissions de son parent.";
+
                       $("#inheritparagraph").css("display", "block");
+
+                      var elementBtn = document.getElementById(item.id + '_inheritParentPermission');
+                      elementBtn.style.display = "none";
+
+                      var rompreBtn = document.getElementById(item.id + '_not_inheritParentPermission');
+                      rompreBtn.style.display = "block";
+
+                      //  $(`#${item.id}_inheritParentPermission`).css("display", "none");
+
                     }
+
+
                     else {
+
+                      $("#heriter_input").val("NON");
+
                       $("#inheritparagraph").css("display", "none");
+
+                      $("#spListPermissions").css("display", "block");
+
+                      var elementBtn2 = document.getElementById(item.id + '_inheritParentPermission');
+                      elementBtn2.style.display = "block";
+
+                      var rompreBtn = document.getElementById(item.id + '_not_inheritParentPermission');
+                      rompreBtn.style.display = "none";
+                      // $(`#${item.id}_inheritParentPermission`).css("display", "block");
                     }
 
                   }
@@ -4656,7 +6882,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   }
                   else if (high == 176 && low == 138612833) { //read
                     console.log("You can only read!");
-                    $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder, #ajouteDoc, #bouton_bookmark").css("display", "none");
+                    $("#bouton_bookmark").css("display", "block");
+                    $("#ajouterDept, #accesFolder, #bouton_delete, #editFolder, #addFolder, #ajouteDoc").css("display", "none");
                   }
 
                   else {
@@ -4668,10 +6895,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   console.error('Error:', error);
                 });
 
-              //  const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-
-
-
+              //  const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
 
               // try {
@@ -4704,12 +6928,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               //     console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
               //     $("#nav").css("display", "block");
 
-              //     const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              //     const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
               //     await generateTable(permissions, Number(x));
               //     console.log("PERMISSIONS ON ITEM", permissions);
 
-              //     var items = await sp.web.lists.getByTitle("Documents").items
-              //       .select("ID, Title, ParentID, inheriting")
+              //     var items = await sp.web.lists.getByTitle("Documents1").items
+              //       .select("ID, Title, ParentID")
               //       .filter(`FolderID eq '${item.key}' and IsFolder eq 'TRUE'`)
               //       .get();
 
@@ -4733,7 +6957,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
 
 
-              // const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              // const { permissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/MyGed', "Documents1", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
 
               // await generateTable(permissions, Number(x));
               // console.log("PERMISSIONS ON ITEM", permissions);
@@ -4755,7 +6979,9 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               var titleFolder = "";
 
-              const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID,Title,revision,IsFolder,description").filter("FolderID eq '" + item.parentID + "'").getAll();
+              const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents1').items
+                .select("ID,ParentID,FolderID,Title,revision,IsFolder,description")
+                .filter("FolderID eq '" + item.parentID + "' and IsFolder eq 'TRUE'").getAll();
 
               allItemsFolder.forEach((x) => {
 
@@ -4766,6 +6992,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               $("#folder_name1").val(item.label);
               $("#folder_desc").val(item.description);
               $("#parent_folder").val(item.parentID + "_" + titleFolder);
+              $('#parent_path').val(`${item.path}`);
+
             }
 
             //bouton delete dossier
@@ -4794,17 +7022,90 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   try {
 
-                    const list = sp.web.lists.getByTitle("Documents");
+                    const list = sp.web.lists.getByTitle("Documents1");
 
                     const i = await list.items.getById(Number(item.id)).update({
+                      Title: item.label,
                       ParentID: 791,
+                      FileLeafRef: `1_.000/303_.000/${item.id}_.000`
                     })
-                      .then(() => {
-                        alert("Dossier archivé avec succès.");
+
+                      .then(async () => {
+
+                        const i = await list.items.getById(Number(item.id)).update({
+                          Title: item.label,
+                          Current: `Gestion Documentaire/ARCHIVES`
+                        });
+
+                      })
+                      .then(async () => {
+                        const list = sp.web.lists.getByTitle('Documents1');
+
+                        var childs = await getChildrenById3(item.key, []);
+
+                        if (childs.length > 0) {
+
+                          const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                            .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                            .filter(`IsFolder eq 'TRUE'`)
+                            .getAll();
+
+                          for (const item_ of childs) {
+
+                            try {
+
+                              const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                              // const _item = allFolders.find(folder => folder.ID === item_);
+
+                              // console.log("_ITEM", _item);
+
+                              const fileDir = item_.FileDirRef;
+
+                              console.log("_ITEM_FILEDIR", item_.FileDirRef);
+
+                              const modifiedFileDir = fileDir.replace(listUri, '');
+
+                              const parts = modifiedFileDir.split('/');
+
+                              const reconstructedPath = parts
+                                .map(part => {
+                                  const id = parseInt(part.split('_')[0]);
+                                  const folder = allFolders.find(folder => folder.ID === id);
+                                  return folder ? folder.Title : '';
+                                })
+                                .join('/');
+
+                              console.log({ "Title ": item_.Title, "Path": reconstructedPath })
+
+
+                              const i = await list.items.getById(Number(item_.ID)).update({
+                                Current: reconstructedPath
+                              });
+                            }
+                            catch (e) {
+
+                              console.log(e.message);
+
+                            }
+
+                            // const rootFolder = await list.items.up({
+                            //   Title: item_.Title,
+                            //   FolderID: item_.FolderID,
+                            //   ParentID: item_.ParentID,
+                            //   IsFolder: "TRUE",
+                            //   description: item_.description,
+                            //   FileSystemObjectType: 1,
+                            //   ContentTypeId: '0x0120'
+                            // });
+                          }
+                        }
                       })
                       .then(() => {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
-                        // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${folderInfo[0].ParentID}`;
+                        alert("Dossier archivé avec succès.");
+                        // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                        Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`, true);
+
                       });
                   }
                   catch (err) {
@@ -4840,8 +7141,33 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               await btn_edit_dossier?.addEventListener('click', async () => {
 
+                const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                  .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                  .filter(`IsFolder eq 'TRUE'`)
+                  .getAll();
+
 
                 let text = $("#parent_folder").val();
+                let path = $("#parent_path").val().toString();
+
+                var splitResult = path.split('/');
+
+                if (splitResult.length >= 6) {
+                  var desiredSubstring = splitResult.slice(5).join('/');
+                  // var path = splitResult
+                }
+
+                const parts = desiredSubstring.split('/');
+
+                const reconstructedPath = parts
+                  .map(part => {
+                    const id = parseInt(part.split('_')[0]);
+                    const folder = allFolders.find(folder => folder.ID === id);
+                    return folder ? folder.Title : '';
+                  })
+                  .join('/');
+
+
                 const myArray = text.toString().split("_");
                 let parentId = myArray[0];
 
@@ -4849,19 +7175,126 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                   try {
 
-                    const i = await await sp.web.lists.getByTitle('Documents').items.getById(parseInt(item.id)).update({
+                    const i = await await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(item.id)).update({
                       Title: $("#folder_name1").val(),
                       description: $("#folder_desc").val(),
-                      ParentID: parseInt(parentId)
+                      ParentID: parseInt(parentId),
+                      FileLeafRef: `${desiredSubstring}/${item.id}_.000`,
+                      Current: reconstructedPath
 
                     })
-                      .then(() => {
-                        alert("Détails mis à jour avec succès");
+                      .then(async () => {
+
+
+                        const _item: any[] = await sp.web.lists.getByTitle('Documents1').items
+                          .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                          .filter(`IsFolder eq 'TRUE' and ID eq '${item.id}'`)
+                          .getAll();
+
+                        const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                          .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                          .filter(`IsFolder eq 'TRUE'`)
+                          .getAll();
+
+                        const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                        const fileDir = _item[0].FileDirRef;
+
+                        console.log("_ITEM_FILEDIR", _item[0].FileDirRef);
+
+                        const modifiedFileDir = fileDir.replace(listUri, '');
+
+                        const parts = modifiedFileDir.split('/');
+
+                        const reconstructedPath = parts
+                          .map(part => {
+                            const id = parseInt(part.split('_')[0]);
+                            const folder = allFolders.find(folder => folder.ID === id);
+                            return folder ? folder.Title : '';
+                          })
+                          .join('/');
+
+                        console.log({ "Title ": _item[0].Title, "Path": reconstructedPath })
+
+                        const i = await await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(item.id)).update({
+                          Current: reconstructedPath
+                          // path: reconstructedPath
+
+                        })
+
+                      })
+                      .then(async () => {
+                        const list = sp.web.lists.getByTitle('Documents1');
+
+
+                        var childs = await getChildrenById3(item.key, []);
+
+                        if (childs.length > 0) {
+
+                          const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                            .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                            .filter(`IsFolder eq 'TRUE'`)
+                            .getAll();
+
+                          for (const item_ of childs) {
+
+                            try {
+
+                              const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                              // const _item = allFolders.find(folder => folder.ID === item_);
+
+                              // console.log("_ITEM", _item);
+
+                              const fileDir = item_.FileDirRef;
+
+                              console.log("_ITEM_FILEDIR", item_.FileDirRef);
+
+                              const modifiedFileDir = fileDir.replace(listUri, '');
+
+                              const parts = modifiedFileDir.split('/');
+
+                              const reconstructedPath = parts
+                                .map(part => {
+                                  const id = parseInt(part.split('_')[0]);
+                                  const folder = allFolders.find(folder => folder.ID === id);
+                                  return folder ? folder.Title : '';
+                                })
+                                .join('/');
+
+                              console.log({ "Title ": item_.Title, "Path": reconstructedPath })
+
+
+                              const i = await list.items.getById(Number(item_.ID)).update({
+
+                                Current: reconstructedPath
+                              });
+                            }
+                            catch (e) {
+
+                              console.log(e.message);
+
+                            }
+
+
+
+
+                            // const rootFolder = await list.items.up({
+                            //   Title: item_.Title,
+                            //   FolderID: item_.FolderID,
+                            //   ParentID: item_.ParentID,
+                            //   IsFolder: "TRUE",
+                            //   description: item_.description,
+                            //   FileSystemObjectType: 1,
+                            //   ContentTypeId: '0x0120'
+                            // });
+                          }
+                        }
                       })
                       .then(() => {
-                        window.open(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, "blank");
+                        alert("Détails mis à jour avec succès");
+                        window.location.reload();
                       });
-
                   }
                   catch (err) {
                     alert(err.message);
@@ -4888,6 +7321,8 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
               const btn_add_doc = document.getElementById(item.id + '_add_doc');
 
+
+
               await btn_add_doc?.addEventListener('click', async () => {
 
 
@@ -4907,6 +7342,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                   alert("Veuillez mettre une révision avant de continuer.");
                 }
 
+                if ($("#input_doc_number_add").val() == "") {
+                  alert("Veuillez mettre le nom du document avant de continuer.")
+                }
+
                 else {
                   if ($('#file_ammendment').val() == '') {
 
@@ -4917,25 +7356,44 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
 
                     if (confirm(`Etes-vous sûr de vouloir creer un document ?`)) {
 
+                      const currentDate = new Date();
+                      const formattedDate = currentDate.toISOString().split('T')[0];
 
                       try {
 
-                        const i = await await sp.web.lists.getByTitle('Documents').items.add({
+
+                        const i = await await sp.web.lists.getByTitle('Documents1').items.add({
                           Title: $("#input_doc_number_add").val(),
                           description: $("#input_description_add").val(),
                           doc_number: $("#input_doc_number_add").val(),
                           revision: $("#input_revision_add").val(),
+                          revisionDate: moment($("#input_revision_date").val()).format("DD/MM/YYYY"),
                           ParentID: item.key,
                           IsFolder: "FALSE",
                           keywords: $("#input_keywords_add").val(),
                           owner: user_current.Title,
-                          createdDate: new Date().toLocaleString(),
+                          createdDate: moment(formattedDate).format("DD/MM/YYYY"),
                           IsFiligrane: value_fili,
-                          IsDownloadable: value_impri
+                          IsDownloadable: value_impri,
+
                         })
                           .then(async (iar) => {
 
-                            const list = sp.web.lists.getByTitle("Documents");
+                            let listUri: string = '/sites/MyGed/Lists/Documents1';
+
+                            var splitResult = item.path.split('/');
+
+                            if (splitResult.length >= 6) {
+                              var desiredSubstring = splitResult.slice(5).join('/');
+
+                            }
+
+
+                            await sp.web
+                              .getFileByServerRelativeUrl(`${listUri}/${iar.data.ID}_.000`)
+                              .moveTo(`${listUri}/${desiredSubstring}/${item.id}_.000/${iar.data.ID}`);
+
+                            const list = sp.web.lists.getByTitle("Documents1");
 
                             await list.items.getById(iar.data.ID).attachmentFiles.add(fileName, content)
 
@@ -4946,14 +7404,10 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                                   filename: fileName
                                 });
 
+
                                 try {
 
                                   var value2 = "TRUE";
-                                  const folderInfo = await sp.web.lists.getByTitle('Documents').items
-                                    .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, inheriting")
-                                    .top(5000)
-                                    .filter(`FolderID eq '${item.key}' and IsFolder eq '${value2}'`)
-                                    .getAll();
 
                                   await sp.web.lists.getByTitle("Audit").items.add({
                                     Title: iar.data.Title.toString(),
@@ -4963,19 +7417,12 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                                     Person: user_current.Title.toString()
                                   });
 
-                                  await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-                                    Title: iar.data.Title.toString(),
-                                    FolderID: iar.data.ID,
-                                    IsDone: "NO",
-                                    ParentID: Number(folderInfo[0].ID)
-                                  });
                                 }
 
                                 catch (e) {
                                   alert("Erreur: " + e.message);
                                 }
-
-                              })
+                              });
 
 
                             var item_id = iar.data.ID,
@@ -4984,9 +7431,19 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                             return { item_id, item_title };
 
                           })
+
+
                           .then(({ item_id, item_title }) => {
                             alert("Document creer avec succès");
-                            window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${item_title}&documentId=${item_id}`;
+
+                            const documentUrl = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${item_title}&documentId=${item_id}`;
+
+                            // Append a cache-busting query parameter to the URL
+                            const cacheBuster = new Date().getTime();
+                            const noCacheUrl = `${documentUrl}&_=${cacheBuster}`;
+                            Navigation.navigate(noCacheUrl, true);
+                            //window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/Document.aspx?document=${item_title}&documentId=${item_id}`;
+                            // Navigation.navigate( , true);
                           });
 
                       }
@@ -4994,15 +7451,11 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                         alert(err.message);
                       }
 
-
                     }
                     else {
 
                     }
-
-
                   }
-
                 }
               });
 
@@ -5022,59 +7475,121 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               const btn_add_subfolder = document.getElementById(item.id + '_add_btn_subfolder');
 
 
+
               await btn_add_subfolder?.addEventListener('click', async () => {
+
                 var subId = null;
 
+                console.log("PATH", item.path);
+
+                var splitResult = item.path.split('/');
+
+                if (splitResult.length >= 6) {
+                  var desiredSubstring = splitResult.slice(5).join('/');
+                }
+
+
                 if ($("#folder_name").val() == '') {
-                  alert("Veuillez mettre une révision avant de continuer.")
+                  alert("Veuillez mettre le nom du dossier avant de continuer.")
                 }
 
                 else {
                   try {
-                    await sp.web.lists.getByTitle("Documents").items.add({
+                    await sp.web.lists.getByTitle("Documents1").items.add({
                       Title: $("#folder_name").val(),
                       ParentID: item.key,
-                      IsFolder: "TRUE"
+                      IsFolder: "TRUE",
+                      FileSystemObjectType: 1,
+                      ContentTypeId: '0x0120'
                     })
                       .then(async (iar) => {
 
-                        const list = sp.web.lists.getByTitle("Documents");
+                        const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                          .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                          .filter(`IsFolder eq 'TRUE'`)
+                          .getAll();
+
+                        const parts = desiredSubstring.split('/');
+
+                        const reconstructedPath = parts
+                          .map(part => {
+                            const id = parseInt(part.split('_')[0]);
+                            const folder = allFolders.find(folder => folder.ID === id);
+                            return folder ? folder.Title : '';
+                          })
+                          .join('/');
+
+
+                        const list = sp.web.lists.getByTitle("Documents1");
 
                         subId = iar.data.ID;
 
                         await list.items.getById(iar.data.ID).update({
                           FolderID: parseInt(iar.data.ID),
+                          Title: $("#folder_name").val(),
+                          FileLeafRef: `${desiredSubstring}/${item.id}_.000/${iar.data.ID}_.000`,
+                          Current: `${reconstructedPath}/${item.label}` // Move to a subfolder
+                        });
 
-                        })
-                          .then(async () => {
+                        return subId;
 
-                            var value2 = "TRUE";
+                        // alert(`Dossier ajouté avec succès`);
 
-                            const folderInfo = await sp.web.lists.getByTitle('Documents').items
-                              .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, inheriting")
-                              .top(5000)
-                              .filter(`FolderID eq '${item.key}' and IsFolder eq '${value2}'`)
-                              .getAll();
+                      })
+                      .then(async (subId) => {
 
-                            await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-                              Title: folderInfo[0].Title,
-                              FolderID: iar.data.ID,
-                              IsDone: "NO",
-                              ParentID: Number(folderInfo[0].ID)
-                            });
+                        const _item: any[] = await sp.web.lists.getByTitle('Documents1').items
+                          .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                          .filter(`IsFolder eq 'TRUE' and ID eq '${subId}'`)
+                          .getAll();
 
-                            alert(`Dossier ajouté avec succès`);
+                        const allFolders: any[] = await sp.web.lists.getByTitle('Documents1').items
+                          .select("ID,ParentID,FolderID,Title,IsFolder,FileDirRef,Current")
+                          .filter(`IsFolder eq 'TRUE'`)
+                          .getAll();
+
+                        const listUri = `/sites/MyGed/Lists/Documents1/`;
+
+                        const fileDir = _item[0].FileDirRef;
+
+                        console.log("_ITEM_FILEDIR", _item[0].FileDirRef);
+
+                        const modifiedFileDir = fileDir.replace(listUri, '');
+
+                        const parts = modifiedFileDir.split('/');
+
+                        const reconstructedPath = parts
+                          .map(part => {
+                            const id = parseInt(part.split('_')[0]);
+                            const folder = allFolders.find(folder => folder.ID === id);
+                            return folder ? folder.Title : '';
                           })
-                          .then(() => {
-                            if (item.key !== 1) {
-                              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
-                            }
+                          .join('/');
 
-                            else {
-                              window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
-                            }
-                          });
+                        console.log({ "Title ": _item[0].Title, "Path": reconstructedPath })
 
+                        const i = await await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(subId)).update({
+                          Current: reconstructedPath
+
+                        });
+
+                        alert(`Dossier ajouté avec succès`);
+
+                      })
+                      .then(() => {
+
+
+                        if (item.key !== 1) {
+                          // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
+                          Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`, true);
+
+                        }
+
+                        else {
+                          // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`;
+                          Navigation.navigate(`https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx`, true);
+
+                        }
                       });
 
                   }
@@ -5082,7 +7597,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
                     console.log("Erreur:", err.message);
                   }
                 }
-
 
               });
 
@@ -5142,249 +7656,6 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
               });
             }
 
-            //azoute permission
-            {
-              //add permission user
-
-              var add_user_permission_container: Element = document.getElementById("add_btn_user");
-
-              let add_btn_user_permission: string = `
-          <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_add_user>Ajouter</button>
-          `;
-
-              add_user_permission_container.innerHTML = add_btn_user_permission;
-
-              const btn_add_user = document.getElementById(item.id + '_add_user');
-
-              var peopleID = null;
-
-
-              await btn_add_user?.addEventListener('click', async () => {
-
-
-                var selected_permission = $("#permissions_user option:selected").val();
-
-                var permission = 0;
-
-                if ($("#users_name").val() === "") {
-                  alert("Please select a user.");
-                }
-                else {
-
-                  if (selected_permission === "ALL") {
-
-                    permission = 1073741829;
-                  }
-
-                  else if (selected_permission === "READ") {
-                    permission = 1073741826;
-
-                  }
-                  else if (selected_permission === "READ_WRITE") {
-                    permission = 1073741830;
-
-                  }
-
-
-                  const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
-
-                  users_Permission = user;
-
-                  console.log("USERS FOR PERMISSION", users_Permission);
-
-                  var x = await getChildrenById(item.key, []);
-
-
-                  try {
-                    console.log("KEY", item.key);
-
-                    await sp.web.lists.getByTitle("AccessRights").items.add({
-                      Title: item.label.toString(),
-                      groupName: $("#users_name").val(),
-                      permission: $("#permissions_user option:selected").val(),
-                      FolderID: item.id.toString(),
-                      PrincipleID: user.Id,
-                      RoleDefID: permission
-                    })
-                      .then(async () => {
-
-
-                        await sp.web.lists.getByTitle("Documents").items.getById(item.id).update({
-                          inheriting: "NO"
-                        }).then(result => {
-                          console.log("Item updated successfully");
-                        }).catch(error => {
-                          console.log("Error updating item: ", error);
-                        });
-
-                        await Promise.all(x.map(async (item) => {
-
-                          if (item.inheriting !== "NO") {
-                            await sp.web.lists.getByTitle("AccessRights").items.add({
-                              Title: item.Title.toString(),
-                              groupName: $("#users_name").val(),
-                              permission: $("#permissions_user option:selected").val(),
-                              FolderID: item.ID.toString(),
-                              PrincipleID: user.Id,
-                              RoleDefID: permission
-                            });
-                          }
-
-                        }));
-
-
-                      })
-                      .then(() => {
-                        alert("Autorisation ajoutée à ce dossier avec succès.")
-                      })
-                      // .then(() => {
-                      //   sp.web.lists.getByTitle("Documents").items.getById(item.id).update({
-                      //     inheriting: "NO",
-                      //   }).then(result => {
-                      //     console.log("Item updated successfully");
-                      //   }).catch(error => {
-                      //     console.log("Error updating item: ", error);
-                      //   });
-                      // })
-                      .then(() => {
-                        window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
-                      });
-
-                  }
-
-                  catch (e) {
-                    alert("Erreur: " + e.message);
-                  }
-
-                }
-
-              });
-
-
-
-
-              var add_group_permission_container: Element = document.getElementById("add_btn_group");
-
-              let add_btn_group_permission: string = `
-          <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_add_group>Ajouter</button>
-          `;
-
-              add_group_permission_container.innerHTML = add_btn_group_permission;
-
-              const btn_add_group = document.getElementById(item.id + '_add_group');
-
-              await btn_add_group?.addEventListener('click', async () => {
-
-                var selected_permission = $("#permissions_group option:selected").val();
-
-                var permission = 0;
-
-
-
-                if ($("#group_name").val() === "") {
-                  alert("Please select a group.");
-                }
-                else {
-
-                  if (selected_permission === "ALL") {
-
-                    permission = 1073741829;
-                  }
-
-                  else if (selected_permission === "READ") {
-                    permission = 1073741826;
-
-                  }
-                  else if (selected_permission === "READ_WRITE") {
-                    permission = 1073741830;
-
-                  }
-
-                  //  const stringGroupUsers: string[] = await getAllUsersInGroup($("#group_name").val());
-                  //  console.log("TESTER GROUP USERS", stringGroupUsers);
-
-                  add_permission_group2($("#group_name").val().toString(), permission, item.key, principleOfGroupAD);
-
-                  await sp.web.lists.getByTitle("Documents").items.getById(item.id).update({
-                    inheriting: "NO",
-                  }).then(result => {
-                    console.log("Item updated successfully");
-                  }).catch(error => {
-                    console.log("Error updating item: ", error);
-                  });
-                }
-
-              });
-
-              var inherit_permission_container: Element = document.getElementById("inheritParentFolderPermission");
-              let inherit_parent_permission: string = `
-                <button type="button" class="btn btn-primary add_group mb-2" style="font-size: 1em;" id=${item.id}_inheritParentPermission>Hériter les droits d'accès du parent</button>
-                `;
-
-              inherit_permission_container.innerHTML = inherit_parent_permission;
-
-              const btn_inherit_permission = document.getElementById(item.id + '_inheritParentPermission');
-
-              await btn_inherit_permission?.addEventListener('click', async () => {
-
-
-                var x = await getChildrenById(item.key, []);
-
-
-                try {
-                  // console.log(item_perm.title);
-
-                  var items = await sp.web.lists.getByTitle("Documents").items
-                    .select("ID")
-                    .filter(`FolderID eq '${item.parentID}' and IsFolder eq 'TRUE'`)
-                    .get();
-
-
-
-                  await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-                    Title: items[0].Title,
-                    FolderID: item.id,
-                    IsDone: "NO",
-                    ParentID: Number(items[0].ID)
-                  })
-                    .then(async () => {
-                      await Promise.all(x.map(async (item_group) => {
-                        await sp.web.lists.getByTitle("InheritParentPermission").items.add({
-                          Title: item_group.Title,
-                          FolderID: item_group.ID,
-                          IsDone: "NO",
-                          ParentID: Number(items[0].ID)
-                        });
-                      }));
-
-                    })
-                    .then(() => {
-                      console.log("ADDED PARENT");
-                    })
-                    .then(() => {
-
-                      sp.web.lists.getByTitle("Documents").items.getById(item.id).update({
-                        inheriting: "YES",
-                      }).then(result => {
-                        console.log("Item updated successfully");
-                      }).catch(error => {
-                        console.log("Error updating item: ", error);
-                      });
-                    });
-
-                  alert("Parent permissions added.");
-                  window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${item.key}`;
-
-                }
-                catch (e) {
-                  alert(e.message);
-                }
-              });
-
-
-            }
-
-
             //close doc upload
             {
               $("#cancel_doc").click(() => {
@@ -5416,6 +7687,7 @@ export default class MyGedTreeView extends React.Component<IMyGedTreeViewProps, 
     );
 
   }
+
 
 }
 

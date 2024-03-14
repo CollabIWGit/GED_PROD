@@ -2,37 +2,10 @@
   display: none;
 }
 
-.hb_u_9f38462c {
-  position: relative;
-  display: none;
-}
 
-.mt_ba_ada2ac09 {
-  box-sizing: border-box;
-  overflow: hidden;
-  position: relative;
-  display: none;
-}
 
-.hb_s_9f38462c {
-  position: relative;
-  display: none;
-}
 
-.hb_af_9f38462c {
-  display: none;
-}
 
-.x_c_ada2ac09 {
-  display: none;
-}
-
-.r_b_beed2cf1,
-.s_b_beed2cf1 {
-    position: relative;
-    z-index: 7;
-    display: none;
-}
 
 #spCommandBar {
   display: none;
@@ -50,19 +23,6 @@
   display: none;
 }
 
-.i_a_beed2cf1 {
-  position: relative;
-  z-index: 7;
-  display: none;
-}
-
-.k_b_beed2cf1.m_b_beed2cf1 {
-  background-color: white;
-}
-
-.e_a_ada2ac09 {
-  display: none;
-}
 
 #CommentsWrapper{
 display: none;
@@ -76,9 +36,7 @@ display: none;
   display: none;
 }
 
-.l_b_beed2cf1{
-  display: none;
-}
+
 
 .simpleFooterContainer-215 {
   display: none;
@@ -103,9 +61,6 @@ display: none;
   min-width: 47px;
 }
 
-.l_b_beed2cf1 {
-  display: none;
-}
 
 #CommentsWrapper {
   display: none;
@@ -800,9 +755,7 @@ button[disabled] {
   display: none;
 }
 
-.l_b_beed2cf1 {
-  display: none;
-}
+
 
 #form_metadata label.ms-Label.root-205 {
   display: flex;

@@ -90,7 +90,6 @@ h3 {
 .dataTables_wrapper {
     position: relative;
     clear: both;
-    *zoom: 1;
     zoom: 1;
     overflow-x: auto;
 }

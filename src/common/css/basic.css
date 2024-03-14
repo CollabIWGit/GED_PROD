@@ -66,9 +66,6 @@
     transition: all 0.5s ease-out 0s; */
   }
 
-  .a_c_50a7110f:not(.b_c_50a7110f):not(.i_c_50a7110f) {
-      padding: 0;
-  }
 
   #pageHeader {
       display: none;

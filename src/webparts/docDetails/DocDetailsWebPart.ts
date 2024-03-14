@@ -14,7 +14,7 @@ import {
 import 'jquery-ui';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
-import { escape } from '@microsoft/sp-lodash-subset';
+import { escape, truncate } from '@microsoft/sp-lodash-subset';
 
 import styles from './DocDetailsWebPart.module.scss';
 import * as strings from 'DocDetailsWebPartStrings';
@@ -46,8 +46,6 @@ require('./../../common/css/bugfix.css');
 require('./../../common/css/doctabs.css');
 require('./../../common/css/minBootstrap.css');
 require('./../../common/css/responsive.css');
-
-
 
 
 
@@ -92,7 +90,6 @@ declare global {
 }
 
 
-
 export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetailsWebPartProps> {
 
   private graphClient: MSGraphClient;
@@ -106,7 +103,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     return new Promise<void>((resolve: () => void, reject: (error: any) => void): void => {
       // this.user = this.context.pageContext.user;
       sp.setup({
-        spfxContext: this.context
+        spfxContext: this.context,
+        globalCacheDisable: true
       });
 
       this.context.msGraphClientFactory
@@ -141,10 +139,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   // import "@pnp/sp/items";
 
   // import { sp, PermissionKind } from '@pnp/sp';
-
   // ...
-
-
 
   private async getGroupsByName(graphClient: MSGraphClient, displayNameStartsWith: string): Promise<Group[]> {
     const allGroups: Group[] = [];
@@ -173,68 +168,84 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     //var parentIDArray = [] ;
 
-    await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter(`FolderID eq '${id}' and Title eq '${title}' and IsFolder eq 'FALSE'`).get().then((results) => {
-
-      // if (results[0].ParentID != undefined || results[0].ParentID != null) {
-      parentID = results[0].ParentID;
-
-      console.log("FIRST PARENT", parentID);
-      parentIDArray.unshift(parentID);
-      parentIDArray.push(parentID);
-      // }
-
-      folderID = results[0].FolderID;
-
-      parent_title = results[0].Title;
-
-
-      parentTitle.push({
-        parentId_doc: folderID,
-        parentTitle_doc: parent_title
-      });
-
-      console.log("Parent 1", parentID);
-
-    });
-
-
-    while (parentID != 1) {
-
-      await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID, Title").filter("FolderID eq '" + parentID + "' and IsFolder eq '" + value1 + "'").get().then((results) => {
+    await sp.web.lists.getByTitle('Documents1').items
+      .select("ID,ParentID,FolderID")
+      .filter(`FolderID eq '${id}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
+      .get()
+      .then((results) => {
 
         // if (results[0].ParentID != undefined || results[0].ParentID != null) {
         parentID = results[0].ParentID;
+
+        console.log("FIRST PARENT", parentID);
         parentIDArray.unshift(parentID);
+        parentIDArray.push(parentID);
         // }
 
         folderID = results[0].FolderID;
-        parentIDArray.unshift(parentID);
 
         parent_title = results[0].Title;
 
-        parentTitle.unshift({
+
+        parentTitle.push({
           parentId_doc: folderID,
           parentTitle_doc: parent_title
         });
 
+        console.log("Parent 1", parentID);
 
-        console.log("Parent 2", parentID);
       });
 
+
+
+    if (parentID == 0) {
+
+      parentIDArray = null;
+      parentTitle = null;
+
     }
 
+    else {
 
-    parentIDArray.push(parseInt(this.getDocId()));
+      while (parentID != 1) {
+
+        await sp.web.lists.getByTitle('Documents1').items.select("ID,ParentID,FolderID, Title").filter("FolderID eq '" + parentID + "' and IsFolder eq '" + value1 + "'").get().then((results) => {
+
+          // if (results[0].ParentID != undefined || results[0].ParentID != null) {
+          parentID = results[0].ParentID;
+          parentIDArray.unshift(parentID);
+          // }
+
+          folderID = results[0].FolderID;
+          parentIDArray.unshift(parentID);
+
+          parent_title = results[0].Title;
+
+          parentTitle.unshift({
+            parentId_doc: folderID,
+            parentTitle_doc: parent_title
+          });
+
+
+          console.log("Parent 2", parentID);
+        });
+
+      }
+
+
+      parentIDArray.push(parseInt(this.getDocId()));
 
 
 
-    if (parentIDArray.length > 1) {
-      parentIDArray.shift();
+      if (parentIDArray.length > 1) {
+        parentIDArray.shift();
+      }
+
+      // parentIDArray.sort(function (a, b) { return a - b });
+      console.log("ArrayParent", parentIDArray);
+      console.log("ArrayParent_Title", parentTitle);
+
     }
-
-    // parentIDArray.sort(function (a, b) { return a - b });
-    console.log("ArrayParent", parentIDArray);
-    console.log("ArrayParent_Title", parentTitle);
 
 
     // this.createPath(parentTitle);
@@ -360,6 +371,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
       const pdfDoc = await PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
+
+
       console.log('pdfDoc Starting...');
 
       const pages = await pdfDoc.getPages();
@@ -407,42 +420,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-
-  private async generatePdfBytes(fileUrl: string, filigraneText: string): Promise<Uint8Array> {
-    try {
-      const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
-      const pdfDoc = await PDFDocument.load(existingPdfBytes, { ignoreEncryption: true });
-
-      const pages = await pdfDoc.getPages();
-
-      const dateDownload = Date();
-
-      for (const [i, page] of Object.entries(pages)) {
-        const firstPage = pages[0];
-        const { width, height } = firstPage.getSize();
-        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        const fontSize = 16;
-
-        page.drawText(filigraneText + dateDownload, {
-          x: 60,
-          y: 60,
-          size: fontSize,
-          font: helveticaFont,
-          color: rgb(1, 0, 1),
-          opacity: 0.4,
-          rotate: degrees(55)
-        });
-      }
-
-      const pdfBytes = await pdfDoc.save();
-
-      return pdfBytes;
-    } catch (e) {
-      console.error('Failed to generate PDF bytes:', e);
-      throw e;
-    }
-  }
-
   private async generatePdfBytes2(fileUrl: string): Promise<Uint8Array> {
     try {
       const existingPdfBytes = await fetch(fileUrl).then(res => res.arrayBuffer());
@@ -457,20 +434,24 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     {
 
       var value2 = 'FALSE';
+      var title = this.getDocTitle();
 
-      const folderInfo = await sp.web.lists.getByTitle('Documents').items
-        .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable, inheriting")
+
+      const folderInfo = await sp.web.lists.getByTitle('Documents1').items
+        .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,attachmentUrl,IsFiligrane,IsDownloadable")
         .top(5000)
-        .filter(`FolderID eq '${x}' and IsFolder eq '${value2}'`)
+        // .filter(`FolderID eq '${x}' and IsFolder eq '${value2}'`)
+        .filter(`FolderID eq '${x}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
         .getAll();
 
       var permission_container: Element = document.getElementById("splistDocAccessRights");
 
+      let user_current = await sp.web.currentUser();
+
+      console.log(user_current.Title);
       // while (permission_container.firstChild) {
-      //   permission_container.removeChild(permission_container.firstChild);
+      //   permission_cont ainer.removeChild(permission_container.firstChild);
       // }
-
-
       // permission_container.innerHTML = "";
 
       // var response = null;
@@ -491,8 +472,12 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       for (const element1 of groups) {
 
-        //  if (element1.role !== "NONE") {
-        html += `
+        // if (element1.Title !== user_current.Title && element1.role !== "Full Control") {
+
+        if (element1.role !== "Limited Access" && element1.role !== "Accès limité") {
+
+          //  if (element1.role !== "NONE") {
+          html += `
           <tr>
           <td class="text-left" id="${element1.id}">${element1.id}</td>
 
@@ -504,16 +489,17 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           <a id="btn${element1.id}_edit" class='buttoncss' role="button">
           
           <i class="fa-solid fa-trash"
-          title="Archiver le document" style="
+          title="Suppression" style="
       padding-left: 0.5em;font-size: 2em;"></i>
           
           </a>
         </td>
           
-
           </tr>
           `;
-        //  }
+        }
+
+        // }
       }
 
       html += `</tbody>
@@ -531,37 +517,92 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
         $('#tbl_permission tbody').on('click', '.buttoncss', async (event) => {
+
           var data = table.row($(event.currentTarget).parents('tr')).data();
-          alert("Remove permission with people id" + data[0]);
 
-          try {
+          const loader = document.createElement("div");
 
-            console.log("KEY", folderInfo[0].FolderID);
 
-            await sp.web.lists.getByTitle("AccessRights").items.add({
-              Title: folderInfo[0].Title.toString(),
-              groupName: $("#users_name").val(),
-              permission: "NONE",
-              FolderID: folderInfo[0].ID.toString(),
-              PrincipleID: data[0]
-              // RoleDefID: permission
-            })
-              .then(async () => {
-                alert("Autorisation supprimée avec succès.");
-                await sp.web.lists.getByTitle("Documents").items.getById(folderInfo[0].ID).update({
-                  inheriting: "NO"
-                }).then(result => {
-                  console.log("Item updated successfully");
-                }).catch(error => {
-                  console.log("Error updating item: ", error);
+          if (confirm(`Voulez-vous vraiment supprimer '${data[1]}' de ce document ?\nATTENTION : l'héritage des droits pour ce fichier sera rompu.`)) {
+
+
+            try {
+
+              loader.id = "loader2";
+              loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations sont en cours d'ajout.</div>"; // Add the text here
+              document.body.appendChild(loader);
+
+              var allSameDocs = await this.getAllSameDocs(folderInfo[0].Title.toString(), "FALSE");
+
+              const list = sp.web.lists.getByTitle("Documents1");
+
+
+              const _item = await list.items.getById(folderInfo[0].ID);
+
+
+              await _item.breakRoleInheritance(true, false);
+              await _item.roleAssignments.getById(data[0]).delete()
+
+                .then(async () => {
+
+                  await Promise.all(allSameDocs.map(async (item_) => {
+
+                    if (item_.ID != folderInfo[0].ID) {
+
+                      const _item = await list.items.getById(item_.ID);
+                      await _item.breakRoleInheritance(true, false);
+                      await _item.roleAssignments.getById(data[0]).delete();
+                    }
+
+                  }));
+
+                })
+                .then(async () => {
+
+                  document.body.removeChild(loader);
+
+                  alert("Autorisation supprimée avec succès.");
+
+
+                  window.location.reload();
+
                 });
 
-                window.location.reload();
+              // try {
 
-              });
-          }
-          catch (e) {
-            console.log(e.message);
+              //   console.log("KEY", folderInfo[0].FolderID);
+
+              //   await sp.web.lists.getByTitle("AccessRights").items.add({
+              //     Title: folderInfo[0].Title.toString(),
+              //     groupName: $("#users_name").val(),
+              //     permission: "NONE",
+              //     FolderID: folderInfo[0].ID.toString(),
+              //     PrincipleID: data[0],
+              //     IsDoc: "YES"
+              //     // RoleDefID: permission
+              //   })
+              //     .then(async () => {
+              //       alert("Autorisation supprimée avec succès.");
+              //       await sp.web.lists.getByTitle("Documents1").items.getById(folderInfo[0].ID).update({
+              //         inheriting: "Awaiting"
+              //       }).then(result => {
+              //         console.log("Item updated successfully");
+              //       }).catch(error => {
+              //         console.log("Error updating item: ", error);
+              //       });
+
+
+
+              //     });
+              // }
+              // catch (e) {
+              //   console.log(e.message);
+              // }
+
+            } catch (err) {
+              document.body.removeChild(loader);
+              alert("Erreur lors de l'application de l'autorisation au document. Veuillez réessayer.");
+            }
           }
 
           // await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
@@ -570,9 +611,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       } else {
         // Container is not empty
       }
-
-
-
 
     }
   }
@@ -603,6 +641,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   public async getListItemPermissions(siteUrl, listName, itemId, username, password) {
     try {
+
+      let user_current = await sp.web.currentUser();
+
       const credentials = btoa(`${username}:${password}`);
       const url = `${siteUrl}/_api/Web/Lists/GetByTitle('${listName}')/Items(${itemId})/RoleAssignments?$expand=Member,RoleDefinitionBindings`;
 
@@ -642,7 +683,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       return { permissions: [] };
     }
   }
-
 
   public async getBasePermissions(listId: any, docId: any): Promise<any> {
     try {
@@ -710,24 +750,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-
-
   public async render(): Promise<void> {
 
-    this.domElement.innerHTML = `
+    if (!this.renderedOnce) {
 
+      this.domElement.innerHTML = `
 
     <div class="wrapper d-flex align-items-stretch">
-    
+
        <div id="loader"
             style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; backdrop-filter: blur(5px);">
             <img src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/images/logoGed.png" alt="Loading..." id="logoGedBeat" />
         </div> 
 
-      
-    
         <div id="contentDetails">
-    
             <div class="jumbotron">
                 <div class="row">
                     <div class="col-md-7 top-buffer">
@@ -750,7 +786,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     
                             <label class="switch" id="switch_fav">
                                 <input type="checkbox" id="bookmark-switch" style="display: none;">
-                                <i class="fa-regular fa-bookmark star-icon" title="Ajouter dns marque-pages" style="padding-left: 0.5em;"></i>
+                                <i class="fa-regular fa-bookmark star-icon" title="Ajouter dans marque-pages" style="padding-left: 0.5em;"></i>
                             </label>
     
     
@@ -794,7 +830,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="input_type_doc">Dossier</label>
-                                <input type="text" class="form-control" id="input_type_doc" list='folders' disabled />
+                                <input type="text" class="form-control" id="input_type_doc" list='folders' disabled/>
     
                                 <datalist id="folders">
                                 </datalist>
@@ -852,7 +888,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="input_number">Date de diffusion</label>
-                                <input type="text" id='creation_date' class='form-control' disabled>
+                                <input type="date" id='creation_date' class='form-control'>
                             </div>
                         </div>
     
@@ -880,7 +916,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="input_number">Date de Revision</label>
-                                <input id="input_reviewDate" name="myBrowser" class='form-control' type="text" readonly>
+                                <input id="input_reviewDate" name="myBrowser" class='form-control' type="date" disabled>
     
                             </div>
                         </div>
@@ -897,10 +933,9 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                         </div>
     
                         <div class="col-lg-6">
-                            <div class="form-group" id='input_filename_group'>
-                                <label for="input_number">Nom du fichier local</label>
-                                <input type="text" id='input_filename' class='form-control' disabled />
-    
+                            <div class="form-group">
+                                <label for="input_number">Chemin du fichier</label>
+                                <input type="text" id='path_doc' class='form-control' disabled/>
                             </div>
                         </div>
                     </div>
@@ -1040,7 +1075,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                 <div class="row">
                                 <div class="col-lg-6" style="padding-top: 1.7em;">
                                 <div id="inherit" style="display: none;">
-                                <p class="h4">Ce document hérite des permissions de son parent.</p>
+                                <p class="h4" id="inheritText">Ce document hérite des permissions de son parent.</p>
                                 </div>
                             </div>
 
@@ -1051,11 +1086,23 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                                     <div class="col-lg-3" style="padding-top: 1.7em;">
                                         <div class="form-group">
                                             <button type="button" class="btn btn-primary add_group mb-2"
-                                                id="inherit_parent">Inherit parent permission</button>
+                                                id="inherit_parent">Hériter les droits d'accès</button>
                                         </div>
                                     </div>
                               
                                 </div>
+
+                                <div class="row">
+                                <div class="col-lg-3" style="padding-top: 1.7em;">
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-primary add_group mb-2"
+                                            id="not_inherit_parent">Rompre les droits d'accès du parent</button>
+                                    </div>
+                                </div>
+                          
+                            </div>
+
+
     
                             </div>
     
@@ -1171,344 +1218,626 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     </div>
     `;
 
-    Promise.all([
-      SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js'), // jQuery
-      SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'), // Popper.js
-      SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js'), // Bootstrap
-      SPComponentLoader.loadScript("https://code.jquery.com/ui/1.12.1/jquery-ui.js"), // jQuery UI
-      // SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'), // DataTables
-    ]).then(function() {
-      console.log("Scripts loaded successfully");
-      // All scripts have been loaded successfully
-    }).catch(function(error) {
-      // An error occurred while loading the scripts
-      console.error("Error loading scripts: "+error);
-    });
-    
+      Promise.all([
+        SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js'), // jQuery
+        SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'), // Popper.js
+        SPComponentLoader.loadScript("https://code.jquery.com/ui/1.12.1/jquery-ui.js"), // jQuery UI
+        SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js'), // Bootstrap
+        // SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'), // DataTables
+      ]).then(function () {
+        console.log("Scripts loaded successfully");
+        // All scripts have been loaded successfully
+      }).catch(function (error) {
+        // An error occurred while loading the scripts
+        console.error("Error loading scripts: " + error);
+      });
 
-    // this.requireLibraries();
+      this.getUserGroups(this.graphClient);
+      // this.requireLibraries();
+      const starIcon = document.querySelector(".star-icon") as HTMLElement;
 
-    const starIcon = document.querySelector(".star-icon") as HTMLElement;
+      starIcon.addEventListener("click", function () {
+        if (this.classList.contains("fa-solid")) {
+          this.classList.remove("fa-solid");
+          this.classList.add("fa-regular");
+          console.log("Star is grey");
+        } else {
+          this.classList.remove("fa-regular");
+          this.classList.add("fa-solid");
+          console.log("Star is gold");
+        }
+      });
 
-    starIcon.addEventListener("click", function () {
-      if (this.classList.contains("fa-solid")) {
-        this.classList.remove("fa-solid");
-        this.classList.add("fa-regular");
-        console.log("Star is grey");
-      } else {
-        this.classList.remove("fa-regular");
-        this.classList.add("fa-solid");
-        console.log("Star is gold");
-      }
-    });
+      var title = this.getDocTitle();
+      var docId = this.getDocId();
+
+      var principleIdOfGroup = null;
+      var principleIdOfGroup_notif = null;
+
+      //require('./DocDetailsWebPartJS');
+
+      const loader = document.getElementById('loader');
+
+      this.getParentID(this.getDocId(), this.getDocTitle());
+
+      var items = await sp.web.lists.getByTitle("Documents1").items
+        .select("ID, Title, ParentID, HasUniqueRoleAssignments")
+        .filter(`FolderID eq '${docId}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
+        .get();
+
+      // const basePermissions = await this.getCurrentUserPermissionsForItem(items[0].ID, 'be040ad0-c2e1-45bf-9a2d-3503043fb77b');
+      // console.log("High", basePermissions.High);
+      // console.log("Low", basePermissions.Low);
+      // const x = await this.getBasePermissions('be040ad0-c2e1-45bf-9a2d-3503043fb77b', items[0].ID);
+
+      await this.getBasePermTest2('be040ad0-c2e1-45bf-9a2d-3503043fb77b', items[0].ID)
+        .then(async result => {
+          // Handle the result
+          console.log('High Value:', result.high);
+          console.log('Low Value:', result.low);
+
+          const high = result.high;
+          const low = result.low;
+
+          //        full control -> high : 2147483647
+          //                 low : 4294967295
+
+          // edit -> high: 432
+          //         low : 1011030767
+
+          // read --> high: 176
+          //          low: 138612833
+
+          let user_current = await sp.web.currentUser();
+
+          if ((high == 2147483647 && low == 4294967295) || (high == 2147483647 && low == 4294705151)) { //full control
+            console.log("You have full control!");
+            $("#creation_date").prop("disabled", false);
+            $("#input_number").prop("disabled", false);
+            $("#input_type_doc").prop("disabled", false);
+            $("#input_reviewDate").prop("disabled", false);
+            // $("#creation_date").prop("disabled", false);
+
+            const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents1", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+
+            const excludedItems = permissions.filter(item => item.title !== user_current.Title);
+
+            if (excludedItems.length === 0) {
+
+              await this.generateTable([{ type: 'member', id: '', role: 'Full Control', title: 'MYGED_ADMIN' }], Number(docId));
+
+            } else {
+              await this.generateTable(excludedItems, Number(docId));
+            }
+
+            console.log("PERMISSIONS ON ITEM", permissions);
+
+            if (items.length > 0 && items[0] && items[0].HasUniqueRoleAssignments === false) {
+              $("#inherit").css("display", "block");
+              $("#inherit_parent").css("display", "none");
+              $("#splistDocAccessRights").css("display", "block");
+              $("#not_inherit_parent").css("display", "block");
+            }
+
+            else {
+              $("#splistDocAccessRights").css("display", "block");
+              $("#inherit").css("display", "none");
+              $("#inherit_parent").css("display", "block");
+              $("#not_inherit_parent").css("display", "none");
+            }
 
 
-    var title = this.getDocTitle();
-    var docId = this.getDocId();
+            try {
+              await this.getSiteGroups(),
+                await this.getSiteGroups_notif(),
+                await this.getSiteUsers();
+            }
+            catch (err) {
+              console.log(err.message);
+            }
 
-
-    var principleIdOfGroup = null;
-    var principleIdOfGroup_notif = null;
-
-
-    //require('./DocDetailsWebPartJS');
-
-    const loader = document.getElementById('loader');
-
-    this.getParentID(this.getDocId(), this.getDocTitle());
-
-    var items = await sp.web.lists.getByTitle("Documents").items
-      .select("ID, Title, ParentID, inheriting")
-      .filter(`FolderID eq '${docId}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
-      .get();
-
-    // const basePermissions = await this.getCurrentUserPermissionsForItem(items[0].ID, 'df095fdf-9978-44f8-941c-23b6c095751a');
-    // console.log("High", basePermissions.High);
-    // console.log("Low", basePermissions.Low);
-
-    // const x = await this.getBasePermissions('df095fdf-9978-44f8-941c-23b6c095751a', items[0].ID);
-
-    await this.getBasePermTest2('df095fdf-9978-44f8-941c-23b6c095751a', items[0].ID)
-      .then(async result => {
-        // Handle the result
-        console.log('High Value:', result.high);
-        console.log('Low Value:', result.low);
-
-        const high = result.high;
-        const low = result.low;
-
-        //        full control -> high : 2147483647
-        //                 low : 4294967295
-
-        // edit -> high: 432
-        //         low : 1011030767
-
-        // read --> high: 176
-        //          low: 138612833
-
-
-        if ((high == 2147483647 && low == 4294967295) || (high == 2147483647 && low == 4294705151) ) { //full control
-          console.log("You have full control!");
-          const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-
-          await this.generateTable(permissions, Number(docId));
-          console.log("PERMISSIONS ON ITEM", permissions);
-
-          if (items.length > 0 && items[0] && items[0].inheriting && items[0].inheriting !== "NO") {
-            $("#inherit").css("display", "block");
           }
+          else if (high == 432 && low == 1011030767) { //edit
+
+
+
+            $("#access").css('display', "none");
+            $("#creation_date").prop("disabled", false);
+            $("#input_reviewDate").prop("disabled", false);
+            //$("#creation_date").prop("disabled", false);
+
+            await this.getSiteUsers();
+            await this.getSiteGroups_notif()
+          }
+          else if (high == 176 && low == 138612833) { //read
+            $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc, #archive_btn").css("display", "none");
+            $("#input_description, #input_keywords, #input_revision, #file_ammendment_update, #check1, #check2, #creation_date, input_reviewDate").prop('disabled', true);
+          }
+
+          else {
+
+          }
+        })
+        .catch(error => {
+          // Handle any errors
+          console.error('Error:', error);
+        });
+
+      try {
+
+        await this._getDocDetails(parseInt(docId), title),
+          // await this.checkPermission(),
+          await this._getAllVersions(title, docId),
+          // await this._getAllAccess(docId),
+          await this._getAllAudit(docId, title),
+          await this._getAllNotifications(docId),
+          await this.load_folders(),
+          this.fileUpload();
+
+        $("#loader").css("display", "none");
+        // $(".spinner").css("display", "none");
+
+      } catch (error) {
+        // $("#loader").html(`Error: ${error.message}`);
+        $("#loader").css("display", "none");
+        // $(".spinner").css("display", "none");
+        console.log(error.message);
+      }
+
+
+      $("#input_type_doc").bind('input', () => {
+        const shownVal = (document.getElementById("input_type_doc") as HTMLInputElement).value;
+        // var shownVal = document.getElementById("name").value;
+
+        const value2send = (document.querySelector<HTMLSelectElement>(`#folders option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
+
+        const selectedOption = $(`#folders option[value='${shownVal}']`);
+        const fileDir = selectedOption.data("filedirref");
+
+        console.log(value2send);
+        $("#created_by").val(value2send);
+        $("#path_doc").val(fileDir);
+
+      });
+
+
+      $("#group_name").bind('input', () => {
+        const shownVal = (document.getElementById("group_name") as HTMLInputElement).value;
+        // var shownVal = document.getElementById("name").value;
+
+        const value2send = (document.querySelector<HTMLSelectElement>(`#group option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
+        principleIdOfGroup = value2send;
+        console.log(value2send);
+        //  $("#created_by").val(value2send);
+      });
+
+      $("#group_name_notif").bind('input', () => {
+        const shownVal = (document.getElementById("group_name_notif") as HTMLInputElement).value;
+        // var shownVal = document.getElementById("name").value;
+
+        const value2send = (document.querySelector<HTMLSelectElement>(`#groups_notif option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
+        principleIdOfGroup_notif = value2send;
+        console.log(value2send);
+        //  $("#created_by").val(value2send);
+      });
+
+
+      const inputRevision = document.getElementById("input_revision") as HTMLInputElement;
+
+      inputRevision.addEventListener('blur', function () {
+        if (this.value) {
+          alert("Téléchargez votre fichier avant de continuer.");
+          $('#file_ammendment_update').focus();
+        }
+      });
+
+
+      //update document
+      //add_permission user
+      // $("#add_user").click(async (e) => {
+
+      //   if ($("#users_name").val() === "") {
+      //     alert("Please select a user.");
+      //   }
+      //   else {
+      //     await this.add_permission($("#users_name").val().toString(), items[0].ID);
+
+      //   }
+
+      // });
+
+      $("#add_user").click(async (e) => {
+        // Disable the button
+
+
+        if ($("#users_name").val() === "") {
+          alert("Please select a user.");
+        } else {
+
+
+          $("#add_user").prop("disabled", true);
+
+          // Show loading text or spinner
+          $("#add_user").text("Loading...");
+
+          const loader = document.createElement("div");
+          loader.id = "loader2";
+          loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations sont en cours d'ajout.</div>"; // Add the text here
+          document.body.appendChild(loader);
+
 
           try {
-            await this.getSiteGroups(),
-              await this.getSiteGroups_notif(),
-              await this.getSiteUsers();
+
+            const allSameDocuments = await this.getAllSameDocs(items[0].Title, 'FALSE');
+
+            const user: any = await sp.web.siteUsers.getByEmail($("#users_name").val().toString())();
+
+            var selected_permission = $("#permissions_user option:selected").val();
+
+            var permission = 0;
+
+            if (selected_permission === "ALL") {
+
+              permission = 1073741829;
+            }
+
+            else if (selected_permission === "READ") {
+              permission = 1073741826;
+
+            }
+            else if (selected_permission === "READ_WRITE") {
+              permission = 1073741830;
+            }
+
+            const list = sp.web.lists.getByTitle("Documents1");
+
+            const _item = await list.items.getById(items[0].ID);
+            await _item.breakRoleInheritance(true, false);
+
+            const roleAssignments = _item.roleAssignments;
+            await roleAssignments.add(user.Id, permission)
+
+              .then(async () => {
+
+                await Promise.all(allSameDocuments.map(async (item_) => {
+
+                  const _item = await list.items.getById(item_.ID);
+                  await _item.breakRoleInheritance(true, false);
+
+                  const roleAssignments = _item.roleAssignments;
+                  await roleAssignments.add(user.Id, permission);
+
+                }));
+
+              });
+
+            document.body.removeChild(loader);
+
+
+            //  await this.add_permission($("#users_name").val().toString(), items[0].ID);
+
+
+            // console.log("ALL SAME", allDocuments)
+
+            // for (const document of allDocuments) {
+
+            //   if(document.ID != items[0].ID){
+            //     await this.add_permission($("#users_name").val().toString(), document.ID);
+            //   }
+            // }
+
+            // .then(() => {
+            alert("Autorisation ajoutée à ce document avec succès.");
+            // })
+            // .then(() => {
+            window.location.reload();
+            // });
+            // Reset the button state
+            // $("#add_user").prop("disabled", false);
+            // $("#add_user").text("Ajouter");
+          } catch (err) {
+            // alert(err.message);
+            document.body.removeChild(loader);
+
+            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+            // Enable the button and reset text on error
+            $("#add_user").prop("disabled", false);
+            $("#add_user").text("Ajouter");
           }
-          catch (err) {
-            console.log(err.message);
+        }
+      });
 
+      // $("#inherit_parent").click(async (e) => {
+
+      //   if (confirm(`Voulez-vous vraiment supprimer toutes les autorisations uniques et hériter de ses autorisations parent?`)) {
+      //     try {
+
+      //       await this.inheritParentPermission(docId, title);
+
+      //     } catch (err) {
+      //       alert(err.message);
+      //     }
+      //   }
+      // });
+
+      $("#inherit_parent").click(async (e) => {
+        // Disable the button
+
+        if (confirm("Voulez-vous vraiment supprimer toutes les autorisations uniques et hériter de ses autorisations parent?")) {
+
+          $("#inherit_parent").prop("disabled", true);
+
+          // Show loading text or spinner
+          $("#inherit_parent").text("Loading...");
+
+
+          try {
+
+            const list = sp.web.lists.getByTitle("Documents1");
+            const mainItem = await list.items.getById(items[0].ID);
+            const allSameDocuments = await this.getAllSameDocs(items[0].Title, 'FALSE');
+
+            await mainItem.resetRoleInheritance();
+            await Promise.all(allSameDocuments.map(async (item_) => {
+              await list.items.getById(item_.ID).resetRoleInheritance();
+
+            }))
+
+              // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents1", itemParent[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
+              .then(() => {
+
+                alert("Suppression des autorisations uniques et application des autorisations du parents sur ce document.");
+                window.location.reload();
+              });
+
+
+            //  await this.inheritParentPermission(docId, title);
+
+            // Reset the button state
+            // $("#inherit_parent").prop("disabled", false);
+            // $("#inherit_parent").text("Hériter les droits d'accès");
+
+
+          } catch (err) {
+
+
+            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+
+
+            // Enable the button and reset text on error
+            $("#inherit_parent").prop("disabled", false);
+            $("#inherit_parent").text("Hériter les droits d'accès");
           }
-
         }
-        else if (high == 432 && low == 1011030767) { //edit
+      });
 
-          $("#access").css('display', "none");
+      $("#not_inherit_parent").click(async (e) => {
+        // Disable the button
 
-          await this.getSiteUsers();
-          await this.getSiteGroups_notif()
+        if (confirm("Voulez-vous vraiment supprimer toutes les autorisations du parents sur ce dossier?")) {
+
+          $("#not_inherit_parent").prop("disabled", true);
+
+          // Show loading text or spinner
+          $("#not_inherit_parent").text("Loading...");
+
+
+          try {
+
+            const list = sp.web.lists.getByTitle("Documents1");
+            const mainItem = await list.items.getById(items[0].ID);
+
+            await mainItem.breakRoleInheritance(false, true);
+            const allSameDocuments = await this.getAllSameDocs(items[0].Title, 'FALSE');
+
+            await Promise.all(allSameDocuments.map(async (item_) => {
+              await list.items.getById(item_.ID).breakRoleInheritance(false, true);
+            }))
+
+              .then(() => {
+
+                alert("Attention, l'héritager des drotits pour ce fichier est rompu.");
+                window.location.reload();
+              });
+
+            //  await this.inheritParentPermission(docId, title);
+
+            // Reset the button state
+            // $("#inherit_parent").prop("disabled", false);
+            // $("#inherit_parent").text("Hériter les droits d'accès");
+
+          } catch (err) {
+            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+            // Enable the button and reset text on error
+            $("#inherit_parent").prop("disabled", false);
+            $("#inherit_parent").text("Hériter les droits d'accès");
+          }
         }
-        else if (high == 176 && low == 138612833) { //read
-          $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
-          $("#input_description, #input_keywords, #input_revision, #file_ammendment_update, #check1, #check2").prop('disabled', true);
+      });
+
+      //add_permission_group
+      // $("#add_group").click(async (e) => {
+      //   if ($("#group_name").val() === "") {
+      //     alert("Please select a group.");
+      //   }
+      //   else {
+
+      //     await this.add_permission_group($("#group_name").val().toString(), items[0].ID, principleIdOfGroup);
+      //   }
+      // });
+
+      $("#add_group").click(async (e) => {
+        // Disable the button
+
+
+        if ($("#group_name").val() === "") {
+          alert("Please select a group.");
+        } else {
+
+
+          const loader = document.createElement("div");
+          loader.id = "loader2";
+          loader.innerHTML = "<div id='loader-spinner'></div><div id='loader-text'>Veuillez patienter... les autorisations sont en cours d'ajout.</div>"; // Add the text here
+          document.body.appendChild(loader);
+
+
+          $("#add_group").prop("disabled", true);
+
+          // Show loading text or spinner
+          $("#add_group").text("Loading...");
+
+          try {
+
+            var selected_permission = $("#permissions_group option:selected").val();
+
+            var permission = 0;
+
+            if (selected_permission === "ALL") {
+
+              permission = 1073741829;
+            }
+
+            else if (selected_permission === "READ") {
+              permission = 1073741826;
+
+            }
+            else if (selected_permission === "READ_WRITE") {
+              permission = 1073741830;
+
+            }
+
+            const allSameDocuments = await this.getAllSameDocs(items[0].Title, 'FALSE');
+
+            const list = sp.web.lists.getByTitle("Documents1");
+
+            const _item = await list.items.getById(items[0].ID);
+            await _item.breakRoleInheritance(true, false);
+
+            const roleAssignments = _item.roleAssignments;
+
+            await roleAssignments.add(principleIdOfGroup, permission)
+              .then(async () => {
+
+                await Promise.all(allSameDocuments.map(async (item_) => {
+
+                  const _item = await list.items.getById(item_.ID);
+                  await _item.breakRoleInheritance(true, false);
+
+                  const roleAssignments = _item.roleAssignments;
+                  await roleAssignments.add(principleIdOfGroup, permission);
+
+                }));
+
+              });
+
+
+            document.body.removeChild(loader);
+            // await this.add_permission_group(
+            //   $("#group_name").val().toString(),
+            //   items[0].ID,
+            //   principleIdOfGroup
+            // );
+
+            alert("Autorisation ajoutée à ce document avec succès.");
+            window.location.reload();
+            // Reset the button state
+            // $("#add_group").prop("disabled", false);
+            // $("#add_group").text("Ajouter");
+          } catch (error) {
+
+            document.body.removeChild(loader);
+
+            console.error(error);
+
+            // Enable the button and reset text on error
+            $("#add_group").prop("disabled", false);
+            $("#add_group").text("Ajouter");
+
+            // Optionally, display an error message
+            alert("Erreur lors de l'application de l'autorisation au dossier. Veuillez réessayer.");
+          }
+        }
+      });
+
+      //add group notif
+      $("#add_group_notif").click(async (e) => {
+        this.add_Notif(title, $("#group_name_notif").val(), principleIdOfGroup_notif);
+      });
+
+      $("#add_user_notif").click(async (e) => {
+        const user: any = await sp.web.siteUsers.getByEmail($("#users_name_notif").val().toString())();
+        this.add_Notif(title, user.Title, $("#users_name_notif").val().toString());
+      });
+
+    }
+  }
+
+  public async removePermissionsOnItem(listTitle, itemId) {
+    const list = sp.web.lists.getByTitle(listTitle);
+    const item = await list.items.getById(itemId);
+
+    // Break inheritance on the item
+    await item.breakRoleInheritance(true, false);
+
+    const roleAssignments = await item.roleAssignments();
+
+    console.log("PERMISSIONS TO B REMOVED", roleAssignments);
+
+    // Delete each role assignment
+    for (const roleAssignment of roleAssignments) {
+      await item.roleAssignments.getById(roleAssignment.PrincipalId).delete();
+      // await item.roleAssignments.remove(roleAssignment.PrincipalId, roleAssignment.);
+    }
+
+    console.log('User permissions removed successfully.');
+  }
+
+  public async setPermissionsOnItem(listTitle, itemId, permissions) {
+    try {
+      const list = sp.web.lists.getByTitle(listTitle);
+      const item = await list.items.getById(itemId);
+
+      for (const permission of permissions) {
+
+        if (permission.role === "Read") {
+          const roleAssignments = item.roleAssignments;
+          await roleAssignments.add(permission.id, 1073741826);
+        }
+
+        else if (permission.role === "Full Control") {
+          const roleAssignments = item.roleAssignments;
+          await roleAssignments.add(permission.id, 1073741829);
+        }
+
+        else if (permission.role === "Edit") {
+          const roleAssignments = item.roleAssignments;
+          await roleAssignments.add(permission.id, 1073741830);
         }
 
         else {
 
         }
-      })
-      .catch(error => {
-        // Handle any errors
-        console.error('Error:', error);
-      });
+        // Updated line
+      }
 
-    //  console.log("RIGHTS", x);
+      console.log('Permissions set successfully.');
 
-    // {
-    //   try {
-    //     const isAdmin = await this.checkIfUserIsAdmin(this.graphClient);
-    //     const isRefUser = isAdmin || await this.checkIfUserIsRefUser(this.graphClient);
-    //     const isGuestUser = isAdmin || await this.checkIfUserIsGuestUser(this.graphClient);
-
-    //     if (isAdmin) {
-    //       console.log('User is an administrator.');
-    //       $("#input_number, #input_type_doc").prop('disabled', false);
-
-    //       // const { permissions, groupPermissions } = await getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", item.id, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-
-    //       // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-    //       const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-
-    //       await this.generateTable(permissions, Number(docId));
-    //       console.log("PERMISSIONS ON ITEM", permissions);
-
-    //     } else if (isRefUser) {
-    //       console.log('User is a MYGED_REF user.');
-    //       $("#access").css('display', "none");
-
-
-    //     } else if (isGuestUser) {
-    //       console.log('User is a MYGED_GUEST user.');
-    //       $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
-
-    //       $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
-
-
-    //     } else {
-
-    //       $("#input_number, #input_type_doc").prop('disabled', false);
-
-    //       console.log('User is not an administrator or a MYGED_REF or MYGED_GUEST user.');
-
-    //       // const { permissions } = await this.getListItemPermissions('https://ncaircalin.sharepoint.com/sites/TestMyGed', "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-    //       const { permissions } = await this.getListItemPermissions(this.context.pageContext.web.absoluteUrl, "Documents", items[0].ID, "mgolapkhan.ext@aircalin.nc", "musharaf2897");
-
-    //       await this.generateTable(permissions, Number(docId));
-    //       console.log("PERMISSIONS ON ITEM", permissions);
-
-    //     }
-    //   } catch (error) {
-    //     console.log('An error occurred while checking user permissions:', error);
-    //   }
-
-
-
-    // }
-
-    const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
-    const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;
-    const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;
-
-
-    try {
-
-      await this._getDocDetails(parseInt(docId), title),
-        // await this.checkPermission(),
-        await this._getAllVersions(title, docId),
-        // await this._getAllAccess(docId),
-        await this._getAllAudit(docId, title),
-        await this._getAllNotifications(docId),
-        await this.load_folders(),
-        this.fileUpload();
-
-      $("#loader").css("display", "none");
-      // $(".spinner").css("display", "none");
-
+      return true;
     } catch (error) {
-      // $("#loader").html(`Error: ${error.message}`);
-      $("#loader").css("display", "none");
-      // $(".spinner").css("display", "none");
-
-      console.log(error.message);
+      console.error('Error setting permissions:', error);
+      return false;
     }
-
-
-    $("#input_type_doc").bind('input', () => {
-      const shownVal = (document.getElementById("input_type_doc") as HTMLInputElement).value;
-      // var shownVal = document.getElementById("name").value;
-
-      const value2send = (document.querySelector<HTMLSelectElement>(`#folders option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
-
-      console.log(value2send);
-      $("#created_by").val(value2send);
-    });
-
-
-    $("#group_name").bind('input', () => {
-      const shownVal = (document.getElementById("group_name") as HTMLInputElement).value;
-      // var shownVal = document.getElementById("name").value;
-
-      const value2send = (document.querySelector<HTMLSelectElement>(`#group option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
-      principleIdOfGroup = value2send;
-      console.log(value2send);
-      //  $("#created_by").val(value2send);
-    });
-
-
-    $("#group_name_notif").bind('input', () => {
-      const shownVal = (document.getElementById("group_name_notif") as HTMLInputElement).value;
-      // var shownVal = document.getElementById("name").value;
-
-      const value2send = (document.querySelector<HTMLSelectElement>(`#groups_notif option[value='${shownVal}']`) as HTMLSelectElement).dataset.value;
-      principleIdOfGroup_notif = value2send;
-      console.log(value2send);
-      //  $("#created_by").val(value2send);
-    });
-
-
-
-    const inputRevision = document.getElementById("input_revision") as HTMLInputElement;
-
-    // inputRevision.addEventListener("keyup", function () {
-    //   if (this.value) {
-    //     alert("Téléchargez votre fichier avant de continuer.");
-    //     $('#file_ammendment_update').focus();
-    //   }
-    // });
-
-    inputRevision.addEventListener('blur', function () {
-      if (this.value) {
-        alert("Téléchargez votre fichier avant de continuer.");
-        $('#file_ammendment_update').focus();
-      }
-    });
-    
-
-
-
-    //update document
-
-
-    //add_permission user
-    $("#add_user").click(async (e) => {
-
-      if ($("#users_name").val() === "") {
-        alert("Please select a user.");
-      }
-      else {
-        await this.add_permission($("#users_name").val().toString(), items[0].ID);
-
-      }
-
-    });
-
-    $("#inherit_parent").click(async (e) => {
-
-      await this.inheritParentPermission(docId, title);
-
-    });
-
-
-
-    //add_permission_group
-    $("#add_group").click(async (e) => {
-      if ($("#group_name").val() === "") {
-        alert("Please select a group.");
-      }
-      else {
-        await this.add_permission_group($("#group_name").val().toString(), items[0].ID, principleIdOfGroup);
-      }
-    });
-
-    //add group notif
-    $("#add_group_notif").click(async (e) => {
-
-      // const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name_notif").val());
-      // console.log("TESTER GROUP USERS", stringGroupUsers);
-      await this.add_notification_group($("#group_name_notif").val(), principleIdOfGroup_notif);
-    });
-
-    $("#add_user_notif").click((e) => {
-      this.add_notification();
-    });
-
   }
 
-  private async inheritParentPermission(id: any, title: any) {
-    try {
-      // console.log(item_perm.title);
+  private async getAllSameDocs(docNumber, ifFolder) {
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents1').items
+      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description")
+      .filter("Title eq '" + docNumber + "' and IsFolder eq '" + ifFolder + "'")
+      .get();
 
-      var items = await sp.web.lists.getByTitle("Documents").items
-        .select("ID, Title, ParentID")
-        .filter(`FolderID eq '${id}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
-        .get();
+    return all_documents;
 
-
-      await sp.web.lists.getByTitle("InheritParentPermission").items.add({ 
-        Title: title,
-        FolderID: items[0].ID,
-        IsDone: "NO",
-        ParentID: Number(items[0].ParentID)
-        // Group_principleID: user.Id
-
-      }).then(() => {
-        console.log("ADDED PARENT");
-      })
-        .then(() => {
-
-          sp.web.lists.getByTitle("Documents").items.getById(items[0].ID).update({
-            inheriting: "YES",
-          }).then(result => {
-            console.log("Item updated successfully");
-          }).catch(error => {
-            console.log("Error updating item: ", error);
-          });
-        });
-
-      alert("Parent permissions added.");
-
-    }
-    catch (e) {
-      alert(e.message);
-    }
   }
 
   private async addBookmark(docID: any, title: any) {
@@ -1550,42 +1879,51 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     console.log('Item removed from Favourites list.');
   }
 
-  // public async checkIfUserIsMemberOfGroup(graphClient: MSGraphClient, groupName: string): Promise<boolean> {
-  //   if (!graphClient) {
-  //     return false;
-  //   }
+  public async checkIfUserIsMemberOfGroup(graphClient: MSGraphClient, groupName: string): Promise<boolean> {
+    if (!graphClient) {
+      return false;
+    }
 
-  //   try {
-  //     // Get the user's groups
-  //     const groups = await graphClient.api('/me/memberOf')
-  //       .version('v1.0')
-  //       .get();
+    try {
+      // Get the user's groups
+      const groups = await graphClient.api('/me/memberOf')
+        .version('v1.0')
+        .get();
 
-  //     // Check if the user is a member of the desired group
-  //     const group = groups.value.find((g: any) => g.displayName === groupName);
-  //     return Boolean(group);
-  //   } catch (error) {
-  //     console.error(error);
-  //     return false;
-  //   }
-  // }
+      // Check if the user is a member of the desired group
+      const group = groups.value.find((g: any) => g.displayName === groupName);
+      return Boolean(group);
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
 
-  // private async getAllGroups(graphClient: MSGraphClient): Promise<any[]> {
-  //   try {
-  //     const groups = await graphClient.api('/groups')
-  //       .version('v1.0')
-  //       .get();
+  public async getUserGroups(graphClient: MSGraphClient): Promise<any[]> {
+    if (!graphClient) {
+      return [];
+    }
 
-  //     return groups.value;
-  //   } catch (error) {
-  //     console.error(error);
-  //     return [];
-  //   }
-  // }
+    try {
+      // Get the user's groups
+      const groups = await graphClient.api('/me/memberOf')
+        .version('v1.0')
+        .get();
+
+      console.log('GROUPS I AM IN : ', groups);
+      // Return the array of group objects
+      return groups.value;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  }
 
   private async updateDocument(folderId: string, title: string, folder: any) {
 
     let user_current = await sp.web.currentUser();
+
+    const path = $("#path_doc").val().toString();
 
     if (confirm(`Etes-vous sûr de creer un nouveaux version de ${title} ?`)) {
 
@@ -1598,24 +1936,37 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       console.log(date); // Output: "10/04/2023"
 
       try {
-        const i = await sp.web.lists.getByTitle('Documents').items.add({
+        const i = await sp.web.lists.getByTitle('Documents1').items.add({
           Title: $("#input_number").val(),
           description: $("#input_description").val(),
           keywords: $("#input_keywords").val(),
           doc_number: $("#input_number").val(),
           revision: $("#input_revision").val(),
           ParentID: $("#created_by").val(),
-          revisionDate: date,
+          revisionDate: moment($("#input_reviewDate").val()).format("DD/MM/YYYY"),
           IsFolder: "FALSE",
+          //createdDate: $("#creation_date").val(),
           // owner: $("#created_by").val(),
           updatedBy: user_current.Title,
-          createdDate: $("#creation_date").val(),
+
+          createdDate: $("#creation_date").val().toString(),
           updatedDate: new Date().toLocaleString()
 
         })
           .then(async (iar) => {
 
-            const list = sp.web.lists.getByTitle("Documents");
+            let listUri: string = '/sites/MyGed/Lists/Documents1';
+
+            // var splitResult = $("#path_doc").toString().split('/');
+            // if (splitResult.length >= 6) {
+            //   var desiredSubstring = splitResult.slice(5).join('/');
+            // }
+
+            await sp.web
+              .getFileByServerRelativeUrl(`${listUri}/${iar.data.ID}_.000`)
+              .moveTo(`${path}/${iar.data.ID}`);
+
+            const list = sp.web.lists.getByTitle("Documents1");
 
             let folderId_link = iar.data.ID;
             let title = iar.data.Title;
@@ -1629,9 +1980,16 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
             await list.items.getById(folderId_link).update({
               FolderID: parseInt(folderId_link),
-              filename: filename_add
+              filename: filename_add,
             });
 
+            // await sp.web.lists.getByTitle("InheritParentPermission").items.add({
+            //   Title: title,
+            //   FolderID: parseInt(folderId_link),
+            //   IsDone: "NO",
+            //   ParentID: $("#created_by").val(),
+            //   IsDoc: "YES"
+            // });
             return { title, folderId_link };
 
           })
@@ -1668,7 +2026,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   private async updateAllDocNumberForDocument(docNumber: any, newDocNumber: any, docid: any) {
 
     var ifFolder = "FALSE";
-    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents1').items
       .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
       .filter("Title eq '" + docNumber + "' and IsFolder eq '" + ifFolder + "'")
       .get();
@@ -1677,7 +2035,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     try {
 
       await Promise.all(all_documents.map(async (doc) => {
-        const list = sp.web.lists.getByTitle("Documents");
+        const list = sp.web.lists.getByTitle("Documents1");
 
         // if (item.inheriting !== "NO") {
         const i = await list.items.getById(doc.ID).update({
@@ -1703,8 +2061,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   private async updateAllDossierForDocument(docNumber: any, docid: any) {
 
     var ifFolder = "FALSE";
-    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents1').items
+      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description, FileDirRef, UniqueId")
       .filter("Title eq '" + docNumber + "' and IsFolder eq '" + ifFolder + "'")
       .get();
 
@@ -1712,12 +2070,24 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     try {
 
       await Promise.all(all_documents.map(async (doc) => {
-        const list = sp.web.lists.getByTitle("Documents");
+        const list = sp.web.lists.getByTitle("Documents1");
+        const path = $("#path_doc").val();
 
         // if (item.inheriting !== "NO") {
         const i = await list.items.getById(doc.ID).update({
           ParentID: $("#created_by").val(),
         });
+
+        // await sp.web
+        // .getFileByServerRelativeUrl(`${doc.FileDirRef}/${doc.ID}_.000`)
+        // .moveTo(`${path}/${doc.ID}`);
+
+        await sp.web
+          .getFileById(doc.UniqueId)
+          .moveTo(`${path}/${doc.ID}`);
+        // await sp.web
+        // .getFileByServerRelativePath(`${doc.FileDirRef}/${doc.ID}_.000`)
+        // .moveTo(`${path}/${doc.ID}`);
 
       }))
         .then(() => {
@@ -1738,23 +2108,28 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
   private async moveAllRevisionsToArchive(docNumber: any, docid: any) {
 
     var ifFolder = "FALSE";
-    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
+
+    const all_documents: any[] = await sp.web.lists.getByTitle('Documents1').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description,FileDirRef,UniqueId")
       .filter("Title eq '" + docNumber + "' and IsFolder eq '" + ifFolder + "'")
       .get();
 
 
     try {
 
-      const list = sp.web.lists.getByTitle("Documents");
+      const list = sp.web.lists.getByTitle("Documents1");
 
       await Promise.all(all_documents.map(async (doc) => {
 
+        const uri = '/sites/MyGed/Lists/Documents1/1_.000/303_.000';
         // if (item.inheriting !== "NO") {
         const i = await list.items.getById(doc.ID).update({
           ParentID: 791,
         });
 
+        await sp.web
+          .getFileById(doc.UniqueId)
+          .moveTo(`${uri}/${doc.ID}`);
       }))
         .then(() => {
           alert("Toutes les versions précédentes ont été déplacées vers le dossier archivé.");
@@ -1768,40 +2143,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
 
 
-
-  }
-
-  private async checkPermission() {
-    const groupTitle = [];
-    let groups: any = await sp.web.currentUser.groups();
-
-    console.log("PERMISSION", groups);
-
-    await Promise.all(groups.map(async (perm) => {
-
-      groupTitle.push(perm.Title);
-
-    }));
-
-    // if (groupTitle.includes("myGed Visitors")) {
-    if (groupTitle.includes("Utilisateur MyGed")) {
-
-      $("#update_details_doc, #edit_cancel_doc,#access, #notifications, #audit, #delete_doc, #download_doc, #archive_btn").css("display", "none");
-
-      $("#input_description, #input_keywords, #input_revision, #file_ammendment_update ").prop('disabled', true);
-
-    }
-    else if (groupTitle.includes("Référent (Read & Write)")) {
-
-      $("#access").css('display', "none");
-      // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
-    }
-
-    else if (groupTitle.includes("Administrateur")) {
-
-      $("#input_number, #input_type_doc").prop('disabled', false);
-      // $("#update_details_doc, #edit_cancel_doc, #access, #notifications, #audit").css("display", "block");
-    }
 
   }
 
@@ -1831,7 +2172,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var value1 = "FALSE";
     var itemID = "";
 
-    var doc_detail: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
+    var doc_detail: any = await sp.web.lists.getByTitle('Documents1').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
 
     await Promise.all(doc_detail.map(async (perm) => {
 
@@ -1963,234 +2304,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async add_permission(user_group: any, id: any) {
-
-    //add permission user
-
-    var ifFolder = "FALSE";
-    var x = this.getDocId();
-    var doc_title = "";
-    var docID = "";
-
-
-    const user: any = await sp.web.siteUsers.getByEmail(user_group)();
-
-    var selected_permission = $("#permissions_user option:selected").val();
-
-    var permission = 0;
-
-    if (selected_permission === "ALL") {
-
-      permission = 1073741829;
-    }
-
-    else if (selected_permission === "READ") {
-      permission = 1073741826;
-
-    }
-    else if (selected_permission === "READ_WRITE") {
-      permission = 1073741830;
-
-    }
-
-
-
-    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
-      .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
-      .get();
-
-    await Promise.all(all_documents.map(async (doc) => {
-
-      doc_title = doc.Title;
-      docID = doc.Id;
-
-
-    }));
-
-
-    console.log("USERS FOR PERMISSION", users_Permission);
-
-
-    try {
-      // response_same_doc.forEach(async (x) => {
-
-      await sp.web.lists.getByTitle("AccessRights").items.add({
-        Title: doc_title.toString(),
-        groupName: $("#users_name").val(),
-        permission: $("#permissions_user option:selected").val(),
-        FolderID: Number(docID),
-        PrincipleID: user.Id,
-        LoginName: user.Title,
-        groupTitle: $("#group_name").val(),
-        RoleDefID: permission
-      })
-        .then(() => {
-          sp.web.lists.getByTitle("Documents").items.getById(Number(id)).update({
-            inheriting: "NO",
-          }).then(result => {
-            console.log("Item updated successfully");
-          }).catch(error => {
-            console.log("Error updating item: ", error);
-          });
-        })
-        .then(() => {
-          alert("Autorisation ajoutée à ce document avec succès.");
-        })
-        .then(() => {
-          window.location.reload();
-        });
-
-      // });
-
-      // alert("Autorisation ajoutée à ce document avec succès.");
-      // window.location.reload();
-    }
-
-    catch (e) {
-      alert("Erreur: " + e.message);
-    }
-
-
-  }
-
-  private async getUserPermissionLevelOnSharePointListItem(listName: string, itemId: number, userEmail: string): Promise<string> {
-    try {
-      const item = await sp.web.lists.getByTitle(listName).items.getById(itemId).get();
-      const userPermission = await item.roleAssignments.get().filter(`Member/Email eq '${userEmail}'`).get();
-
-      if (userPermission && userPermission.length > 0) {
-        const permissionLevel = userPermission[0].roleDefinitionBindings[0].Name;
-        return permissionLevel;
-      }
-    } catch (error) {
-      console.error(error);
-    }
-
-    return 'No Access';
-  }
-
-  private async add_permission_group(group_name: string, id: any, principleIdOfGroup: any) {
-
-    //add permission user
-
-    var ifFolder = "FALSE";
-    var x = this.getDocId();
-
-
-    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description")
-      .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
-      .get();
-
-    const group: any = await sp.web.siteGroups.getByName(group_name);
-
-    console.log("GROUP TESTER SA", group);
-
-    const groups1: any = await sp.web.siteGroups.get();
-    const filteredGroups: ISiteGroupInfo[] = groups1.filter(group => group.LoginName === group_name);
-
-    // await Promise.all(all_documents.map(async (doc) => {
-    //   doc_title = doc.Title;
-    //   docID = doc.Id;
-    // }));
-
-    console.log("USERS FOR PERMISSION", group_name);
-
-    var selected_permission = $("#permissions_group option:selected").val();
-
-    var permission = 0;
-
-    if (selected_permission === "ALL") {
-
-      permission = 1073741829;
-    }
-
-    else if (selected_permission === "READ") {
-      permission = 1073741826;
-
-    }
-    else if (selected_permission === "READ_WRITE") {
-      permission = 1073741830;
-
-    }
+  private async add_Notif(title, user, email) {
 
     try {
       // await Promise.all(group_name.map(async (email) => {
-      await sp.web.lists.getByTitle("AccessRights").items.add({
-        Title: all_documents[0].Title.toString(),
-        groupName: group_name,
-        permission: $("#permissions_group option:selected").val(),
-        FolderID: Number(all_documents[0].ID),
-        PrincipleID: principleIdOfGroup,
-        LoginName: group_name,
-        groupTitle: group_name,
-        RoleDefID: permission
-      })
-
-        .then(async () => {
-          await sp.web.lists.getByTitle("Documents").items.getById(Number(id)).update({
-            inheriting: "NO",
-          }).then(result => {
-            console.log("Item updated successfully");
-          }).catch(error => {
-            console.log("Error updating item: ", error);
-          });
-        });
-      // }));
-
-      alert("Authorization added successfully.");
-      window.location.reload();
-    }
-    catch (e) {
-      alert("Error: " + e.message);
-    }
-  }
-
-  private async add_notification_group(group_name: any, email: any) {
-
-    //add permission group
-
-    var ifFolder = "FALSE";
-    var x = this.getDocId();
-    var doc_title = "";
-    var docID = "";
-    var revisionDate = "";
-    var description = "";
-    var revision = "";
-
-
-    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, revisionDate")
-      .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
-      .get();
-
-    await Promise.all(all_documents.map(async (doc) => {
-      doc_title = doc.Title;
-      docID = doc.Id;
-      revisionDate = doc.revisionDate;
-      description = doc.description;
-      revision = doc.revision;
-
-    }));
-
-    console.log("USERS FOR PERMISSION", group_name);
-
-    try {
-      // await Promise.all(group_name.map(async (email) => {
-      // const user: any = await sp.web.siteUsers.getByEmail(email)();
-      await sp.web.lists.getByTitle("Notifications").items.add({
-        Title: doc_title.toString(),
-        group_person: email,
-        IsFolder: "FALSE",
-        revisionDate: revisionDate,
-        toNotify: "YES",
-        description: description,
-        FolderID: x.toString(),
-        webLink: `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
-        LoginName: group_name,
-        revision: revision,
-        TypeNotif: "manual"
+      //const user: any = await sp.web.siteUsers.getByEmail(email)();
+      await sp.web.lists.getByTitle("toNotify").items.add({
+        Title: title,
+        groupe_name: user,
+        email: email
       });
       // }));
 
@@ -2200,27 +2322,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     catch (e) {
       alert("Error: " + e.message);
     }
+
+
   }
 
   private async load_folders() {
     const value1 = "TRUE";
-    // const drp_folders = document.getElementById("select_folders");
-    // const drp_folders = document.getElementById("select_folders") as HTMLSelectElement;
+
     const drp_folders = document.getElementById("folders") as HTMLSelectElement;
-
-
-    const folderTitleInput = document.getElementById("input_type_doc") as HTMLSelectElement;;
-    const folderValueInput = document.getElementById("input_dossier_id") as HTMLSelectElement;;
-
-
 
     if (!drp_folders) {
       console.error("Dropdown element not found");
       return;
     }
 
-    const all_folders = await sp.web.lists.getByTitle('Documents').items
-      .select("ID,ParentID,FolderID,Title,IsFolder,description")
+    const all_folders = await sp.web.lists.getByTitle('Documents1').items
+      .select("ID,ParentID,FolderID,Title,IsFolder,description,FileDirRef")
       .top(5000)
       .filter("IsFolder eq '" + value1 + "'")
       .get();
@@ -2231,13 +2348,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     await Promise.all(all_folders.map(async (result) => {
 
       const opt = document.createElement('option');
-      //  opt.appendChild(document.createTextNode(result.Title));
 
-      // opt.text = result.Title;
-      opt.value = result.Title;
+      opt.value = result.Title + '_' + result.FolderID; // Concatenate FolderID and Title to create a unique value      // opt.text = result.Title;
       opt.setAttribute('data-value', result.FolderID);
+      opt.setAttribute('data-filedirref', `${result.FileDirRef}/${result.ID}_.000`)
       opt.dataset// Set the value of the option to the folder ID
-
 
       // create a span element for the description
       const description = document.createElement('span');
@@ -2247,14 +2362,12 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       const lineBreak = document.createElement('br');
       opt.appendChild(lineBreak);
 
-
       // opt.insertAdjacentElement('beforeend', description);
 
       opt.appendChild(description);
       drp_folders.appendChild(opt);
 
     }));
-
 
 
   }
@@ -2269,13 +2382,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     let html: string = `<ul class="breadcrumb" id="breadcrumb">`;
 
 
-    // for (var i in parentTitle) {
-    //   if (parentTitle[i] !== undefined) {
-    //     html += `<li><a href="#">${parentTitle[i]}</a></li>`;
-    //     console.log("OLLL", parentTitle[i]);
-    //   }
-    // }
-
     listDoc.forEach((item) => {
 
       if (item.parentTitle_doc !== undefined) {
@@ -2287,51 +2393,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     listContainerDocPath.innerHTML += html;
 
-  }
-
-  private async showPDF(url: any, filigraneText: any) {
-    const pdfBytes = await this.generatePdfBytes(url, filigraneText);
-    const pdfUrl = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-
-    // Create a container element to hold the viewer
-    const container = document.createElement('div');
-    container.setAttribute('style', 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background-color:#fff;');
-    document.body.appendChild(container);
-
-    // Create an iframe element to display the PDF file
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('src', 'viewer.html');
-    iframe.setAttribute('style', 'width:100%;height:100%;border:none;');
-    iframe.setAttribute('scrolling', 'no');
-    iframe.setAttribute('allowfullscreen', 'true');
-
-    // Add the iframe to the container element
-    container.appendChild(iframe);
-
-    // Wait for the iframe to load
-    iframe.addEventListener('load', () => {
-      // Get a reference to the iframe's content window
-      const iframeWindow = iframe.contentWindow as Window;
-
-      // Load Viewer.js in the iframe
-      const script = iframeWindow.document.createElement('script');
-      script.setAttribute('src', 'viewer.js');
-      script.addEventListener('load', () => {
-        // Initialize viewer.js with the PDF file
-        const viewer = new iframeWindow.Viewer({
-          inline: true,
-          button: false,
-          toolbar: false,
-          navbar: false,
-          fullscreen: true,
-          url: pdfUrl
-        });
-        viewer.show();
-      });
-
-      // Add the Viewer.js script to the iframe's document
-      iframeWindow.document.body.appendChild(script);
-    });
   }
 
   private getFileExtensionFromUrl(url: string): string {
@@ -2353,20 +2414,17 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     const parentArray = await this.getParentID(this.getDocId(), this.getDocTitle());
 
+    if (parentArray.parentTitle !== null) {
+      this.createPath(parentArray.parentTitle);
+    }
+
     console.log("PARENT BREADCRUMB", parentArray);
 
-    this.createPath(parentArray.parentTitle);
 
-    //  this.createPath(parentArray.parentTitle);
-    // var externalUrl = '';
-    // var url = '';
+
     var urlFile_download = '';
     var pdfNameDownload = '';
 
-    // await this.checkPermission();
-    //  var x = await this.getAllGroups(this.graphClient);
-
-    // console.log("ALL AD GROUPS", x);
 
     $('#file_ammendment_update').on('change', () => {
       const input = document.getElementById('file_ammendment_update') as HTMLInputElement | null;
@@ -2389,20 +2447,37 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     });
 
     // Get the document details
-    const itemDoc: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate, attachmentUrl, IsFiligrane, IsDownloadable, filename")
+    const itemDoc: any[] = await sp.web.lists.getByTitle('Documents1').items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate, keywords, owner, updatedBy, updatedDate, createdDate, attachmentUrl, IsFiligrane, IsDownloadable, filename, FileDirRef, UniqueId, source")
       .filter(`FolderID eq '${id}' and Title eq '${title}' and IsFolder eq 'FALSE'`)
       .get();
 
+    // if (itemDoc[0].source === "qpulse" || itemDoc[0].source === "gedeon1") {
+    //   $("#input_reviewDate").prop("disabled", true);
+    // }
+
+    if (itemDoc[0].ParentID == 0) {
+
+      $("#input_type_doc").val("");
+      $("#path_doc").val("");
+
+    }
+
+
+    else {
+      var itemFolder: any[] = await sp.web.lists.getByTitle('Documents1').items
+        .select("Id,ParentID,FolderID,Title, FileDirRef")
+        .filter("FolderID eq '" + parseInt(itemDoc[0].ParentID) + "' and IsFolder eq 'TRUE'")
+        .get();
+
+      $("#input_type_doc").val(itemFolder[0].Title);
+      $("#path_doc").val(itemDoc[0].FileDirRef);
+
+    }
+
+
     // Get the folder details
-    const itemFolder: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title")
-      .filter("FolderID eq '" + parseInt(itemDoc[0].ParentID) + "' and IsFolder eq 'TRUE'")
-      .get();
-
-
-
-    await sp.web.lists.getByTitle("Documents")
+    await sp.web.lists.getByTitle("Documents1")
       .items
       .getById(parseInt(itemDoc[0].Id))
       .attachmentFiles
@@ -2435,11 +2510,135 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
 
 
+    var condition1 = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/.test(itemDoc[0].createdDate);
 
+    var condition2 = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(itemDoc[0].createdDate);
+
+    var condition3 = /^(\d{2}\/\d{2}\/\d{4}), (\d{2}:\d{2}:\d{2})$/.test(itemDoc[0].createdDate);
+
+    var condition4 = /^(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2}) (AM|PM)$/.test(itemDoc[0].createdDate);
+
+    var condition5 = /^(\d{2})\/(\d{2})\/(\d{4})$/.test(itemDoc[0].createdDate);
+
+
+
+    var condition11 = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/.test(itemDoc[0].revisionDate);
+
+    var condition22 = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(itemDoc[0].revisionDate);
+
+    var condition33 = /^(\d{2}\/\d{2}\/\d{4}), (\d{2}:\d{2}:\d{2})$/.test(itemDoc[0].revisionDate);
+
+    var condition44 = /^(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2}) (AM|PM)$/.test(itemDoc[0].revisionDate);
+
+    var condition55 = /^(\d{2})\/(\d{2})\/(\d{4})$/.test(itemDoc[0].revisionDate);
+
+
+    var dateRevision = itemDoc[0].revisionDate;
+
+
+if (dateRevision !== null && (condition11 || condition22)) {
+      // var dateString = itemDoc[0].createdDate;
+
+      var dateParts2 = dateRevision.split(' ');
+
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+      dateRevision = year + "-" + month + "-" + day;
+
+    }
+
+    else if (dateRevision !== null && condition33) {
+
+      var dateParts2 = dateRevision.split(',');
+
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+
+      dateRevision = year + "-" + month + "-" + day;
+
+    }
+
+    else if (dateRevision !== null && condition44) {
+
+      var dateParts2 = dateRevision.split(',');
+
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+      dateRevision = year + "-" + month + "-" + day;
+
+    }
+
+    else if (dateRevision !== null && condition55) {
+
+      var dateParts2 = dateRevision.split(',');
+
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+      dateRevision = year + "-" + month + "-" + day;
+
+    }
+
+
+    var dateCreated = itemDoc[0].createdDate;
+
+    if (condition1 || condition2) {
+      // var dateString = itemDoc[0].createdDate;
+
+      var dateParts2 = dateCreated.split(' ');
+
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+      dateCreated = year + "-" + month + "-" + day;
+
+    }
+
+    else if (condition3) {
+
+      var dateParts2 = dateCreated.split(',');
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+      dateCreated = year + "-" + month + "-" + day;
+
+    }
+
+    else if (condition4) {
+
+      var dateParts2 = dateCreated.split(',');
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+
+      dateCreated = year + "-" + month + "-" + day;
+
+    }
+    else if (condition5) {
+
+      var dateParts2 = dateCreated.split(',');
+      var dateParts = dateParts2[0].split("/");
+      var year = dateParts[2];
+      var month = dateParts[1];
+      var day = dateParts[0];
+
+      dateCreated = year + "-" + month + "-" + day;
+
+    }
 
 
     // Set the document details in the UI
-    $("#input_type_doc").val(itemFolder[0].Title);
+    // $("#input_type_doc").val(itemFolder[0].Title);
     $("#input_number").val(itemDoc[0].Title);
     $("#input_revision").val(itemDoc[0].revision);
     $("#input_keywords").val(itemDoc[0].keywords);
@@ -2447,16 +2646,22 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     $("#created_by").val(itemDoc[0].ParentID);
     $("#updated_by").val(itemDoc[0].updatedBy);
     $("#updated_time").val(itemDoc[0].updatedDate);
-    $("#creation_date").val(itemDoc[0].createdDate);
+    $("#creation_date").val(dateCreated);
     $("#h2_doc_title").text(itemDoc[0].Title);
+    // $("#path_doc").val(itemDoc[0].FileDirRef);
 
-    if (itemDoc[0].revisionDate) {
-      $("#input_reviewDate").val((itemDoc[0].revisionDate).split(" ")[0]);
-    }
+    $("#input_reviewDate").val(dateRevision);
 
-    else {
-      $("#input_reviewDate").val(itemDoc[0].revisionDate);
-    }
+    // if (itemDoc[0].revisionDate) {
+    //   $("#input_reviewDate").val((itemDoc[0].revisionDate).split(" ")[0]);
+    // }
+
+    // else {
+    //   var dateString = itemDoc[0].revisionDate.toString();
+    //   var dateParts = dateString.split(" ")[0].split("/");
+    //   var convertedDate = dateParts[0] + "/" + dateParts[1] + "/" + dateParts[2];
+    //   $("#input_reviewDate").val(convertedDate);
+    // }
 
 
     // Set the URL for downloading the attachment
@@ -2473,7 +2678,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       $("#download_doc").css("display", "none");
     }
 
-    // var xx = await this.getPermissionLevel(this.graphClient, "TestMyGed", "Documents", itemDoc[0].Id);
+    // var xx = await this.getPermissionLevel(this.graphClient, "TestMyGed", "Documents1", itemDoc[0].Id);
     // console.log("GRAPH PERMISSION", xx);
 
     // Open the attachment in a new tab
@@ -2482,15 +2687,13 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     $("#open_doc").click(async (e) => {
 
       //   url = "https://ncaircalin.sharepoint.com" + url;
-
       if (this.getFileExtensionFromUrl(url) !== "pdf") {
-
         //  if (itemDoc[0].IsFiligrane === "NO") {
-        window.open(`${url}`, '_blank');
+        // window.open(`${url}`, '_blank');
+        await this.downloadFile(url, itemDoc[0].Title + "." + this.getFileExtensionFromUrl(url) , itemDoc[0].FolderID);
       }
 
       else {
-
 
         // create a div element to blur the screen
         const blurDiv = document.createElement('div');
@@ -2529,7 +2732,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
     //check user permission
-    // var userPermission = this.getUserPermissionLevelOnSharePointListItem("Documents", itemDoc[0].Id, user_current.Email);
+    // var userPermission = this.getUserPermissionLevelOnSharePointListItem("Documents1", itemDoc[0].Id, user_current.Email);
     // console.log("User Permission", userPermission);
 
 
@@ -2540,7 +2743,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         try {
 
           await this.moveAllRevisionsToArchive(itemDoc[0].Title, itemDoc[0].FolderID);
-          // await sp.web.lists.getByTitle('Documents').items.getById(parseInt(itemDoc[0].Id)).recycle();
+          // await sp.web.lists.getByTitle('Documents1').items.getById(parseInt(itemDoc[0].Id)).recycle();
           // alert("Document deleted successfully.");
           // window.location.href = `https://ncaircalin.sharepoint.com/sites/MyGed/SitePages/documentation.aspx?folder=${itemDoc[0].ParentID}`;
         } catch (err) {
@@ -2549,21 +2752,25 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       }
     });
 
-
-
-
     //archive doc
     $("#archive_btn").click(async (e) => {
 
       if (confirm(`Voulez-vous vraiment archiver ce document : ${itemDoc[0].Title} ?`)) {
         try {
 
-          const list = sp.web.lists.getByTitle("Documents");
+          const list = sp.web.lists.getByTitle("Documents1");
+
+          const uri = '/sites/MyGed/Lists/Documents1/1_.000/303_.000';
 
           const i = await list.items.getById(itemDoc[0].ID).update({
             ParentID: 791,
           })
-            .then(() => {
+            .then(async () => {
+
+              await sp.web
+                .getFileById(itemDoc[0].UniqueId)
+                .moveTo(`${uri}/${itemDoc[0].ID}`);
+
               alert("Le document a été archivé.");
               window.location.href = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${itemDoc[0].Title}&documentId=${itemDoc[0].FolderID}`;
             });
@@ -2574,16 +2781,28 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     });
 
-    // Download the attachment
     $("#download_doc").click(async (e) => {
-      const user = await sp.web.currentUser();
-      if (itemDoc[0].IsFiligrane === "NO") {
-        await this.downloadDocWithoutFili(url, itemDoc[0].Title, itemDoc[0].FolderID);
+
+      const specialCharsRegex = /[^\w\s]/g; // Regex to match special characters excluding dot and forward slash
+
+      const cleanedTitle = itemDoc[0].Title.replace(specialCharsRegex, "_"); // Replace special characters with an underscore (_)
+      const finalTitle = cleanedTitle.replace(/\./g, "_").replace(/\//g, "_");
+
+      if (this.getFileExtensionFromUrl(url) === "pdf") {
+
+        if (itemDoc[0].IsFiligrane === "NO") {
+          await this.downloadDocWithoutFili(url, finalTitle, itemDoc[0].FolderID);
+        } else {
+          await this.downloadDoc(url, finalTitle, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
+        }
+
       }
 
       else {
-        await this.downloadDoc(url, itemDoc[0].Title, itemDoc[0].FolderID, 'UNCONTROLLED COPY - Downloaded on ');
+        await this.downloadFile(url, finalTitle + "." + this.getFileExtensionFromUrl(url) , itemDoc[0].FolderID);
       }
+
+
     });
 
 
@@ -2607,10 +2826,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
         else {
 
-
           var confirmed = confirm("Êtes-vous sûr de vouloir créer une nouvelle version de ce document ?");
-
-
           if (confirmed) {
 
             // User clicked OK
@@ -2631,7 +2847,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       else if ($("#input_number").val() !== itemDoc[0].Title) {
 
-        var confirmed = confirm("Êtes-vous sûr de vouloir appliquer cette modification à tous les documents portant ce numéro de document?");
+        var confirmed = confirm("Êtes-vous sûr de vouloir appliquer cette modification à tous les Documents1 portant ce numéro de document?");
         if (confirmed) {
 
           await this.updateAllDocNumberForDocument(itemDoc[0].Title, $("#input_number").val(), itemDoc[0].FolderID);
@@ -2644,10 +2860,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       else if (Number($("#created_by").val()) !== itemDoc[0].ParentID) {
 
-        alert($("#created_by").val());
-        alert(itemDoc[0].ParentID);
+        // alert($("#created_by").val());
+        // alert(itemDoc[0].ParentID);
 
-        var confirmed = confirm("Êtes-vous sûr de bouger les documents portant ce numéro de document?");
+        var confirmed = confirm("Êtes-vous sûr de bouger les Documents1 portant ce numéro de document?");
         if (confirmed) {
 
           await this.updateAllDossierForDocument(itemDoc[0].Title, itemDoc[0].FolderID);
@@ -2695,8 +2911,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     const user: ISiteUserInfo = await sp.web.currentUser();
 
-    // await this.checkUserPermissions( "Documents", itemDoc[0].ID , user.Id);
-
+    // await this.checkUserPermissions( "Documents1", itemDoc[0].ID , user.Id);
 
     var items = await sp.web.lists.getByTitle("Marque_Pages").items
       .select("ID")
@@ -2709,11 +2924,56 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
 
     else {
+
       return this.setBookmarkSwitchState(true);
 
     }
 
+  }
 
+  public async downloadFile(url, filename, folderID) {
+
+    try {
+
+      const message = document.createElement('div');
+      message.textContent = 'Downloading file...';
+      message.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #f54630;
+        color: white;
+        text-align: center;
+        font-size: 24px;
+        padding: 10px 0;
+      `;
+
+      document.body.appendChild(message);
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const a = document.createElement("a");
+      const downloadUrl = URL.createObjectURL(blob);
+      a.href = downloadUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(downloadUrl);
+
+
+      document.body.removeChild(message);
+    }
+
+    catch (e) {
+      alert("Cannot download this file for the following reason: " + e);
+
+      // Remove the message from the DOM in case of an error
+      const message = document.querySelector('div');
+      if (message) {
+        document.body.removeChild(message);
+      }
+
+      window.location.reload();
+    }
 
   }
 
@@ -2742,7 +3002,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       closeButton.style.cssText = `
       position: absolute;
       top: 80px;
-      left: 50px;
+      left: 27%;
       padding: 5px 10px;
       background-color: #fa0f00;
       border: none;
@@ -2770,8 +3030,8 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
       const iframe = document.createElement('iframe');
       iframe.style.cssText = `
-        width: 90%;
-        height: 90%;
+        width: 39%;
+        height: 97%;
       `;
 
       overlay.appendChild(iframe);
@@ -2822,7 +3082,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
               // x.then(blob => {
                 adobeDCView.previewFile({
                   content:{location: {url: '${pdfUrl}'}},
-                  metaData: { fileName: '${filename}' }
+                  metaData: { fileName: "${filename}" }
                 }, { embedMode: "IN_LINE", showDownloadPDF: false, showPrintPDF: false});
               });
             // });
@@ -2912,31 +3172,15 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  // private async getFolder(docParentID: any) {
-  //   let folder = { ID: '', Title: '' };
-  //   const items = await sp.web.lists.getByTitle('Documents').items
-  //     .select("Id,ParentID,FolderID,Title")
-  //     .filter(`Title eq '${$("#input_type_doc").val().toString()}' and FolderID eq '${docParentID}'`)
-  //     .get();
+  private async updateDocMetadata(id: any, folderID: any, userTitle: any,) {
 
-  //   const folders = items.filter(item => item.IsFolder === "TRUE");
+    const path = $("#path_doc").val().toString();
 
+    const item: any = await sp.web.lists.getByTitle("Documents1").items
+      .getById(id)
+      .select("ID,ParentID,FolderID,Title,revision,IsFolder,description,FileDirRef,UniqueId")
+      .get();
 
-
-  //   // if (items.length > 0) {
-  //   //   folder.ID = items[0].FolderID;
-  //   //   folder.Title = items[0].Title;
-  //   // }
-
-  //   if (folders.length > 0) {
-  //     folder.ID = folders.FolderID;
-  //     folder.Title = folders.Title;
-  //   }
-
-  //   return folder;
-  // }
-
-  private async updateDocMetadata(id: any, folderID: any, userTitle: any) {
 
     var checkbox_fili = document.getElementById("check1") as HTMLInputElement;
     var filivalue = "NO";
@@ -2958,9 +3202,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
 
     try {
-      const list = sp.web.lists.getByTitle("Documents");
-
-
+      const list = sp.web.lists.getByTitle("Documents1");
 
       const i = await list.items.getById(id).update({
         // Title: $("#input_number").val(),
@@ -2969,11 +3211,44 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         doc_number: $("#input_number").val(),
         ParentID: $("#created_by").val(),
         IsFiligrane: filivalue,
-        IsDownloadable: download_value
-
-      }).then(async () => {
-        await this.createAudit($("#input_number").val(), folderID, userTitle, "Modification");
+        revisionDate: moment($("#input_reviewDate").val()).format("DD/MM/YYYY"),
+        IsDownloadable: download_value,
+        createdDate: moment($("#creation_date").val()).format("DD/MM/YYYY")
       })
+        .then(async () => {
+
+          let listUri: string = '/sites/MyGed/Lists/Documents1';
+
+          if (path === "") {
+            await sp.web
+              .getFileByServerRelativeUrl(`${listUri}/${id}_.000`)
+              .moveTo(`${path}/${id}`);
+
+            // const i = await list.items.getById(id).update({
+            //   Current: path
+            // });
+
+          }
+
+          else if (path !== item.FileDirRef) {
+
+            await sp.web
+              .getFileByServerRelativeUrl(`${item.FileDirRef}/${id}_.000`)
+              .moveTo(`${path}/${id}`);
+
+            const i = await list.items.getById(id).update({
+              Current: path
+            });
+          }
+
+          else {
+
+          }
+
+        })
+        .then(async () => {
+          await this.createAudit($("#input_number").val(), folderID, userTitle, "Modification");
+        })
         .then(() => {
 
           alert("Détails mis à jour avec succès");
@@ -2989,84 +3264,12 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
   }
 
-  private async add_notification() {
-
-    //add permission user
-
-
-    var ifFolder = "FALSE";
-    var x = this.getDocId();
-    var doc_title = "";
-    var docID = "";
-    var revisionDate = "";
-    var description = "";
-    var link = "";
-    var revision = "";
-
-
-    const user: any = await sp.web.siteUsers.getByEmail($("#users_name_notif").val().toString())();
-
-
-    const all_documents: any[] = await sp.web.lists.getByTitle('Documents').items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder, description, revisionDate")
-      .filter("FolderID eq '" + x + "' and IsFolder eq '" + ifFolder + "'")
-      .get();
-
-
-
-    await Promise.all(all_documents.map(async (doc) => {
-
-      doc_title = doc.Title;
-      docID = doc.Id;
-      revisionDate = doc.revisionDate;
-      description = doc.description;
-      link = `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=OWNERTEST&documentId=${doc.FolderID}`;
-      revision = doc.revision;
-
-    }));
-
-    console.log("USERS FOR PERMISSION", users_Permission);
-    console.log("LIIINK", link);
-
-    try {
-
-      await sp.web.lists.getByTitle("Notifications").items.add({
-        Title: doc_title.toString(),
-        group_person: $("#users_name_notif").val(),
-        IsFolder: "FALSE",
-        revisionDate: revisionDate,
-        revision: revision,
-        toNotify: "YES",
-        description: description,
-        FolderID: x.toString(),
-        webLink: `${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${doc_title}&documentId=${x}`,
-        LoginName: user.Title,
-        TypeNotif: "manual"
-      })
-        .then(() => {
-          alert("Notification ajoutée à ce document avec succès.");
-        })
-        .then(() => {
-          window.location.reload();
-        });
-
-
-    }
-
-    catch (e) {
-      alert("Erreur: " + e.message);
-    }
-
-  }
-
   private async _getAllVersions(title: string, doc_id: any) {
 
     {
       //display so table
       // $("#table_version_doc").css("display", "block");
-
       const listContainerDocVersions: Element = this.domElement.querySelector('#splistDocVersions');
-
       let html: string = `<table id='tbl_doc_versions' class='table table-striped' style="width: 100%;font-size: initial;" >`;
 
       html += `<thead>
@@ -3089,12 +3292,10 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       var value1 = "FALSE";
 
 
-      const all_documents_versions: any[] = await sp.web.lists.getByTitle('Documents').items
+      const all_documents_versions: any[] = await sp.web.lists.getByTitle('Documents1').items
         .select("Id,ParentID,FolderID,Title,revision,IsFolder,description, attachmentUrl, IsFiligrane, IsDownloadable, filename")
         .filter("Title eq '" + title + "' and IsFolder eq '" + value1 + "' and FolderID ne '" + doc_id + "'")
         .get();
-
-
 
       // First, sort the array by revision in descending order
       // all_documents_versions.sort((a, b) => b.revision - a.revision);
@@ -3129,8 +3330,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           var url = '';
           var attachmentUrl = element_version.attachmentUrl;
 
-
-          await sp.web.lists.getByTitle("Documents")
+          await sp.web.lists.getByTitle("Documents1")
             .items
             .getById(parseInt(element_version.Id))
             .attachmentFiles
@@ -3142,7 +3342,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
                   pdfName = attachmentItem.FileName;
                   urlFile = attachmentItem.ServerRelativeUrl;
                 });
-
             });
 
           if (attachmentUrl == undefined || attachmentUrl == null || attachmentUrl == "") {
@@ -3171,7 +3370,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
           ${element_version.revision}          
           </td>
 
- 
           <td class="text-left"> 
           ${element_version.description}          
           </td>
@@ -3321,11 +3519,17 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         $('#tbl_doc_versions tbody').on('click', '.btn_download_doc', async (event) => {
           var data = table.row($(event.currentTarget).parents('tr')).data();
 
+          const specialCharsRegex = /[^\w\s]/g; // Regex to match special characters excluding dot and forward slash
+          const cleanedTitle = data[1].replace(specialCharsRegex, "_");
+          const finalTitle = cleanedTitle.replace(/\./g, "_").replace(/\//g, "_");
+          const finalRevision = data[3].replace(/\./g, "_").replace(/\//g, "_");
+
+
           if (data[7] === "NO") {
-            await this.downloadDocWithoutFili(data[2], data[5], data[6]);
+            await this.downloadDocWithoutFili(data[2], `${finalTitle}_${finalRevision}`, data[6]);
           }
           else {
-            await this.downloadDoc(data[2], data[5], data[6], 'ARCHIVED COPY - Downloaded on ');
+            await this.downloadDoc(data[2], `${finalTitle}_${finalRevision}`, data[6], 'ARCHIVED COPY - Downloaded on ');
           }
         });
 
@@ -3334,28 +3538,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
 
   }
-
-  private async getCurrentUserPermissionsForItem(itemId, listName) {
-    try {
-      // Get the item and its effective permissions for the current user
-      const item = await sp.web.lists.getByTitle(listName).items.getById(itemId).select('EffectiveBasePermissions').get();
-
-      // Extract permission values from XML using regular expressions
-
-
-      // Check if permission values were found
-
-      // Return the permissions values as an object
-      return item[0].EffectiveBasePermissions;
-
-
-    } catch (error) {
-      console.error('Error getting user permissions:', error);
-      return null;
-    }
-  }
-
-
 
   public async checkIfUserIsAdmin(graphClient: MSGraphClient): Promise<boolean> {
     try {
@@ -3371,100 +3553,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     }
   }
 
-  private async _getAllAccess(id: string) {
-
-    var value1 = "FALSE";
-    var itemID = "";
-
-    var doc_detail: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
-
-    await Promise.all(doc_detail.map(async (perm) => {
-
-      itemID = perm.Id;
-
-    }));
-
-    const listContainerDocRights: Element = this.domElement.querySelector('#splistDocAccessRights');
-
-    let html: string = `<table id='tbl_doc_rights' class='table table-striped' style="width: 100%;font-size: initial;" >`;
-
-    html += `<thead>
-    <tr>
-      <th class="text-left">ID</th>
-      <th class="text-left">Nom</th>
-      <th class="text-left" >Droits d'accès</th>
-
-     <!-- <th class="text-left" >Actions</th>- -->
-    </tr>
-  </thead>
-  <tbody id="tbl_documents_access_bdy">`;
-
-    const allPermissions: any[] = await sp.web.lists.getByTitle('AccessRights').items.select("ID,groupName,permission,FolderID,LoginName, groupTitle, Created").filter("FolderID eq '" + Number(itemID) + "'").getAll();
-
-    const permissionsByGroup = allPermissions.reduce((groups, permission) => {
-      const groupName = permission.groupTitle;
-      if (!groups[groupName] || permission.Created > groups[groupName].Created) {
-        groups[groupName] = permission;
-      }
-      return groups;
-    }, {});
-
-    const mostRecentPermissions: any = Object.values(permissionsByGroup);
-
-
-    await Promise.all(mostRecentPermissions.map(async (perm) => {
-
-      html += `
-          <tr>
-          <td class="text-left">${perm.Id}</td>
-
-          <td class="text-left">${perm.LoginName}</td>
-          <td class="text-left">${perm.permission}</td>
-          
-   <!--       <td class="text-left">
-
-         <a href="#"  title="delete_perm" id="${perm.Id}_view_doc_version" class="btn_delete_access" style="padding-left: inherit;">
-         <i class="fa-solid fa-trash" style="font-size: x-large;"></i>
-
-     
-         </a>
-
-          </td> -->
-
-         `;
-
-
-    }))
-      .then(() => {
-
-        html += `</tbody>
-          </table>`;
-        listContainerDocRights.innerHTML += html;
-      });
-
-    var table = $("#tbl_doc_rights").DataTable(
-
-      {
-        columnDefs: [
-          {
-            targets: [0],
-            visible: false,
-            target: 0
-          }]
-
-      }
-    );
-
-    // $('#tbl_doc_rights tbody').on('click', '.btn_delete_access', async (event) => {
-    //   var data = table.row($(event.currentTarget).parents('tr')).data();
-    //   await this._delete(data[0], "AccessRights", "Droits d'accès");
-    //   window.location.reload();
-    // });
-
-
-
-  }
-
   private async _getAllNotifications(id: string) {
 
     var value1 = "FALSE";
@@ -3472,7 +3560,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
     var folderID = "";
     var docTitle = this.getDocTitle();
 
-    var doc_detail: any = await sp.web.lists.getByTitle('Documents').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
+    var doc_detail: any = await sp.web.lists.getByTitle('Documents1').items.select("ID,ParentID,FolderID").filter("FolderID eq '" + parseInt(id) + "' and IsFolder eq '" + value1 + "'").get();
 
     await Promise.all(doc_detail.map(async (perm) => {
 
@@ -3734,55 +3822,6 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       return { permissions: [] };
     }
   }
-
-  private async getAllGroups(graphClient: MSGraphClient): Promise<Group[]> {
-    const allGroups: Group[] = [];
-
-    let nextPageUrl = '/groups';
-    while (nextPageUrl) {
-      const response = await graphClient.api(nextPageUrl).version('v1.0').get();
-      allGroups.push(...response.value);
-      nextPageUrl = response["@odata.nextLink"] ?? null;
-    }
-
-    return allGroups;
-  }
-
-  private async getAllUsers(graphClient: MSGraphClient): Promise<User[]> {
-    const allUsers: User[] = [];
-
-    let nextPageUrl = '/users';
-    while (nextPageUrl) {
-      const response = await graphClient.api(nextPageUrl).version('v1.0').get();
-      allUsers.push(...response.value);
-      nextPageUrl = response["@odata.nextLink"] ?? null;
-    }
-
-    return allUsers;
-  }
-
-  // private async getAllUsers(graphClient: MSGraphClient): Promise<User[]> {
-  //   const allUsers: User[] = [];
-
-  //   let nextPageUrl = '/users';
-  //   while (nextPageUrl) {
-  //     const response = await graphClient.api(nextPageUrl).version('v1.0').get();
-  //     const users = response.value.map(async (user: any) => {
-  //       const userResponse = await graphClient.api(`/users/${user.id}/?$select=id,displayName,userPrincipalName`).version('v1.0').get();
-  //       const userPrincipleIdResponse = await graphClient.api(`/users/${user.id}/?$select=id,mailNickname`).version('v1.0').get();
-  //       return {
-  //         id: userResponse.id,
-  //         displayName: userResponse.displayName,
-  //         userPrincipalName: userResponse.userPrincipalName,
-  //         principleId: userPrincipleIdResponse.mailNickname
-  //       };
-  //     });
-  //     allUsers.push(...await Promise.all(users));
-  //     nextPageUrl = response["@odata.nextLink"] ?? null;
-  //   }
-
-  //   return allUsers;
-  // }
 
   private _getEnvironmentMessage(): string {
     if (!!this.context.sdks.microsoftTeams) { // running in Teams

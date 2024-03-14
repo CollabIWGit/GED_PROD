@@ -15,6 +15,7 @@ import { escape } from '@microsoft/sp-lodash-subset';
 import { MSGraphClient } from '@microsoft/sp-http';
 import { sp, List, IItemAddResult, UserCustomActionScope, Items, Item, ITerm, ISiteGroup, ISiteGroupInfo } from "@pnp/sp/presets/all";
 import { SPComponentLoader } from '@microsoft/sp-loader';
+import { HttpClient, IHttpClientOptions, HttpClientResponse } from '@microsoft/sp-http';
 
 
 
@@ -24,9 +25,6 @@ import * as strings from 'RechercheDocWebPartStrings';
 export interface IRechercheDocWebPartProps {
   description: string;
 }
-
-
-
 
 SPComponentLoader.loadCss('//cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css');
 
@@ -43,7 +41,8 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
     return new Promise<void>((resolve: () => void, reject: (error: any) => void): void => {
       // this.user = this.context.pageContext.user;
       sp.setup({
-        spfxContext: this.context
+        spfxContext: this.context,
+        globalCacheDisable: true
       });
 
       this.context.msGraphClientFactory
@@ -56,40 +55,47 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
   }
 
   public async render(): Promise<void> {
-    this.domElement.innerHTML = `
+
+    if (!this.renderedOnce) {
+
+      this.domElement.innerHTML = `
     <div class="container" style=" margin-top: 1em;">
     <div id="splistAlldocsMatching" style="box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%), 0 6px 20px 0 rgb(0 0 0 / 19%); padding: 1em;">
-    <div id="loader" style="display: flex; align-items: center; justify-content: center; height: 100%;">
-    <!--  <img src="https://ncaircalin.sharepoint.com/sites/TestMyGed/SiteAssets/images/loader.gif" alt="Loading..." /> -->
-      <img src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/images/logoGed.png" id="logoGedBeat" alt="Loading..." />
 
+    <div id="notFound" style="display: none; text-align: center;">
+    <h3>Aucun résultat ne correspond à vos critères de recherche.</h3>
+     </div>
+
+    <div id="loader" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+      <img src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/images/logoGed.png" id="logoGedBeat" alt="Loading..." />
     </div>
   </div>
   </div>`;
 
+      require('./../../common/css/doctabs.css');
+      require('./../../common/js/jquery.min');
+      require('./../../common/js/popper');
+      require('./../../common/js/bootstrap.min');
+      require('./../../common/js/main');
+      // require('./../../common/css/common.css');
+      require('./../../common/css/bugfix.css');
+      require('./../../common/css/minBootstrap.css');
+      require('./../../common/css/responsive.css');
+      require('./../../common/css/forms.css');
 
-    require('./../../common/css/doctabs.css');
-    require('./../../common/js/jquery.min');
-    require('./../../common/js/popper');
-    require('./../../common/js/bootstrap.min');
-    require('./../../common/js/main');
-    // require('./../../common/css/common.css');
-    require('./../../common/css/bugfix.css');
-    require('./../../common/css/minBootstrap.css');
-    require('./../../common/css/responsive.css');
-    require('./../../common/css/forms.css');
 
+      const loader = document.getElementById('loader');
+      const keywords = this.getKeywords();
 
-    const loader = document.getElementById('loader');
-    const keywords = this.getKeywords();
+      try {
+        await this.getDocs(keywords);
+        $("#loader").css("display", "none");
 
-    try {
-      await this.getDocs(keywords);
-      $("#loader").css("display", "none");
+        // loader.remove();
+      } catch (error) {
+        loader.innerHTML = `Error: ${error.message}`;
+      }
 
-      // loader.remove();
-    } catch (error) {
-      loader.innerHTML = `Error: ${error.message}`;
     }
   }
 
@@ -105,33 +111,49 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
 
     var value1 = "FALSE";
 
-    var response_title = await sp.web.lists.getByTitle("Documents").items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description,keywords")
+    var response_title = await sp.web.lists.getByTitle("Documents1").items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description,keywords, Created")
       .top(5000)
       .filter("substringof('" + keywords + "',Title) and IsFolder eq '" + value1 + "' ")
       .getAll();
 
-    var response_keywords = await sp.web.lists.getByTitle("Documents").items
-      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description,keywords")
+    var response_keywords = await sp.web.lists.getByTitle("Documents1").items
+      .select("Id,ParentID,FolderID,Title,revision,IsFolder,description,keywords, Created")
       .top(5000)
       .filter("substringof('" + keywords + "',keywords) and IsFolder eq '" + value1 + "' ")
       .getAll();
 
     var response = response_title.concat(response_keywords);
 
-    // Remove duplicates based on title and keep only the one with the highest revision value
-    var uniqueResponse = response.reduce((acc, current) => {
-      const existing = acc.find(item => item.Title === current.Title);
-      if (!existing) {
-        acc.push(current);
-      } else if (current.revision > existing.revision) {
-        acc[acc.indexOf(existing)] = current;
+    const uniqueResponse = response.reduce((acc: any[], obj: any) => {
+      if (!obj.revision || obj.revision === null) return acc;
+      let existingObjIndex = acc.findIndex(o => o.Title === obj.Title);
+
+      if (existingObjIndex === -1 || Number(obj.revision) > Number(acc[existingObjIndex].revision) ||
+        new Date(obj.Created) > new Date(acc[existingObjIndex].Created)) {
+
+        if (existingObjIndex !== -1) {
+          acc.splice(existingObjIndex, 1);
+        }
+
+        acc.push(obj);
       }
       return acc;
-    }, []);
+    }, [])
+      .sort((a: any, b: any) => {
+        if (a.Title > b.Title) return 1;
+        if (a.Title < b.Title) return -1;
+        if (Number(a.revision) > Number(b.revision)) return -1;
+        if (Number(a.revision) < Number(b.revision)) return 1;
+        const dateA = new Date(a.Created);
+        const dateB = new Date(b.Created);
+        if (dateA > dateB) return -1;
+        if (dateA < dateB) return 1;
+        return 0;
+      });
 
 
-    console.log("RESPONSE", response);
+    console.log("RESPONSE", uniqueResponse);
 
     {
       //display so table
@@ -152,7 +174,7 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
       <th class="text-left" >Revision</th>
     </tr>
   </thead>
-  <tbody id="tbl_documents_versions_bdy">`;
+  <tbody id="tbl_Documents1_versions_bdy">`;
 
 
       var response_doc_versions = null;
@@ -173,7 +195,7 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
           var titleFolder = '';
           var value2 = "TRUE";
 
-          await sp.web.lists.getByTitle("Documents")
+          await sp.web.lists.getByTitle("Documents1")
             .items
             .getById(parseInt(element_version.Id))
             .attachmentFiles
@@ -196,7 +218,7 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
 
           }
 
-          const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents').items.select("FolderID,Title").filter("FolderID eq '" + element_version.ParentID + "' and IsFolder eq '" + value2 + "'").getAll();
+          const allItemsFolder: any[] = await sp.web.lists.getByTitle('Documents1').items.select("FolderID,Title").filter("FolderID eq '" + element_version.ParentID + "' and IsFolder eq '" + value2 + "'").getAll();
 
           allItemsFolder.forEach((x) => {
 
@@ -210,7 +232,6 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
         <td class="text-left">${element_version.Id}</td>
 
         <td class="text-left"><a href="${this.context.pageContext.web.absoluteUrl}/SitePages/Document.aspx?document=${element_version.Title}&documentId=${element_version.FolderID}" target="_blank" data-interception="off">${element_version.Title}</a></td>
-
 
         <td class="text-left"> 
        ${url}          
@@ -230,9 +251,7 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
         ${element_version.revision}          
         </td>
       
-      
        `;
-
 
         }))
           .then(() => {
@@ -266,12 +285,12 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
           }
         );
 
-
       }
 
-
+      else  {
+        $("#notFound").css("display", "block");
+      }
     }
-
 
   }
 
@@ -323,4 +342,5 @@ export default class RechercheDocWebPart extends BaseClientSideWebPart<IRecherch
       ]
     };
   }
+
 }

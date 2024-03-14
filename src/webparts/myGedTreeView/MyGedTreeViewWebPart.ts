@@ -24,7 +24,6 @@ var SP;
 
 
 
-
 export interface IMyGedTreeViewWebPartProps {
   description: string;
 }
@@ -39,7 +38,8 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
 
     return super.onInit().then(_ => {
       sp.setup({
-        spfxContext: this.context
+        spfxContext: this.context,
+        globalCacheDisable: true
       });
     });
   }
@@ -74,51 +74,53 @@ export default class MyGedTreeViewWebPart extends BaseClientSideWebPart<IMyGedTr
   // }
 
   public render(): void {
-    const element = React.createElement(MyGedTreeView, {
-      description: this.properties.description,
-      context: this.context,
-      msGraphClientFactory: this.context.msGraphClientFactory
-    });
 
-    // Promise.all([
-    //   this.require_libraries(),
-    //   // SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
-    //   // SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
-    //   // SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
+    if (!this.renderedOnce) {
 
-    // ]).then(() => {
-    //   ReactDom.render(element, this.domElement);
-    // });
+      const element = React.createElement(MyGedTreeView, {
+        description: this.properties.description,
+        context: this.context,
+        msGraphClientFactory: this.context.msGraphClientFactory
+      });
 
+      // Promise.all([
+      //   this.require_libraries(),
+      //   // SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
+      //   // SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
+      //   // SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
 
-    Promise.all([
-      this.require_libraries(),
-      // SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
-      // SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
-      // SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
+      // ]).then(() => {
+      //   ReactDom.render(element, this.domElement);
+      // });
 
-    ]).then(() => {
-      ReactDom.render(element, this.domElement);
-    });
+      Promise.all([
+        this.require_libraries(),
+        // SPComponentLoader.loadScript('//code.jquery.com/jquery-3.3.1.slim.min.js', { globalExportsName: 'jQuery' }),
+        // SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'),
+        // SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js'),
 
-    // Promise.all([
-    //   SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js'), // jQuery
-    //   SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'), // Popper.js
-    //   SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js'), // Bootstrap
-    //   SPComponentLoader.loadScript("https://code.jquery.com/ui/1.12.1/jquery-ui.js"),
-    //   this.require_libraries(), // jQuery UI
-    //   // SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'), // DataTables
-    // ]).then(function() {
-    //   console.log("Scripts loaded successfully");
-    //   // ReactDom.render(element, this.domElement);
-    //   // All scripts have been loaded successfully
-    // }).catch(function(error) {
-    //   // An error occurred while loading the scripts
-    //   console.error("Error loading scripts: "+error);
-    // });
+      ]).then(() => {
+        ReactDom.render(element, this.domElement);
+      });
 
-    // ReactDom.render(element, this.domElement);
+      // Promise.all([
+      //   SPComponentLoader.loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js'), // jQuery
+      //   SPComponentLoader.loadScript('//cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js'), // Popper.js
+      //   SPComponentLoader.loadScript('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js'), // Bootstrap
+      //   SPComponentLoader.loadScript("https://code.jquery.com/ui/1.12.1/jquery-ui.js"),
+      //   this.require_libraries(), // jQuery UI
+      //   // SPComponentLoader.loadScript('//cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js'), // DataTables
+      // ]).then(function() {
+      //   console.log("Scripts loaded successfully");
+      //   // ReactDom.render(element, this.domElement);
+      //   // All scripts have been loaded successfully
+      // }).catch(function(error) {
+      //   // An error occurred while loading the scripts
+      //   console.error("Error loading scripts: "+error);
+      // });
 
+      // ReactDom.render(element, this.domElement);
+    }
   }
 
   // private require_libraries() {
