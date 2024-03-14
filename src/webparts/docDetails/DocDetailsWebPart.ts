@@ -1407,12 +1407,20 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
 
     const inputRevision = document.getElementById("input_revision") as HTMLInputElement;
 
-    inputRevision.addEventListener("keyup", function () {
+    // inputRevision.addEventListener("keyup", function () {
+    //   if (this.value) {
+    //     alert("Téléchargez votre fichier avant de continuer.");
+    //     $('#file_ammendment_update').focus();
+    //   }
+    // });
+
+    inputRevision.addEventListener('blur', function () {
       if (this.value) {
         alert("Téléchargez votre fichier avant de continuer.");
         $('#file_ammendment_update').focus();
       }
     });
+    
 
 
 
@@ -1456,14 +1464,11 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
       // const stringGroupUsers: string[] = await this.getAllUsersInGroup($("#group_name_notif").val());
       // console.log("TESTER GROUP USERS", stringGroupUsers);
       await this.add_notification_group($("#group_name_notif").val(), principleIdOfGroup_notif);
-
     });
-
 
     $("#add_user_notif").click((e) => {
       this.add_notification();
     });
-
 
   }
 
@@ -1477,7 +1482,7 @@ export default class DocDetailsWebPart extends BaseClientSideWebPart<IDocDetails
         .get();
 
 
-      await sp.web.lists.getByTitle("InheritParentPermission").items.add({
+      await sp.web.lists.getByTitle("InheritParentPermission").items.add({ 
         Title: title,
         FolderID: items[0].ID,
         IsDone: "NO",
